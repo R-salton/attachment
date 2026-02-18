@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,24 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      toast({ title: "Success", description: "Signed in with Google." });
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: error.message || "Failed to sign in with Google.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAnonymousLogin = async () => {
     setIsLoading(true);
     try {
@@ -66,8 +85,25 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>Sign in to manage your operational reports</CardDescription>
         </CardHeader>
-        <form onSubmit={handleEmailLogin}>
-          <CardContent className="space-y-4">
+        <CardContent className="space-y-4">
+          <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="animate-spin mr-2 h-4 w-4" />
+            ) : (
+              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+              </svg>
+            )}
+            Sign in with Google
+          </Button>
+
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t"></div>
+            <span className="flex-shrink mx-4 text-xs text-muted-foreground uppercase">Or</span>
+            <div className="flex-grow border-t"></div>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
@@ -101,8 +137,8 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Sign In with Email"}
             </Button>
-          </CardContent>
-        </form>
+          </form>
+        </CardContent>
         <div className="px-6 pb-2">
           <div className="relative flex items-center">
             <div className="flex-grow border-t"></div>
