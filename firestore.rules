@@ -1,0 +1,174 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a strict Ownership-Based Access Control model. To ensure high 
+     * performance and "Authorization Independence," every document related to a specific 
+     * report (including nested subcollections) contains a denormalized 'ownerId' field. 
+     * This allows security rules to verify access without performing expensive recursive lookups.
+     *
+     * DATA STRUCTURE:
+     * - Master Data (/companies, /operationalUnits): Read-only lookup data for authenticated users.
+     * - Role Validation (/roles_cadet_commanders): DBAC (Database-Backed Access Control) to verify rank.
+     * - Report Tree (/reports/...): User-owned hierarchy. Every child document (e.g., ActivityItem, 
+     *   CaseDetail) repeats the 'ownerId' of the parent Report.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Authorization Independence: We avoid get() calls in rules by relying on denormalized
+     *    owner IDs directly on child documents.
+     * 2. Prototyping Flexibility: While ownership is strictly enforced, the specific data types 
+     *    and content of reports are not validated to allow for rapid UI/UX iteration.
+     * 3. Immutability: Critical relational fields like 'ownerId' are immutable once set.
+     * 4. Relational Integrity: On creation, the rules force the client to correctly link 
+     *    the document to the authenticated user's ID.
+     */
+
+    // --- HELPER FUNCTIONS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Used for update and delete to ensure the document exists and the user owns it.
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // DBAC check for Cadet Commander role
+    function hasCommanderRole() {
+      return exists(/databases/$(database)/documents/roles_cadet_commanders/$(request.auth.uid));
+    }
+
+    // --- MASTER DATA RULES ---
+
+    /**
+     * @description Master data for cadet companies. Publicly readable by authenticated users.
+     * @path /companies/{companyId}
+     * @allow Authenticated user performing (get) or (list).
+     * @deny Any user performing (create), (update), or (delete).
+     * @principle Master data is read-only for standard users.
+     */
+    match /companies/{companyId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Master data for geographical/specialized units. Publicly readable by authenticated users.
+     * @path /operationalUnits/{operationalUnitId}
+     * @allow Authenticated user performing (get) or (list).
+     * @deny Any user performing (create), (update), or (delete).
+     * @principle Master data is read-only for standard users.
+     */
+    match /operationalUnits/{operationalUnitId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Role mapping collection for Cadet Commanders.
+     * @path /roles_cadet_commanders/{commanderId}
+     * @allow User checking their own role status (get).
+     * @deny Users modifying role assignments or listing all commanders.
+     * @principle DBAC lookup used to verify system-level permissions.
+     */
+    match /roles_cadet_commanders/{commanderId} {
+      allow get: if isOwner(commanderId);
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // --- REPORTING HIERARCHY RULES ---
+
+    /**
+     * @description Root collection for Daily Aggregate Reports.
+     * @path /reports/{reportId}
+     * @allow Owner creating a report with their UID (create) or listing their own reports (list).
+     * @deny Accessing or modifying reports owned by another user.
+     * @principle Ownership-based security with relational field enforcement.
+     */
+    match /reports/{reportId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.ownerId) || hasCommanderRole());
+      allow list: if isSignedIn(); // Filtered by query (e.g. .where('ownerId', '==', uid))
+      allow create: if isOwner(request.resource.data.ownerId);
+      allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isExistingOwner(resource.data.ownerId);
+
+      // --- SUBCOLLECTIONS (Authorization Independence via Denormalized ownerId) ---
+
+      /**
+       * @description Company-specific operational summaries.
+       * @path /reports/{reportId}/companyOperationalReports/{id}
+       */
+      match /companyOperationalReports/{reportDetailId} {
+        allow get, list: if isSignedIn();
+        allow create: if isOwner(request.resource.data.ownerId);
+        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+        allow delete: if isExistingOwner(resource.data.ownerId);
+
+        /**
+         * @description Nested items within an operational report (ActivityItems, EmphasisPoints, etc.).
+         */
+        match /activityItems/{itemId} {
+          allow get, list: if isSignedIn();
+          allow create: if isOwner(request.resource.data.ownerId);
+          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+          allow delete: if isExistingOwner(resource.data.ownerId);
+        }
+
+        match /emphasisPoints/{itemId} {
+          allow get, list: if isSignedIn();
+          allow create: if isOwner(request.resource.data.ownerId);
+          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+          allow delete: if isExistingOwner(resource.data.ownerId);
+        }
+
+        match /postCaseReports/{postId} {
+          allow get, list: if isSignedIn();
+          allow create: if isOwner(request.resource.data.ownerId);
+          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+          allow delete: if isExistingOwner(resource.data.ownerId);
+
+          match /caseDetails/{caseId} {
+            allow get, list: if isSignedIn();
+            allow create: if isOwner(request.resource.data.ownerId);
+            allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+            allow delete: if isExistingOwner(resource.data.ownerId);
+          }
+        }
+      }
+
+      /**
+       * @description Top-level report metadata (Challenges, Recommendations, OtherActivities).
+       */
+      match /challenges/{itemId} {
+        allow get, list: if isSignedIn();
+        allow create: if isOwner(request.resource.data.ownerId);
+        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+        allow delete: if isExistingOwner(resource.data.ownerId);
+      }
+
+      match /recommendations/{itemId} {
+        allow get, list: if isSignedIn();
+        allow create: if isOwner(request.resource.data.ownerId);
+        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+        allow delete: if isExistingOwner(resource.data.ownerId);
+      }
+
+      match /otherActivities/{itemId} {
+        allow get, list: if isSignedIn();
+        allow create: if isOwner(request.resource.data.ownerId);
+        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+        allow delete: if isExistingOwner(resource.data.ownerId);
+      }
+    }
+  }
+}

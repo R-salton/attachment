@@ -1,0 +1,672 @@
+{
+  "entities": {
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a daily aggregate report submitted by a Cadet Commander, encompassing all activities, challenges, and recommendations for a specific day.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Report entity."
+        },
+        "reportDate": {
+          "type": "string",
+          "description": "The specific date for which this report is generated (e.g., '2026-02-16').",
+          "format": "date"
+        },
+        "cadetIntake": {
+          "type": "string",
+          "description": "The cadet intake period this report pertains to (e.g., '14/2025-2026')."
+        },
+        "reportTitle": {
+          "type": "string",
+          "description": "The full, formatted title of the report as it appears at the top (e.g., 'General daily report for cadets intake 14/2025-2026 Attachments operations as of 16 FEB 26')."
+        },
+        "reportingCommanderName": {
+          "type": "string",
+          "description": "The name of the Cadet Commander who submitted the report (e.g., 'Oc Isiah KAYIRANGA')."
+        },
+        "reportingCommanderTitle": {
+          "type": "string",
+          "description": "The title or rank of the Cadet Commander (e.g., 'Cadet Commander')."
+        },
+        "creationDateTime": {
+          "type": "string",
+          "description": "Timestamp indicating when this report record was created in the system.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "reportDate",
+        "cadetIntake",
+        "reportTitle",
+        "reportingCommanderName",
+        "reportingCommanderTitle",
+        "creationDateTime"
+      ]
+    },
+    "Company": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Company",
+      "type": "object",
+      "description": "Represents a distinct company or group of cadets (e.g., Alpha Company, Fox Unit).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Company entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The formal name of the company (e.g., 'Alpha Company', 'Fox Unit')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the company's role or typical operations."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "OperationalUnit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OperationalUnit",
+      "type": "object",
+      "description": "Represents a specific geographical district police unit or specialized force where operations are conducted.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OperationalUnit entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the operational unit (e.g., 'Gasabo DPU', 'Special Intervention Force (SIF)')."
+        },
+        "type": {
+          "type": "string",
+          "description": "The classification or type of the operational unit (e.g., 'DPU', 'SIF', 'TRS', 'TFU')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the operational unit and its primary functions."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description"
+      ]
+    },
+    "CompanyOperationalReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CompanyOperationalReport",
+      "type": "object",
+      "description": "Details the specific activities, security situation, and observations reported by a cadet company within an operational unit for a particular daily report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CompanyOperationalReport entity."
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Reference to the main daily Report this operational report entry belongs to. (Relationship: Report 1:N CompanyOperationalReport)"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "Reference to the Company that conducted operations for this entry. (Relationship: Company 1:N CompanyOperationalReport)"
+        },
+        "operationalUnitId": {
+          "type": "string",
+          "description": "Reference to the OperationalUnit where these operations took place. (Relationship: OperationalUnit 1:N CompanyOperationalReport)"
+        },
+        "sectionTitle": {
+          "type": "string",
+          "description": "The specific title for this section within the main report (e.g., 'GASABO DPU DAY ONE REPORT')."
+        },
+        "operationsStartTime": {
+          "type": "string",
+          "description": "The start time of operations for this unit, if specified (e.g., '06:00').",
+          "format": "time"
+        },
+        "operationsEndTime": {
+          "type": "string",
+          "description": "The end time of operations for this unit, if specified (e.g., '19:00').",
+          "format": "time"
+        },
+        "securitySituation": {
+          "type": "string",
+          "description": "A brief statement on the security situation observed in the operational area (e.g., 'the security situation remained calm')."
+        },
+        "overallActivitySummary": {
+          "type": "string",
+          "description": "A high-level summary of the main activities conducted by the company in this unit (e.g., 'Today operations focused on introduction to Station Duties')."
+        },
+        "briefingOfficer": {
+          "type": "string",
+          "description": "The name or title of the officer who conducted briefings or introductions, if applicable (e.g., 'DPC Kicukiro', 'Operations Commander')."
+        },
+        "patrolAreas": {
+          "type": "array",
+          "description": "A list of areas where patrols were conducted, including the type of patrol (e.g., 'Giporoso (vehicle and foot patrol)').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deploymentLocations": {
+          "type": "array",
+          "description": "Specific locations where companies were deployed for duties (e.g., 'Nyarugenge Sector', 'Traffic Fine Recovery Unit').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "additionalNotes": {
+          "type": "string",
+          "description": "Any additional descriptive text relevant to this unit's report that does not fit into other structured fields (e.g., 'Foot patrols enabled engagement and collaboration with local security agencies')."
+        }
+      },
+      "required": [
+        "id",
+        "reportId",
+        "companyId",
+        "operationalUnitId",
+        "sectionTitle",
+        "securitySituation",
+        "overallActivitySummary"
+      ]
+    },
+    "ActivityItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ActivityItem",
+      "type": "object",
+      "description": "Represents a single numbered point or item describing a general activity, operation, or observation within a CompanyOperationalReport.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ActivityItem entity."
+        },
+        "companyOperationalReportId": {
+          "type": "string",
+          "description": "Reference to the CompanyOperationalReport this activity item belongs to. (Relationship: CompanyOperationalReport 1:N ActivityItem)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical order of this activity item within its section, used for consistent display sequencing."
+        },
+        "description": {
+          "type": "string",
+          "description": "The detailed description of the activity or observation (e.g., 'Alpha Company have conducted their operations in Gasabo DPU and the security situation remained calm.')."
+        }
+      },
+      "required": [
+        "id",
+        "companyOperationalReportId",
+        "order",
+        "description"
+      ]
+    },
+    "EmphasisPoint": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EmphasisPoint",
+      "type": "object",
+      "description": "Represents a specific point or value emphasized during briefings, introductions, or training sessions within a CompanyOperationalReport.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the EmphasisPoint entity."
+        },
+        "companyOperationalReportId": {
+          "type": "string",
+          "description": "Reference to the CompanyOperationalReport this emphasis point belongs to. (Relationship: CompanyOperationalReport 1:N EmphasisPoint)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical or alphabetical order of this emphasis point within its section, used for consistent display sequencing."
+        },
+        "text": {
+          "type": "string",
+          "description": "The detailed text of the emphasized point (e.g., 'JOC presentation planning', 'Values of a good officer – confidence, professionalism, and seeking guidance where necessary.')."
+        }
+      },
+      "required": [
+        "id",
+        "companyOperationalReportId",
+        "order",
+        "text"
+      ]
+    },
+    "PostCaseReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PostCaseReport",
+      "type": "object",
+      "description": "Summarizes the total number of cases received at a specific police post within a particular Operational Unit's report (e.g., for DPU Nyarugenge).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PostCaseReport entity."
+        },
+        "companyOperationalReportId": {
+          "type": "string",
+          "description": "Reference to the CompanyOperationalReport this post case summary belongs to. (Relationship: CompanyOperationalReport 1:N PostCaseReport)"
+        },
+        "postName": {
+          "type": "string",
+          "description": "The name of the police post (e.g., 'Nyabugogo Post', 'Inkundamahoro Post')."
+        },
+        "totalCasesReported": {
+          "type": "number",
+          "description": "The total number of cases reported at this specific post."
+        }
+      },
+      "required": [
+        "id",
+        "companyOperationalReportId",
+        "postName",
+        "totalCasesReported"
+      ]
+    },
+    "CaseDetail": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CaseDetail",
+      "type": "object",
+      "description": "Provides details for a specific type of case and its count reported under a PostCaseReport.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CaseDetail entity."
+        },
+        "postCaseReportId": {
+          "type": "string",
+          "description": "Reference to the PostCaseReport this specific case detail belongs to. (Relationship: PostCaseReport 1:N CaseDetail)"
+        },
+        "caseType": {
+          "type": "string",
+          "description": "The type or category of crime or incident reported (e.g., 'Theft', 'Street vending', 'Breach of trust', 'Illicit local brew')."
+        },
+        "caseCount": {
+          "type": "number",
+          "description": "The number of instances recorded for this specific case type."
+        },
+        "additionalInformation": {
+          "type": "string",
+          "description": "Any additional context or details about the cases (e.g., '101 cases of substandard home-brewed drinks recovered')."
+        }
+      },
+      "required": [
+        "id",
+        "postCaseReportId",
+        "caseType",
+        "caseCount"
+      ]
+    },
+    "Challenge": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Challenge",
+      "type": "object",
+      "description": "A specific challenge or obstacle encountered during the overall reporting period, applicable to the entire daily report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Challenge entity."
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Reference to the main daily Report this challenge belongs to. (Relationship: Report 1:N Challenge)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical order of the challenge within the report, used for consistent display sequencing."
+        },
+        "description": {
+          "type": "string",
+          "description": "The detailed description of the challenge (e.g., 'Delayed and long Deployment', 'Failing to get Lunch')."
+        }
+      },
+      "required": [
+        "id",
+        "reportId",
+        "order",
+        "description"
+      ]
+    },
+    "Recommendation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Recommendation",
+      "type": "object",
+      "description": "A specific recommendation proposed to address identified challenges or improve future operations, applicable to the entire daily report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Recommendation entity."
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Reference to the main daily Report this recommendation belongs to. (Relationship: Report 1:N Recommendation)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical order of the recommendation within the report, used for consistent display sequencing."
+        },
+        "description": {
+          "type": "string",
+          "description": "The detailed description of the recommendation (e.g., 'Proper coordination mainly with Dpcs and Logistics for effective transportation')."
+        }
+      },
+      "required": [
+        "id",
+        "reportId",
+        "order",
+        "description"
+      ]
+    },
+    "OtherActivity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OtherActivity",
+      "type": "object",
+      "description": "Represents miscellaneous activities or general notes that are not specific to a single operational unit report but are part of the overall daily summary.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OtherActivity entity."
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Reference to the main daily Report this other activity belongs to. (Relationship: Report 1:N OtherActivity)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical order of the activity within the 'Other Activities' section, for consistent display sequencing."
+        },
+        "description": {
+          "type": "string",
+          "description": "The detailed description of the other activity (e.g., '25 Officer cadets went to Zigama for Bank issues')."
+        },
+        "activityDateTime": {
+          "type": "string",
+          "description": "The precise date and time when this activity occurred, if specified.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "The location where the activity took place (e.g., 'Zigama')."
+        },
+        "involvedCompanyIds": {
+          "type": "array",
+          "description": "References to Companies that were involved in this activity. (Relationship: OtherActivity N:N Company)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "statusDetails": {
+          "type": "string",
+          "description": "Additional details regarding the outcome or status of the activity (e.g., 'all we are returned with incidents Free', 'They are 21 Oc’s from Alpha Company')."
+        }
+      },
+      "required": [
+        "id",
+        "reportId",
+        "order",
+        "description"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/companies/{companyId}",
+        "definition": {
+          "entityName": "Company",
+          "schema": {
+            "$ref": "#/backend/entities/Company"
+          },
+          "description": "Top-level collection for master data representing distinct cadet companies. Accessible to all authenticated users for lookup.",
+          "params": [
+            {
+              "name": "companyId",
+              "description": "Unique identifier for the Company."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/operationalUnits/{operationalUnitId}",
+        "definition": {
+          "entityName": "OperationalUnit",
+          "schema": {
+            "$ref": "#/backend/entities/OperationalUnit"
+          },
+          "description": "Top-level collection for master data representing various operational units. Accessible to all authenticated users for lookup.",
+          "params": [
+            {
+              "name": "operationalUnitId",
+              "description": "Unique identifier for the Operational Unit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_cadet_commanders/{commanderId}",
+        "definition": {
+          "entityName": "CadetCommanderRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "A collection used for Database-Backed Access Control (DBAC). The existence of a document at this path signifies that 'commanderId' has the Cadet Commander role. Document content can be minimal (e.g., `{exists: true}`).",
+          "params": [
+            {
+              "name": "commanderId",
+              "description": "The User ID (UID) of the Cadet Commander."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Main collection for daily aggregate reports. Each document includes an 'ownerId' (Firebase UID of the creator) for authorization independence, and a 'status' field ('DRAFT', 'SUBMITTED', 'APPROVED') for lifecycle management.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "Unique identifier for the daily Report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}",
+        "definition": {
+          "entityName": "CompanyOperationalReport",
+          "schema": {
+            "$ref": "#/backend/entities/CompanyOperationalReport"
+          },
+          "description": "Subcollection detailing activities for a specific company within an operational unit for a given daily report. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the parent Report."
+            },
+            {
+              "name": "companyOperationalReportId",
+              "description": "Unique identifier for the Company Operational Report entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}/activityItems/{activityItemId}",
+        "definition": {
+          "entityName": "ActivityItem",
+          "schema": {
+            "$ref": "#/backend/entities/ActivityItem"
+          },
+          "description": "Subcollection for individual activity points or observations within a CompanyOperationalReport. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the ancestral Report."
+            },
+            {
+              "name": "companyOperationalReportId",
+              "description": "The ID of the parent Company Operational Report."
+            },
+            {
+              "name": "activityItemId",
+              "description": "Unique identifier for the Activity Item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}/emphasisPoints/{emphasisPointId}",
+        "definition": {
+          "entityName": "EmphasisPoint",
+          "schema": {
+            "$ref": "#/backend/entities/EmphasisPoint"
+          },
+          "description": "Subcollection for specific points emphasized during briefings within a CompanyOperationalReport. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the ancestral Report."
+            },
+            {
+              "name": "companyOperationalReportId",
+              "description": "The ID of the parent Company Operational Report."
+            },
+            {
+              "name": "emphasisPointId",
+              "description": "Unique identifier for the Emphasis Point."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}/postCaseReports/{postCaseReportId}",
+        "definition": {
+          "entityName": "PostCaseReport",
+          "schema": {
+            "$ref": "#/backend/entities/PostCaseReport"
+          },
+          "description": "Subcollection summarizing cases received at a specific police post within a CompanyOperationalReport. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the ancestral Report."
+            },
+            {
+              "name": "companyOperationalReportId",
+              "description": "The ID of the parent Company Operational Report."
+            },
+            {
+              "name": "postCaseReportId",
+              "description": "Unique identifier for the Post Case Report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}/postCaseReports/{postCaseReportId}/caseDetails/{caseDetailId}",
+        "definition": {
+          "entityName": "CaseDetail",
+          "schema": {
+            "$ref": "#/backend/entities/CaseDetail"
+          },
+          "description": "Subcollection providing details for specific case types and counts under a PostCaseReport. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the ancestral Report."
+            },
+            {
+              "name": "companyOperationalReportId",
+              "description": "The ID of the ancestral Company Operational Report."
+            },
+            {
+              "name": "postCaseReportId",
+              "description": "The ID of the parent Post Case Report."
+            },
+            {
+              "name": "caseDetailId",
+              "description": "Unique identifier for the Case Detail."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/challenges/{challengeId}",
+        "definition": {
+          "entityName": "Challenge",
+          "schema": {
+            "$ref": "#/backend/entities/Challenge"
+          },
+          "description": "Subcollection for challenges encountered during the overall reporting period. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the parent Report."
+            },
+            {
+              "name": "challengeId",
+              "description": "Unique identifier for the Challenge."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/recommendations/{recommendationId}",
+        "definition": {
+          "entityName": "Recommendation",
+          "schema": {
+            "$ref": "#/backend/entities/Recommendation"
+          },
+          "description": "Subcollection for recommendations to address challenges or improve operations. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the parent Report."
+            },
+            {
+              "name": "recommendationId",
+              "description": "Unique identifier for the Recommendation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}/otherActivities/{otherActivityId}",
+        "definition": {
+          "entityName": "OtherActivity",
+          "schema": {
+            "$ref": "#/backend/entities/OtherActivity"
+          },
+          "description": "Subcollection for miscellaneous activities not specific to an operational unit. Includes denormalized 'ownerId' from the root Report for authorization independence.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The ID of the parent Report."
+            },
+            {
+              "name": "otherActivityId",
+              "description": "Unique identifier for the Other Activity."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure is designed with a strong emphasis on Authorization Independence, Structural Segregation, and clear Access Modeling, prioritizing robust security rules and efficient querying. \n\n**Authorization Independence and Denormalization:**\nAt the core of this design is the principle of Authorization Independence. This means that access to any document in a subcollection does not require a `get()` operation on a parent document in the security rules. This is achieved through strategic denormalization:\n\n1.  **Owner ID Denormalization:** Every document that is part of a specific daily report, from the top-level `Report` down to the most nested `CaseDetail`, will explicitly contain an `ownerId` field. This `ownerId` will be the Firebase User ID (UID) of the Cadet Commander who originally created the `Report`. This ensures that security rules can instantly verify ownership (e.g., `request.auth.uid == resource.data.ownerId`) on any document in the report hierarchy without expensive and potentially problematic `get()` calls.\n\n2.  **Parent ID Inclusion:** While the path structure implicitly shows the parent IDs (e.g., `reports/{reportId}/companyOperationalReports/{companyOperationalReportId}`), the foreign key fields (`reportId`, `companyOperationalReportId`, `postCaseReportId`) already present in the schema for child entities will be explicitly stored as fields within their respective documents. This further enhances query capabilities and rule debugging, although the primary authorization independence comes from `ownerId`.\n\n**Querying for Authorization (QAPs - Rules are not Filters):**\nThis structure directly supports QAPs by ensuring that all necessary authorization context is present within each document:\n\n*   **Owner-based Listing:** For a Cadet Commander to view their own reports, a `list` rule can be applied directly to the `/reports` collection: `allow list: if request.auth.uid == resource.data.ownerId;`. This rule operates directly on the `ownerId` field of each `Report` document, allowing Firestore to efficiently filter results based on the index. The same logic extends to all subcollections, enabling secure `list` access for a user's own nested data.\n*   **Role-based Access:** For supervisors or administrators, a `roles_supervisors` collection (or similar) will be used. Security rules can then check for the existence of `request.auth.uid` in this roles collection (e.g., `get(/databases/$(database)/documents/roles_supervisors/$(request.auth.uid)).exists()`). This provides a DBAC (Database-Backed Access Control) mechanism without relying on custom claims.\n\n**Structural Segregation:**\n\n*   **Homogeneous Security Posture:** All documents within a given collection (e.g., all `Report` documents, all `CompanyOperationalReport` documents) are expected to have a similar security posture, primarily controlled by the `ownerId` and `status` fields. There is no mixing of public and private data within the same collection. The `Report` document will include a `status` field (e.g., 'DRAFT', 'SUBMITTED', 'APPROVED') to manage its lifecycle and associated access permissions.\n*   **Lookup Collections:** `companies` and `operationalUnits` are separated into top-level collections as they represent master data that multiple reports will reference. They are not directly tied to a user's ownership.\n\n**Access Modeling:**\n\n*   **Hierarchical Paths for User-Owned Data:** The structure `/reports/{reportId}/companyOperationalReports/{companyOperationalReportId}/...` clearly establishes ownership. The top-level `Report` document belongs to a specific `ownerId`, and all nested sub-collections inherit this ownership context through denormalization.\n*   **Global Roles:** A dedicated top-level collection `/roles_cadet_commanders/{commanderId}` is used for Database-Backed Access Control (DBAC). The mere existence of a document at this path signifies that `commanderId` possesses the 'Cadet Commander' role.\n\n**Data Clarity and Predictability:**\n\n*   **Explicit State Modeling:** The `Report` entity will have a `status` field to manage its lifecycle (e.g., 'DRAFT', 'SUBMITTED', 'APPROVED'), making its state explicit.\n*   **Consistent Naming:** Wildcards are descriptive (e.g., `{reportId}`, `{companyOperationalReportId}`), and field names are consistent (`ownerId`).\n\nThis design ensures that data access is clearly defined, security rules are simple, auditable, and performant, and the system is scalable for future features like report approval workflows or multi-level access control."
+  }
+}
