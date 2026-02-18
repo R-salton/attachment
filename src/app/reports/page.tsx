@@ -13,9 +13,9 @@ export default function ReportsList() {
   const db = useFirestore();
   const { user, isUserLoading } = useUser();
 
+  // Defensive query construction: only create the query if auth is resolved and user exists.
   const reportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Only construct the query if the user's auth state is resolved AND they are logged in.
-    if (!db || isUserLoading || !user) return null;
+    if (isUserLoading || !user || !db) return null;
     
     return query(
       collection(db, 'reports'),

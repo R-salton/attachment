@@ -17,9 +17,10 @@ export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch the 5 most recent reports for the dashboard
+  // Defensive query construction for recent reports
   const recentReportsQuery = useMemoFirebase(() => {
-    if (!db || isUserLoading || !user) return null;
+    if (isUserLoading || !user || !db) return null;
+    
     return query(
       collection(db, 'reports'),
       where('ownerId', '==', user.uid),
@@ -42,7 +43,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navigation */}
       <nav className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="bg-primary w-10 h-10 rounded-lg flex items-center justify-center">
@@ -84,13 +84,11 @@ export default function Home() {
       </nav>
 
       <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
-        {/* Header */}
         <section className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight text-foreground">Operations Dashboard</h1>
           <p className="text-muted-foreground text-lg">Streamlined report generation for cadets and operational units.</p>
         </section>
 
-        {/* Quick Actions */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="hover:shadow-md transition-shadow cursor-pointer group">
             <Link href="/daily/new" className="block p-6">
@@ -123,7 +121,6 @@ export default function Home() {
           </Card>
         </section>
 
-        {/* Recent Reports Section */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card>
             <CardHeader>
@@ -205,7 +202,6 @@ export default function Home() {
                 </div>
               </div>
             </CardContent>
-            {/* Decorative background element */}
             <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-accent/20 rounded-full blur-3xl"></div>
           </Card>
         </section>
