@@ -1,9 +1,30 @@
+"use client";
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, PlusCircle, LayoutDashboard, History, Settings } from 'lucide-react';
+import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, User } from 'lucide-react';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Signed out", description: "You have been successfully signed out." });
+      router.refresh();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to sign out." });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
@@ -15,9 +36,29 @@ export default function Home() {
           <span className="text-xl font-bold tracking-tight text-primary">Report Master</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/reports">View Reports</Link>
-          </Button>
+          {!isUserLoading && (
+            <>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <div className="hidden md:flex flex-col items-end">
+                    <span className="text-xs font-medium text-muted-foreground">Logged in as</span>
+                    <span className="text-sm font-bold text-primary truncate max-w-[150px]">{user.email || 'Anonymous User'}</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" asChild variant="outline">
+                  <Link href="/login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Link>
+                </Button>
+              )}
+            </>
+          )}
           <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
             <Link href="/daily/new">
               <PlusCircle className="mr-2 h-4 w-4" />
