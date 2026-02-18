@@ -6,13 +6,12 @@ import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebas
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -23,7 +22,9 @@ export default function ReportsList() {
     );
   }, [db, user?.uid]);
 
-  const { data: reports, isLoading } = useCollection(reportsQuery);
+  const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
+
+  const isLoading = isUserLoading || isReportsLoading;
 
   return (
     <div className="min-h-screen bg-background pb-12">
@@ -48,10 +49,9 @@ export default function ReportsList() {
         </section>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <Card key={i} className="animate-pulse bg-muted h-48" />
-            ))}
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground animate-pulse">Fetching your reports...</p>
           </div>
         ) : reports && reports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

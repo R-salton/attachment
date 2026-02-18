@@ -5,11 +5,8 @@ service cloud.firestore {
     /**
      * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
      * 
-     * CORE PHILOSOPHY:
-     * This ruleset implements a strict Ownership-Based Access Control model. 
-     * To ensure high performance and "Authorization Independence," every document 
-     * related to a specific report (including nested subcollections) contains 
-     * a denormalized 'ownerId' field.
+     * This ruleset implements an Ownership-Based Access Control model.
+     * All operational reports are owned by the creator (ownerId).
      */
 
     // --- HELPER FUNCTIONS ---
@@ -22,12 +19,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Used for update and delete to ensure the document exists and the user owns it.
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    // DBAC check for Cadet Commander role
+    // DBAC check for Cadet Commander role (existence check)
     function hasCommanderRole() {
       return exists(/databases/$(database)/documents/roles_cadet_commanders/$(request.auth.uid));
     }
@@ -35,92 +27,89 @@ service cloud.firestore {
     // --- MASTER DATA RULES ---
 
     match /companies/{companyId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if false;
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
-    match /operationalUnits/{operationalUnitId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if false;
+    match /operationalUnits/{unitId} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
     match /roles_cadet_commanders/{commanderId} {
       allow get: if isOwner(commanderId);
-      allow list: if false;
-      allow create, update, delete: if false;
+      allow list, write: if false;
     }
 
     // --- REPORTING HIERARCHY RULES ---
 
     match /reports/{reportId} {
-      // Allow listing if signed in. The application uses a query filter 
-      // (where ownerId == uid) which is consistent with this rule.
-      allow list: if isSignedIn();
+      // Broad read access for authenticated users. 
+      // Listing is restricted by the ownerId filter in the application query.
+      allow read: if isSignedIn();
       
-      // Allow get if owner or has commander role
-      allow get: if isSignedIn() && (isOwner(resource.data.ownerId) || hasCommanderRole());
-      
-      // Ownership enforced on mutations
+      // Mutations restricted to the owner
       allow create: if isOwner(request.resource.data.ownerId);
-      allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-      allow delete: if isExistingOwner(resource.data.ownerId);
+      allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner(resource.data.ownerId);
 
       // --- SUBCOLLECTIONS ---
+      // Nested rules inherit or specify ownership based on the denormalized ownerId.
 
       match /companyOperationalReports/{reportDetailId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-        allow delete: if isExistingOwner(resource.data.ownerId);
+        allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+        allow delete: if isOwner(resource.data.ownerId);
 
         match /activityItems/{itemId} {
-          allow get, list: if isSignedIn();
+          allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-          allow delete: if isExistingOwner(resource.data.ownerId);
+          allow update: if isOwner(resource.data.ownerId);
+          allow delete: if isOwner(resource.data.ownerId);
         }
 
         match /emphasisPoints/{itemId} {
-          allow get, list: if isSignedIn();
+          allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-          allow delete: if isExistingOwner(resource.data.ownerId);
+          allow update: if isOwner(resource.data.ownerId);
+          allow delete: if isOwner(resource.data.ownerId);
         }
 
         match /postCaseReports/{postId} {
-          allow get, list: if isSignedIn();
+          allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-          allow delete: if isExistingOwner(resource.data.ownerId);
+          allow update: if isOwner(resource.data.ownerId);
+          allow delete: if isOwner(resource.data.ownerId);
 
           match /caseDetails/{caseId} {
-            allow get, list: if isSignedIn();
+            allow read: if isSignedIn();
             allow create: if isOwner(request.resource.data.ownerId);
-            allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-            allow delete: if isExistingOwner(resource.data.ownerId);
+            allow update: if isOwner(resource.data.ownerId);
+            allow delete: if isOwner(resource.data.ownerId);
           }
         }
       }
 
       match /challenges/{itemId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-        allow delete: if isExistingOwner(resource.data.ownerId);
+        allow update: if isOwner(resource.data.ownerId);
+        allow delete: if isOwner(resource.data.ownerId);
       }
 
       match /recommendations/{itemId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-        allow delete: if isExistingOwner(resource.data.ownerId);
+        allow update: if isOwner(resource.data.ownerId);
+        allow delete: if isOwner(resource.data.ownerId);
       }
 
       match /otherActivities/{itemId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-        allow delete: if isExistingOwner(resource.data.ownerId);
+        allow update: if isOwner(resource.data.ownerId);
+        allow delete: if isOwner(resource.data.ownerId);
       }
     }
   }
