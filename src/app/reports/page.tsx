@@ -14,13 +14,15 @@ export default function ReportsList() {
   const { user, isUserLoading } = useUser();
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
+    // CRITICAL: Only construct the query if the user's auth state is resolved AND they are logged in.
+    if (!db || isUserLoading || !user) return null;
+    
     return query(
       collection(db, 'reports'),
       where('ownerId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-  }, [db, user?.uid]);
+  }, [db, user?.uid, isUserLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
