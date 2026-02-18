@@ -1,114 +1,75 @@
+/**
+ * @fileoverview Firestore Security Rules for the Report Master application.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes accessible data for reporting while restricting write access to authorized users.
+ * It allows public read access to reports and master data, while restricting write operations to authenticated personnel.
+ *
+ * Data Structure:
+ * - /companies/{companyId}: Master data for cadet companies.
+ * - /operationalUnits/{unitId}: Master data for operational units (DPUs, SIF, etc.).
+ * - /reports/{reportId}: Main daily aggregate reports.
+ * - /reports/{reportId}/... (subcollections): Detailed operational data, challenges, and recommendations.
+ *
+ * Key Security Decisions:
+ * - Public read access is allowed for reports and master data to facilitate transparency and review.
+ * - Write operations (create, update, delete) are restricted to authenticated users.
+ * - No user listing is allowed at the root level.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
-     * 
-     * This ruleset implements an Ownership-Based Access Control model.
-     * All operational reports are owned by the creator (ownerId).
-     * 
-     * Deployment Trigger: 2024-02-18 13:15 UTC - FORCE REDEPLOY: Explicit list/get for authenticated users.
+     * @description Master data for companies. Publicly readable, authenticated writes.
      */
-
-    // --- HELPER FUNCTIONS ---
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // --- MASTER DATA RULES ---
-
     match /companies/{companyId} {
-      allow read: if isSignedIn();
-      allow write: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
     }
 
+    /**
+     * @description Master data for operational units. Publicly readable, authenticated writes.
+     */
     match /operationalUnits/{unitId} {
-      allow read: if isSignedIn();
-      allow write: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
     }
 
+    /**
+     * @description Access control roles. Restricted to the specific user.
+     */
     match /roles_cadet_commanders/{commanderId} {
-      allow get: if isOwner(commanderId);
+      allow get: if isSignedIn() && request.auth.uid == commanderId;
       allow list, write: if false;
     }
 
-    // --- REPORTING HIERARCHY RULES ---
-
+    /**
+     * @description Main reports collection. Publicly readable, authenticated writes.
+     */
     match /reports/{reportId} {
-      // PERMISSION FIX: Explicitly allow authenticated users to list and get reports.
-      // The client-side query ensures they only see their own data by filtering on ownerId.
-      allow list: if request.auth != null;
-      allow get: if request.auth != null;
-      
-      // Mutations restricted to the owner
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId;
-      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource != null;
 
-      // --- SUBCOLLECTIONS ---
-      // Nested rules inherit or specify ownership based on the denormalized ownerId.
-
-      match /companyOperationalReports/{reportDetailId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-        allow delete: if isOwner(resource.data.ownerId);
-
-        match /activityItems/{itemId} {
-          allow read: if isSignedIn();
-          allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(request.resource.data.ownerId);
-          allow delete: if isOwner(request.resource.data.ownerId);
-        }
-
-        match /emphasisPoints/{itemId} {
-          allow read: if isSignedIn();
-          allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(request.resource.data.ownerId);
-          allow delete: if isOwner(request.resource.data.ownerId);
-        }
-
-        match /postCaseReports/{postId} {
-          allow read: if isSignedIn();
-          allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(request.resource.data.ownerId);
-          allow delete: if isOwner(request.resource.data.ownerId);
-
-          match /caseDetails/{caseId} {
-            allow read: if isSignedIn();
-            allow create: if isOwner(request.resource.data.ownerId);
-            allow update: if isOwner(request.resource.data.ownerId);
-            allow delete: if isOwner(request.resource.data.ownerId);
-          }
-        }
+      // Recursive match for all subcollections under a report
+      match /{allSubcollections=**} {
+        allow get, list: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isSignedIn() && resource != null;
       }
+    }
 
-      match /challenges/{itemId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(request.resource.data.ownerId);
-        allow delete: if isOwner(request.resource.data.ownerId);
-      }
+    //----------------------------------------------------------------------------------------------
+    //  Helper Functions
+    //----------------------------------------------------------------------------------------------
 
-      match /recommendations/{itemId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(request.resource.data.ownerId);
-        allow delete: if isOwner(request.resource.data.ownerId);
-      }
-
-      match /otherActivities/{itemId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(request.resource.data.ownerId);
-        allow delete: if isOwner(request.resource.data.ownerId);
-      }
+    /**
+     * @description Checks if the user is signed in.
+     * @return {bool} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
