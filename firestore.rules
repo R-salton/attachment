@@ -8,7 +8,7 @@ service cloud.firestore {
      * This ruleset implements an Ownership-Based Access Control model.
      * All operational reports are owned by the creator (ownerId).
      * 
-     * Deployment Trigger: 2024-02-18 - Ensuring list permissions for /reports
+     * Deployment Trigger: 2024-02-18 10:45 UTC - Ensuring list permissions for /reports are live
      */
 
     // --- HELPER FUNCTIONS ---
@@ -41,10 +41,9 @@ service cloud.firestore {
     // --- REPORTING HIERARCHY RULES ---
 
     match /reports/{reportId} {
-      // Explicitly allow get and list for authenticated users
-      // List is allowed because the application query always filters by ownerId
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      // Simplified read rules to cover both get and list for authenticated users.
+      // The application logic handles filtering by ownerId in the query.
+      allow read: if isSignedIn();
       
       // Mutations restricted to the owner
       allow create: if isOwner(request.resource.data.ownerId);
@@ -63,28 +62,28 @@ service cloud.firestore {
         match /activityItems/{itemId} {
           allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(resource.data.ownerId);
-          allow delete: if isOwner(resource.data.ownerId);
+          allow update: if isOwner(request.resource.data.ownerId);
+          allow delete: if isOwner(request.resource.data.ownerId);
         }
 
         match /emphasisPoints/{itemId} {
           allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(resource.data.ownerId);
-          allow delete: if isOwner(resource.data.ownerId);
+          allow update: if isOwner(request.resource.data.ownerId);
+          allow delete: if isOwner(request.resource.data.ownerId);
         }
 
         match /postCaseReports/{postId} {
           allow read: if isSignedIn();
           allow create: if isOwner(request.resource.data.ownerId);
-          allow update: if isOwner(resource.data.ownerId);
-          allow delete: if isOwner(resource.data.ownerId);
+          allow update: if isOwner(request.resource.data.ownerId);
+          allow delete: if isOwner(request.resource.data.ownerId);
 
           match /caseDetails/{caseId} {
             allow read: if isSignedIn();
             allow create: if isOwner(request.resource.data.ownerId);
-            allow update: if isOwner(resource.data.ownerId);
-            allow delete: if isOwner(resource.data.ownerId);
+            allow update: if isOwner(request.resource.data.ownerId);
+            allow delete: if isOwner(request.resource.data.ownerId);
           }
         }
       }
@@ -92,22 +91,22 @@ service cloud.firestore {
       match /challenges/{itemId} {
         allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(resource.data.ownerId);
-        allow delete: if isOwner(resource.data.ownerId);
+        allow update: if isOwner(request.resource.data.ownerId);
+        allow delete: if isOwner(request.resource.data.ownerId);
       }
 
       match /recommendations/{itemId} {
         allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(resource.data.ownerId);
-        allow delete: if isOwner(resource.data.ownerId);
+        allow update: if isOwner(request.resource.data.ownerId);
+        allow delete: if isOwner(request.resource.data.ownerId);
       }
 
       match /otherActivities/{itemId} {
         allow read: if isSignedIn();
         allow create: if isOwner(request.resource.data.ownerId);
-        allow update: if isOwner(resource.data.ownerId);
-        allow delete: if isOwner(resource.data.ownerId);
+        allow update: if isOwner(request.resource.data.ownerId);
+        allow delete: if isOwner(request.resource.data.ownerId);
       }
     }
   }
