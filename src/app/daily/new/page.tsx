@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CaseDetailList } from '@/components/reports/CaseDetailList';
-import { generateDailyReport } from '@/ai/flows/generate-daily-report-flow';
 import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser } from '@/firebase';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { formatDailyReport } from '@/lib/report-formatter';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
@@ -83,6 +87,8 @@ type FormValues = z.infer<typeof FormSchema>;
 export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
+  const db = useFirestore();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -103,9 +109,14 @@ export default function NewDailyReport() {
   });
 
   const onSubmit = async (values: FormValues) => {
+    if (!user) {
+      toast({ variant: "destructive", title: "Not Authenticated", description: "You must be signed in to save reports." });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const input = {
+      const formattedInput = {
         ...values,
         gasaboActivities: values.gasaboActivities.split('\n').filter(s => s.trim()),
         kicukiroEmphasizedPoints: values.kicukiroEmphasizedPoints.split('\n').filter(s => s.trim()),
@@ -118,18 +129,55 @@ export default function NewDailyReport() {
         otherActivities: values.otherActivities.split('\n').filter(s => s.trim()),
       };
 
-      const result = await generateDailyReport(input as any);
-      setPreviewContent(result.reportContent);
+      const content = formatDailyReport(formattedInput as any);
+      setPreviewContent(content);
       setActiveTab("preview");
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: "There was an error generating the report content. Please try again.",
+        description: "There was an error formatting the report content.",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const saveReport = () => {
+    if (!user || !db || !previewContent) return;
+    setIsLoading(true);
+
+    const values = form.getValues();
+    const reportId = doc(collection(db, 'reports')).id;
+    const reportRef = doc(db, 'reports', reportId);
+
+    const reportData = {
+      id: reportId,
+      ownerId: user.uid,
+      reportDate: values.reportDate,
+      cadetIntake: values.cadetsIntake,
+      reportTitle: `General daily report for cadets intake ${values.cadetsIntake} as of ${values.reportDate}`,
+      reportingCommanderName: values.commanderName,
+      reportingCommanderTitle: 'Cadet Commander',
+      creationDateTime: new Date().toISOString(),
+      fullText: previewContent,
+      status: 'SUBMITTED',
+      createdAt: serverTimestamp(),
+    };
+
+    setDoc(reportRef, reportData)
+      .then(() => {
+        toast({ title: "Report Saved", description: "The daily report has been archived successfully." });
+        router.push('/reports');
+      })
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: reportRef.path,
+          operation: 'create',
+          requestResourceData: reportData
+        }));
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const tabs = [
@@ -157,8 +205,8 @@ export default function NewDailyReport() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => form.reset()}>Reset</Button>
           <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmit)}>
-            {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-            Generate Report
+            {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+            Preview Report
           </Button>
         </div>
       </header>
@@ -431,17 +479,15 @@ export default function NewDailyReport() {
                       }}>
                         Copy to Clipboard
                       </Button>
-                      <Button onClick={() => {
-                        toast({ title: "Report Saved", description: "The daily report has been archived successfully." });
-                        router.push('/');
-                      }}>
+                      <Button onClick={saveReport} disabled={isLoading}>
+                        {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
                         Finalize and Save
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-20 text-muted-foreground">
-                    <p>Complete the form sections and click "Generate Report" to see the output here.</p>
+                    <p>Complete the form sections and click "Preview Report" to see the output here.</p>
                   </div>
                 )}
               </TabsContent>
