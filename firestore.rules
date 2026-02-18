@@ -2,42 +2,44 @@
  * @fileoverview Firestore Security Rules for the Report Master application.
  *
  * Core Philosophy:
- * This ruleset prioritizes accessible data for reporting while restricting write access to authorized users.
- * It allows public read access to reports and master data, while restricting write operations to authenticated personnel.
+ * This ruleset prioritizes secure data access based on user identity where applicable.
+ * It allows public read access to general content, while restricting write access to authorized users.
  *
  * Data Structure:
  * - /companies/{companyId}: Master data for cadet companies.
- * - /operationalUnits/{unitId}: Master data for operational units (DPUs, SIF, etc.).
+ * - /operationalUnits/{unitId}: Master data for operational units.
  * - /reports/{reportId}: Main daily aggregate reports.
- * - /reports/{reportId}/... (subcollections): Detailed operational data, challenges, and recommendations.
+ * - /reports/{reportId}/... (subcollections): Detailed operational data.
  *
  * Key Security Decisions:
- * - Public read access is allowed for reports and master data to facilitate transparency and review.
+ * - Public read access (get, list) is generally allowed for reports and master data.
  * - Write operations (create, update, delete) are restricted to authenticated users.
- * - No user listing is allowed at the root level.
+ * - No user listing is allowed at the root level (security best practice).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Master data for companies. Publicly readable, authenticated writes.
+     * @description Allows anyone to read companies, but only authenticated users can modify them.
      */
     match /companies/{companyId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Master data for operational units. Publicly readable, authenticated writes.
+     * @description Allows anyone to read operational units, but only authenticated users can modify them.
      */
     match /operationalUnits/{unitId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Access control roles. Restricted to the specific user.
+     * @description Roles are restricted to the specific commander to prevent public listing of personnel roles.
      */
     match /roles_cadet_commanders/{commanderId} {
       allow get: if isSignedIn() && request.auth.uid == commanderId;
@@ -45,14 +47,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Main reports collection. Publicly readable, authenticated writes.
+     * @description Allows anyone to read reports and their sub-content, but only authenticated users can create or modify them.
      */
     match /reports/{reportId} {
       allow get, list: if true;
       allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && resource != null;
 
-      // Recursive match for all subcollections under a report
+      // Recursive match for all subcollections under a report (activities, cases, challenges, etc.)
       match /{allSubcollections=**} {
         allow get, list: if true;
         allow create: if isSignedIn();
