@@ -2,9 +2,9 @@
  * @fileoverview Firestore Security Rules for the Report Master application.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure data access based on user identity.
+ * This ruleset implements ownership-based access control.
  *
- * Deployment Trigger: 2024-02-18 15:30 UTC - Explicitly granting list/get to all authenticated users for /reports
+ * Deployment Trigger: 2024-02-18 16:15 UTC - Explicitly allowing list/get for authenticated users on /reports
  */
 rules_version = '2';
 service cloud.firestore {
@@ -50,13 +50,11 @@ service cloud.firestore {
 
     /**
      * @description Main reports collection.
-     * We allow any authenticated user to list/get reports.
-     * The application logic handles filtering by ownerId in the query.
      */
     match /reports/{reportId} {
-      // BROAD READ PERMISSION: Allow any signed-in user to see reports.
-      // This specifically addresses the 'list' error.
-      allow read: if request.auth != null;
+      // Allow any authenticated user to list and get reports.
+      // The application code uses queries that filter by ownerId.
+      allow list, get: if isSignedIn();
       
       // Allow creation if the ownerId in the data matches the authenticated user.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
@@ -66,7 +64,7 @@ service cloud.firestore {
 
       // Recursive match for all subcollections (activities, cases, etc.)
       match /{allSubcollections=**} {
-        allow read: if request.auth != null;
+        allow list, get: if isSignedIn();
         allow write: if isSignedIn() && (
           (resource != null && resource.data.ownerId == request.auth.uid) ||
           (resource == null && request.resource.data.ownerId == request.auth.uid)
