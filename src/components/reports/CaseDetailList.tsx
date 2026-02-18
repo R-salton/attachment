@@ -21,15 +21,18 @@ export function CaseDetailList({ label, cases, onChange }: CaseDetailListProps) 
   const [newType, setNewType] = useState('');
   const [newCount, setNewCount] = useState<number>(0);
 
+  // Ensure cases is always treated as an array
+  const safeCases = cases || [];
+
   const handleAdd = () => {
     if (!newType) return;
-    onChange([...cases, { caseType: newType, count: newCount }]);
+    onChange([...safeCases, { caseType: newType, count: newCount }]);
     setNewType('');
     setNewCount(0);
   };
 
   const handleRemove = (index: number) => {
-    onChange(cases.filter((_, i) => i !== index));
+    onChange(safeCases.filter((_, i) => i !== index));
   };
 
   return (
@@ -37,11 +40,12 @@ export function CaseDetailList({ label, cases, onChange }: CaseDetailListProps) 
       <Label className="text-sm font-bold uppercase tracking-wider">{label}</Label>
       
       <div className="space-y-2">
-        {cases.map((item, idx) => (
+        {safeCases.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border shadow-sm">
             <span className="flex-1 font-medium">{item.caseType}</span>
             <span className="bg-primary/10 text-primary font-bold px-3 py-1 rounded">{item.count}</span>
             <Button 
+              type="button"
               variant="ghost" 
               size="icon" 
               className="text-destructive h-8 w-8"
@@ -70,7 +74,7 @@ export function CaseDetailList({ label, cases, onChange }: CaseDetailListProps) 
             className="h-9"
           />
         </div>
-        <Button size="sm" onClick={handleAdd} className="h-9">
+        <Button type="button" size="sm" onClick={handleAdd} className="h-9">
           <Plus className="h-4 w-4" />
         </Button>
       </div>

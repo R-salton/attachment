@@ -99,9 +99,44 @@ export default function NewDailyReport() {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
       cadetsIntake: '14/2025-2026',
       commanderName: 'Isiah KAYIRANGA',
+      gasaboSecuritySituation: 'calm',
       gasaboActivities: "JOC presentation planning\nPolice core values\nOfficer Cadet expectations in modern policing\nProfessional social media management and appropriate use of force\nCollaboration with local governance\nProactive policing approach\nProper recording in station registers and detainees’ files\nClear understanding of Area of Responsibility (AoR)\nCommon crimes within the AoR",
+      gasaboSentryDuties: true,
+      kicukiroSecuritySituation: 'calm',
+      kicukiroOperationTime: '0600hrs to 1900hrs',
+      kicukiroOperationFocus: 'introduction to Station Duties and responsibilities of the OC Station',
+      kicukiroIntroductionBy: 'DPC Kicukiro',
       kicukiroEmphasizedPoints: "Values of a good officer – confidence, professionalism, and seeking guidance where necessary.\nExpectations from cadets – gaining practical experience and applying training knowledge.\nMedia management – maintaining professionalism due to public and media visibility.\nCooperation with local governance – promoting safety, security, and rule of law through collaboration.",
+      nyarugengeSecuritySituation: 'calm',
+      nyarugengeNyabugogoCases: [],
+      nyarugengeInkundamahoroCases: [],
+      nyarugengeKimisagaraCases: [],
+      nyarugengeKimisagaraNotes: '',
+      sifOperationTime: '1400hrs to 2000hrs',
+      sifCompany: 'Delta Company',
+      sifAreaOfOperation: 'Giporoso, Gisimenti, Nyabugogo, Ku Iposita',
+      sifSecuritySituation: 'calm',
+      sifOperationFocus: 'introduction to SIF duties and responsibilities',
+      sifIntroductionBy: 'Operations Commander',
       sifEmphasizedPoints: "Values of a good officer like confidence, professionalism, and seeking guidance when necessary.\nExpectations from cadets – gaining field experience and applying training knowledge.\nMedia management – maintaining professionalism due to constant public and media scrutiny.",
+      sifPatrolOperations: 'foot and vehicle',
+      sifPatrolIncidentsFree: true,
+      trsCompany: 'Echo company',
+      trsInductionTraining: 'TRS structure, core values, and expected attitude of police officers on the road',
+      trsRemarksBy: 'various Directors and the Deputy Commissioner in charge of Operations',
+      trsRemarksTime: '0700hrs to 1130hrs',
+      trsDeploymentTime: '1400hrs to 2000hrs',
+      trsDeploymentLocations: 'Nyarugenge Sector, Gasabo Sector, Kicukiro Sector, Traffic Fine Recovery Unit',
+      foxSecuritySituation: 'calm',
+      foxShiftDuration: '8-hour morning shift',
+      foxCompany: 'Delta Company',
+      foxBriefingBy: 'TFU Operations Officer',
+      foxInductionTrainingLocation: 'Muhima',
+      foxCasesReportedCount: 0,
+      foxCasesReportedDistrict: 'Kicukiro District',
+      foxCasesReportedDetails: [],
+      foxFootPatrols: 'Foot patrols enabled engagement and collaboration with local security agencies, including DASSO and Irondo Ry’umwuga, to detect and prevent illegal activities (community policing).',
+      foxNightShiftsScheduled: 'Officers are scheduled for night shifts, with each company assigned specific working hours and areas of operation.',
       challenges: "Delayed and long Deployment.\nDelayed Shift Replacement\nFailing to get Lunch\nTransportation for embarking and disembarking to/from operations/duties is poor.",
       recommendations: "Proper coordination mainly with Dpcs and Logistics for effective transportation.",
       otherActivities: "25 Officer cadets went to Zigama for Bank issues and all we are returned with incidents Free.\nAll police officers received their meal except some who are supposed to be disembarked from duty but still now not yet arrived, They are 21 Oc’s from Alpha Company\nCurrently all officer cadets are well and ready to continue the operation",
@@ -118,15 +153,15 @@ export default function NewDailyReport() {
     try {
       const formattedInput = {
         ...values,
-        gasaboActivities: values.gasaboActivities.split('\n').filter(s => s.trim()),
-        kicukiroEmphasizedPoints: values.kicukiroEmphasizedPoints.split('\n').filter(s => s.trim()),
-        sifEmphasizedPoints: values.sifEmphasizedPoints.split('\n').filter(s => s.trim()),
-        sifAreaOfOperation: values.sifAreaOfOperation.split(',').map(s => s.trim()).filter(Boolean),
-        trsInductionTraining: values.trsInductionTraining.split(',').map(s => s.trim()).filter(Boolean),
-        trsDeploymentLocations: values.trsDeploymentLocations.split(',').map(s => s.trim()).filter(Boolean),
-        challenges: values.challenges.split('\n').filter(s => s.trim()),
-        recommendations: values.recommendations.split('\n').filter(s => s.trim()),
-        otherActivities: values.otherActivities.split('\n').filter(s => s.trim()),
+        gasaboActivities: (values.gasaboActivities || "").split('\n').filter(s => s.trim()),
+        kicukiroEmphasizedPoints: (values.kicukiroEmphasizedPoints || "").split('\n').filter(s => s.trim()),
+        sifEmphasizedPoints: (values.sifEmphasizedPoints || "").split('\n').filter(s => s.trim()),
+        sifAreaOfOperation: (values.sifAreaOfOperation || "").split(',').map(s => s.trim()).filter(Boolean),
+        trsInductionTraining: (values.trsInductionTraining || "").split(',').map(s => s.trim()).filter(Boolean),
+        trsDeploymentLocations: (values.trsDeploymentLocations || "").split(',').map(s => s.trim()).filter(Boolean),
+        challenges: (values.challenges || "").split('\n').filter(s => s.trim()),
+        recommendations: (values.recommendations || "").split('\n').filter(s => s.trim()),
+        otherActivities: (values.otherActivities || "").split('\n').filter(s => s.trim()),
       };
 
       const content = formatDailyReport(formattedInput as any);
@@ -499,6 +534,7 @@ export default function NewDailyReport() {
         {/* Navigation Buttons for Tabs */}
         <div className="mt-8 flex justify-between">
           <Button 
+            type="button"
             variant="ghost" 
             disabled={activeTab === tabs[0].id}
             onClick={() => {
@@ -510,6 +546,7 @@ export default function NewDailyReport() {
             Previous Section
           </Button>
           <Button 
+            type="button"
             variant="outline" 
             disabled={activeTab === tabs[tabs.length-1].id}
             onClick={() => {
