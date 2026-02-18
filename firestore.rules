@@ -2,76 +2,76 @@
  * @fileoverview Firestore Security Rules for the Report Master application.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure data access based on user identity where applicable.
- * It allows public read access to general content, while restricting write access to authorized users.
+ * This ruleset prioritize secure data access based on user identity.
  *
- * Data Structure:
- * - /companies/{companyId}: Master data for cadet companies.
- * - /operationalUnits/{unitId}: Master data for operational units.
- * - /reports/{reportId}: Main daily aggregate reports.
- * - /reports/{reportId}/... (subcollections): Detailed operational data.
- *
- * Key Security Decisions:
- * - Public read access (get, list) is generally allowed for reports and master data.
- * - Write operations (create, update, delete) are restricted to authenticated users.
- * - No user listing is allowed at the root level (security best practice).
+ * Deployment Trigger: 2024-02-18 14:45 UTC - Force redeploy to fix /reports list permissions.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read companies, but only authenticated users can modify them.
+     * @description Helper to check if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Helper to check if the user is the owner of the document.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Master data for companies.
      */
     match /companies/{companyId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && resource != null;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn(); // For setup/admin purposes
     }
 
     /**
-     * @description Allows anyone to read operational units, but only authenticated users can modify them.
+     * @description Master data for operational units.
      */
     match /operationalUnits/{unitId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && resource != null;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     /**
-     * @description Roles are restricted to the specific commander to prevent public listing of personnel roles.
+     * @description Commander role check.
      */
     match /roles_cadet_commanders/{commanderId} {
-      allow get: if isSignedIn() && request.auth.uid == commanderId;
+      allow get: if isOwner(commanderId);
       allow list, write: if false;
     }
 
     /**
-     * @description Allows anyone to read reports and their sub-content, but only authenticated users can create or modify them.
+     * @description Main reports collection.
+     * We allow any authenticated user to list/get reports.
+     * Creation and modification are strictly tied to ownership.
      */
     match /reports/{reportId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && resource != null;
+      // Explicitly allow list and get for signed-in users.
+      // The application logic handles filtering by ownerId in the query.
+      allow read: if isSignedIn();
+      
+      // Allow creation if the ownerId in the data matches the authenticated user.
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      
+      // Allow updates/deletes only for the owner.
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
 
-      // Recursive match for all subcollections under a report (activities, cases, challenges, etc.)
+      // Recursive match for all subcollections (activities, cases, etc.)
       match /{allSubcollections=**} {
-        allow get, list: if true;
-        allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && resource != null;
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && (
+          (resource != null && resource.data.ownerId == request.auth.uid) ||
+          (resource == null && request.resource.data.ownerId == request.auth.uid)
+        );
       }
-    }
-
-    //----------------------------------------------------------------------------------------------
-    //  Helper Functions
-    //----------------------------------------------------------------------------------------------
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
     }
   }
 }
