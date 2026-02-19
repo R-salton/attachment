@@ -18,8 +18,10 @@ service cloud.firestore {
 
     // High command check (Commander, Leader)
     function isHighCommand() {
-      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return role == 'COMMANDER' || role == 'LEADER';
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'
+      );
     }
 
     match /users/{userId} {
@@ -29,31 +31,24 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       // 1. COMMAND OVERWATCH
-      // Administrators and High Command staff can list and get any report.
-      // Explicitly allowing list without filters for these roles.
-      allow list, get: if isAdmin() || isHighCommand();
+      // Administrators can do anything.
+      allow list, get, create, update, delete: if isAdmin();
 
-      // 2. UNIT-SPECIFIC ACCESS (Trainees)
-      // Trainees can only list reports filtered by their unit.
-      allow list: if isSignedIn() && (
+      // 2. OPERATIONAL OVERSIGHT
+      // High Command can view everything.
+      allow list, get: if isHighCommand();
+
+      // 3. UNIT-SPECIFIC ACCESS (Trainees)
+      // Restricted to their own station deployments.
+      allow list, get: if isSignedIn() && (
         resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
       );
       
-      allow get: if isSignedIn() && (
-        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
-      );
-      
-      // 3. OPERATIONAL FILING
+      // 4. OPERATIONAL FILING
       allow create: if isSignedIn();
       
-      // 4. MODIFICATION
-      allow update: if isSignedIn() && (
-        isAdmin() || 
-        resource.data.ownerId == request.auth.uid
-      );
-      
-      // 5. ARCHIVE PURGING
-      allow delete: if isAdmin();
+      // 5. MODIFICATION
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
   }
 }

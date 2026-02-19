@@ -18,12 +18,15 @@ import {
   Navigation,
   ExternalLink,
   ShieldAlert,
-  Shield
+  Shield,
+  Eye
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { ReportPreviewDialog } from '@/components/reports/ReportPreviewDialog';
 
 const UNITS = [
   { name: "Gasabo DPU", slug: "gasabodpu" },
@@ -38,6 +41,8 @@ export default function Home() {
   const db = useFirestore();
   const router = useRouter();
   const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
@@ -53,6 +58,11 @@ export default function Home() {
   }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
+
+  const handlePreview = (report: any) => {
+    setSelectedReport(report);
+    setIsPreviewOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -150,7 +160,7 @@ export default function Home() {
                 {(isAdmin || isCommander || isLeader) ? 'Command Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
-                {(isAdmin || isCommander || isLeader) ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
+                {(isAdmin || isCommander || isLeader) ? 'Latest filings across the entire command.' : `Recent filings for ${profile?.unit}.`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -168,7 +178,11 @@ export default function Home() {
                 </div>
               ) : reports && reports.length > 0 ? (
                 reports.map((report) => (
-                  <Link key={report.id} href={`/reports/view/${report.id}`} className="group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50">
+                  <div 
+                    key={report.id} 
+                    onClick={() => handlePreview(report)}
+                    className="cursor-pointer group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[8px] md:text-[9px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-white">
                         {report.unit}
@@ -187,9 +201,9 @@ export default function Home() {
                         </div>
                         <span className="text-[10px] font-bold text-slate-500 truncate max-w-[100px]">{report.reportingCommanderName}</span>
                       </div>
-                      <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors group-hover:translate-x-1 duration-300" />
+                      <Eye className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
                     </div>
-                  </Link>
+                  </div>
                 ))
               ) : (
                 <div className="col-span-full text-center py-24 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
@@ -251,6 +265,12 @@ export default function Home() {
           </Card>
         </div>
       </div>
+
+      <ReportPreviewDialog 
+        report={selectedReport} 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+      />
     </div>
   );
 }

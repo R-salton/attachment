@@ -5,8 +5,7 @@ import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
 /**
- * Redirect component to fix routing conflicts between [id] and [unitSlug].
- * All report viewing is now consolidated under /reports/view/[id].
+ * Redirect component to resolve routing ambiguity between [id] and [unitSlug].
  */
 export default function ReportRedirect() {
   const router = useRouter();

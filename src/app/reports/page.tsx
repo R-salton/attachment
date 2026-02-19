@@ -1,13 +1,12 @@
 
 "use client";
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { ReportPreviewDialog } from '@/components/reports/ReportPreviewDialog';
 
 export default function ReportsList() {
   const router = useRouter();
@@ -33,6 +34,8 @@ export default function ReportsList() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isAuthLoading || !profile) return null;
@@ -49,6 +52,11 @@ export default function ReportsList() {
   }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
+
+  const handlePreview = (report: any) => {
+    setSelectedReport(report);
+    setIsPreviewOpen(true);
+  };
 
   const handleDelete = async (e: React.MouseEvent, reportId: string) => {
     e.stopPropagation();
@@ -113,7 +121,7 @@ export default function ReportsList() {
               <Card 
                 key={report.id} 
                 className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-white rounded-[2rem] md:rounded-[2.5rem] overflow-hidden hover:-translate-y-2 duration-500" 
-                onClick={() => router.push(`/reports/view/${report.id}`)}
+                onClick={() => handlePreview(report)}
               >
                 <CardHeader className="p-6 md:p-8 pb-4">
                   <div className="flex justify-between items-start mb-6">
@@ -180,7 +188,7 @@ export default function ReportsList() {
                   </div>
                   <div className="pt-6 border-t border-slate-50 mt-auto flex justify-end">
                     <Button variant="ghost" size="sm" className="font-black text-primary hover:bg-transparent group-hover:translate-x-2 transition-transform h-auto p-0 text-xs">
-                      Review Transcript <ArrowRight className="ml-2 h-4 w-4" />
+                      Quick View <Eye className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -204,6 +212,12 @@ export default function ReportsList() {
           </div>
         )}
       </div>
+
+      <ReportPreviewDialog 
+        report={selectedReport} 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+      />
     </div>
   );
 }
