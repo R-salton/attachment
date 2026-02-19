@@ -19,7 +19,8 @@ export default function Home() {
 
   const recentReportsQuery = useMemoFirebase(() => {
     // Only construct the query if the user is authenticated and services are available
-    if (!user || !db) return null;
+    // and explicitly wait for isUserLoading to be false to avoid race conditions.
+    if (!user?.uid || !db || isUserLoading) return null;
     
     // Explicitly filter by ownerId to satisfy Firestore Security Rules
     return query(
@@ -28,7 +29,7 @@ export default function Home() {
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid]);
+  }, [db, user?.uid, isUserLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -135,7 +136,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {isUserLoading || isReportsLoading ? (
+                {isUserLoading || (user && isReportsLoading) ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="text-xs text-muted-foreground">Retrieving secure data...</p>

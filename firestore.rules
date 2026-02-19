@@ -5,36 +5,21 @@ service cloud.firestore {
     /**
      * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
      * 
-     * This ruleset implements an Ownership-Based Access Control model.
-     * All operational reports are owned by the creator (ownerId).
+     * Deployment Trigger: 2024-05-20 15:45:00 - Hardened ownership-based listing.
      * 
-     * Deployment Trigger: 2024-02-19 10:00:00 - Hardened ownership-based listing.
+     * Rules are NOT filters. To list reports, the client must provide a filter 
+     * where 'ownerId' matches their UID.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Master lookup data
-    match /companies/{companyId} {
-      allow read: if isSignedIn();
-      allow write: if false;
-    }
-    match /operationalUnits/{unitId} {
-      allow read: if isSignedIn();
-      allow write: if false;
-    }
-
     // Reports collection
     match /reports/{reportId} {
-      // allow 'get' and 'list' for the owner. 
+      // Allow read (get and list) only for the owner.
       // Firestore enforces that 'list' queries must include the 'ownerId' filter.
-      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       
       // Allow creation if the user sets themselves as the owner
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
@@ -42,7 +27,7 @@ service cloud.firestore {
       // Allow update/delete only by the owner
       allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
 
-      // Allow recursive access to subcollections for the owner
+      // Recursive access for subcollections (if any)
       match /{allSubcollections=**} {
         allow read, write: if isSignedIn() && 
           (get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId == request.auth.uid);

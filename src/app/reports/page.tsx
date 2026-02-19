@@ -17,15 +17,15 @@ export default function ReportsList() {
 
   const reportsQuery = useMemoFirebase(() => {
     // CRITICAL: Defensive query construction to ensure rule compliance.
-    // The query MUST include the ownerId filter to match the security rules.
-    if (!user || !db) return null;
+    // Explicitly wait for isUserLoading to be false and check for user.uid.
+    if (!user?.uid || !db || isUserLoading) return null;
     
     return query(
       collection(db, 'reports'),
       where('ownerId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-  }, [db, user?.uid]);
+  }, [db, user?.uid, isUserLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -34,7 +34,7 @@ export default function ReportsList() {
     r.reportDate?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const isLoading = isUserLoading || isReportsLoading;
+  const isLoading = isUserLoading || (user && isReportsLoading);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
@@ -74,7 +74,7 @@ export default function ReportsList() {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-slate-500 font-medium animate-pulse">Establishing secure connection...</p>
           </div>
-        ) : filteredReports && filteredReports.length > 0 ? (
+        ) : user && filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredReports.map((report) => (
               <Card key={report.id} className="hover:shadow-xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-white" onClick={() => router.push(`/reports/${report.id}`)}>
@@ -118,12 +118,18 @@ export default function ReportsList() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-slate-900">Record Not Found</h3>
-              <p className="text-slate-500 max-w-sm mx-auto">No operational reports match your current filter or no entries have been filed yet.</p>
+              <p className="text-slate-500 max-w-sm mx-auto">
+                {user 
+                  ? "No operational reports match your current filter or no entries have been filed yet."
+                  : "Please sign in to access historical operational reports."}
+              </p>
             </div>
             {searchTerm ? (
               <Button variant="outline" onClick={() => setSearchTerm('')} className="rounded-xl px-8 font-bold">Clear Filter</Button>
-            ) : (
+            ) : user ? (
               <Button onClick={() => router.push('/daily/new')} className="rounded-xl px-10 h-12 font-bold">File First Report</Button>
+            ) : (
+              <Button onClick={() => router.push('/login')} className="rounded-xl px-10 h-12 font-bold">Sign In</Button>
             )}
           </div>
         )}
