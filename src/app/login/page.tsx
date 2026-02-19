@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { FileText, Loader2, Mail, Lock, UserCheck } from 'lucide-react';
+import { FileText, Loader2, Mail, Lock, UserCheck, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [domainError, setDomainError] = useState(false);
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -25,6 +27,7 @@ export default function LoginPage() {
     if (!email || !password) return;
 
     setIsLoading(true);
+    setDomainError(false);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Success", description: "You are now signed in." });
@@ -42,12 +45,16 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setDomainError(false);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
       toast({ title: "Success", description: "Signed in with Google." });
       router.push('/');
     } catch (error: any) {
+      if (error.code === 'auth/unauthorized-domain') {
+        setDomainError(true);
+      }
       toast({
         variant: "destructive",
         title: "Authentication Failed",
@@ -60,6 +67,7 @@ export default function LoginPage() {
 
   const handleAnonymousLogin = async () => {
     setIsLoading(true);
+    setDomainError(false);
     try {
       await signInAnonymously(auth);
       toast({ title: "Success", description: "Signed in anonymously." });
@@ -86,6 +94,16 @@ export default function LoginPage() {
           <CardDescription>Sign in to manage your operational reports</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {domainError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration Required</AlertTitle>
+              <AlertDescription className="text-xs">
+                This domain is not authorized for Google Sign-in. Please add this URL to <b>Authorized domains</b> in the Firebase Console (Authentication > Settings).
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="animate-spin mr-2 h-4 w-4" />
