@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { 
-  FileText, 
   PlusCircle, 
   History, 
   Loader2, 
@@ -26,8 +25,6 @@ import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
-import { ReportPreviewDialog } from '@/components/reports/ReportPreviewDialog';
 
 const UNITS = [
   { name: "Gasabo DPU", slug: "gasabodpu" },
@@ -42,8 +39,6 @@ export default function Home() {
   const db = useFirestore();
   const router = useRouter();
   const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
-  const [selectedReport, setSelectedReport] = useState<any | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Admins see more recent activity to provide better oversight
   const displayLimit = isAdmin ? 12 : 6;
@@ -62,11 +57,6 @@ export default function Home() {
   }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
-
-  const handlePreview = (report: any) => {
-    setSelectedReport(report);
-    setIsPreviewOpen(true);
-  };
 
   if (isLoading) {
     return (
@@ -182,10 +172,10 @@ export default function Home() {
                 </div>
               ) : reports && reports.length > 0 ? (
                 reports.map((report) => (
-                  <div 
+                  <Link 
                     key={report.id} 
-                    onClick={() => handlePreview(report)}
-                    className="cursor-pointer group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50"
+                    href={`/reports/view/${report.id}`}
+                    className="group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[8px] md:text-[9px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-white">
@@ -207,7 +197,7 @@ export default function Home() {
                       </div>
                       <Eye className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
                     </div>
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <div className="col-span-full text-center py-24 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
@@ -269,12 +259,6 @@ export default function Home() {
           </Card>
         </div>
       </div>
-
-      <ReportPreviewDialog 
-        report={selectedReport} 
-        isOpen={isPreviewOpen} 
-        onClose={() => setIsPreviewOpen(false)} 
-      />
     </div>
   );
 }
