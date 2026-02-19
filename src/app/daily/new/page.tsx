@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -12,6 +11,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   FileText, 
   Save, 
@@ -36,9 +52,10 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
-  companyName: z.string().min(1, "Company is required"),
   unitName: z.string().min(1, "Unit name is required"),
   dayNumber: z.string().min(1, "Day number is required"),
   operationalSummary: z.string().min(1, "Summary is required"),
@@ -67,12 +84,12 @@ export default function NewDailyReport() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-      companyName: 'ALPHA COMPANY',
       unitName: profile?.unit || 'TRS',
       dayNumber: '1',
       operationalSummary: 'continued performing Traffic regulations, control, traffic recoveries, public education and enforcing laws through punishments.',
@@ -94,7 +111,7 @@ export default function NewDailyReport() {
     name: "incidents"
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmitPreview = async (values: FormValues) => {
     if (!user || !isLeader) {
       toast({ variant: "destructive", title: "Clearance Required", description: "Only Leaders can generate reports." });
       return;
@@ -125,6 +142,10 @@ export default function NewDailyReport() {
     }
   };
 
+  const handleFinalize = () => {
+    setShowConfirmDialog(true);
+  };
+
   const saveReport = () => {
     if (!user || !db || !previewContent || !profile) return;
     setIsLoading(true);
@@ -137,9 +158,8 @@ export default function NewDailyReport() {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
-      unit: profile.unit || 'TRS',
-      cadetIntake: 'N/A',
-      reportTitle: `SITUATION REPORT - ${values.companyName} (${values.reportDate})`,
+      unit: values.unitName,
+      reportTitle: `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
       reportingCommanderTitle: 'Officer in Charge',
       creationDateTime: new Date().toISOString(),
@@ -161,7 +181,10 @@ export default function NewDailyReport() {
         });
         errorEmitter.emit('permission-error', contextualError);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+        setShowConfirmDialog(false);
+      });
   };
 
   if (isAuthLoading) {
@@ -200,12 +223,12 @@ export default function NewDailyReport() {
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg md:text-xl font-extrabold text-slate-900 leading-none">Situation Report</h1>
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary mt-1">{profile?.unit || 'TRS'} Command</span>
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary mt-1">Operational Protocol</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => form.reset()} className="hidden sm:flex rounded-xl">Reset</Button>
-          <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmit)} className="rounded-xl">
+          <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmitPreview)} className="rounded-xl">
             {isLoading ? <Loader2 className="animate-spin mr-1 h-3.5 w-3.5" /> : <Eye className="mr-1 h-3.5 w-3.5" />}
             Preview
           </Button>
@@ -248,18 +271,24 @@ export default function NewDailyReport() {
                     <Input {...form.register('reportDate')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. 18 Feb 26" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Unit Name</Label>
+                    <Select 
+                      defaultValue={form.getValues('unitName')} 
+                      onValueChange={(val) => form.setValue('unitName', val)}
+                    >
+                      <SelectTrigger className="h-10 md:h-11 rounded-xl text-sm">
+                        <SelectValue placeholder="Select Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Day Number</Label>
                     <Input {...form.register('dayNumber')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. 3" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Company Name</Label>
-                    <Input {...form.register('companyName')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. ALPHA COMPANY" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Unit Name</Label>
-                    <Input {...form.register('unitName')} readOnly className="h-10 md:h-11 rounded-xl text-sm bg-slate-50" />
-                  </div>
-                  <div className="col-span-1 md:col-span-2 space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Name)</Label>
                     <Input {...form.register('commanderName')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. CASTRO Boaz" />
                   </div>
@@ -373,7 +402,7 @@ export default function NewDailyReport() {
                       }}>
                         Copy Text
                       </Button>
-                      <Button className="rounded-xl h-10 md:h-11 px-8 font-bold text-xs md:text-sm w-full sm:w-auto shadow-lg shadow-primary/20" onClick={saveReport} disabled={isLoading}>
+                      <Button className="rounded-xl h-10 md:h-11 px-8 font-bold text-xs md:text-sm w-full sm:w-auto shadow-lg shadow-primary/20" onClick={handleFinalize} disabled={isLoading}>
                         {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
                         Finalize & Archive
                       </Button>
@@ -421,6 +450,24 @@ export default function NewDailyReport() {
           </Button>
         </div>
       </main>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive SITUATION REPORT?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please confirm that all information in this report is accurate and reflects the official operational status. Once archived, it will be added to the permanent registry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Review Again</AlertDialogCancel>
+            <AlertDialogAction onClick={saveReport} disabled={isLoading} className="bg-primary shadow-lg shadow-primary/20">
+              {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Confirm Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

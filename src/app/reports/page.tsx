@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -7,22 +6,25 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search, ShieldAlert, ArrowLeft, Building2 } from 'lucide-react';
+import { FileText, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft, LayoutGrid, List } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
   const { isCommander, profile, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
 
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
-    // Caded Commander and Admin see all reports. Others see their unit only.
+    // Commander and Admin see all reports. Others see their unit only.
     if (isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } else {
@@ -51,20 +53,45 @@ export default function ReportsList() {
             <div className="space-y-0.5 md:space-y-1">
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900">Archive</h1>
               <p className="text-xs md:text-sm text-slate-500 font-medium">
-                {isCommander ? 'All Units central registry.' : `${profile?.unit} Unit operational registry.`}
+                {isCommander ? 'Global Command Registry' : `${profile?.unit} Unit Registry`}
               </p>
             </div>
           </div>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search by date or unit..." 
-              className="pl-10 h-10 md:h-11 rounded-xl bg-white border-slate-200 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Search logs..." 
+                className="pl-10 h-10 rounded-xl bg-white border-slate-200 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Tabs value={viewType} onValueChange={(val) => setViewType(val as any)} className="hidden sm:block">
+              <TabsList className="rounded-xl bg-slate-100 p-1">
+                <TabsTrigger value="daily" className="rounded-lg text-[10px] uppercase font-bold px-4 data-[state=active]:bg-white">Daily</TabsTrigger>
+                <TabsTrigger value="weekly" className="rounded-lg text-[10px] uppercase font-bold px-4 data-[state=active]:bg-white">Weekly</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </section>
+
+        {isCommander && (
+          <div className="bg-primary/5 border border-primary/10 p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <FileText className="text-white h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="font-bold text-slate-900">Executive Summary Generation</h2>
+                <p className="text-xs text-slate-500">Analyze multiple logs to produce a consolidated weekly report.</p>
+              </div>
+            </div>
+            <Button size="sm" className="rounded-xl font-bold shadow-lg shadow-primary/10" asChild>
+              <Link href="/weekly/new">Launch AI Consolidation</Link>
+            </Button>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 md:py-32 gap-4">
@@ -84,11 +111,9 @@ export default function ReportsList() {
                     <div className="p-2.5 md:p-3 bg-primary/10 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors text-primary">
                       <FileText className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
-                    {isCommander && (
-                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                        {report.unit}
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary">
+                      {report.unit}
+                    </Badge>
                   </div>
                   <CardTitle className="text-base md:text-lg font-bold line-clamp-2 leading-tight text-slate-900">
                     {report.reportTitle}
@@ -119,11 +144,13 @@ export default function ReportsList() {
             <Search className="h-12 w-12 md:h-16 md:w-16 text-slate-200" />
             <div className="space-y-1 md:space-y-2">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900">No Records Found</h3>
-              <p className="text-xs md:text-sm text-slate-500 max-w-sm mx-auto">Either the archive is empty or no reports match your search criteria.</p>
+              <p className="text-xs md:text-sm text-slate-500 max-w-sm mx-auto">The archive is empty or no reports match your search criteria.</p>
             </div>
-            <Button size="sm" asChild className="rounded-xl px-6">
-              <Link href="/daily/new">File New Report</Link>
-            </Button>
+            {profile?.role === 'LEADER' && (
+              <Button size="sm" asChild className="rounded-xl px-6">
+                <Link href="/daily/new">File New Report</Link>
+              </Button>
+            )}
           </div>
         )}
       </div>

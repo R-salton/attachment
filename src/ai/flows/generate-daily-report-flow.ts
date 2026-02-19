@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for generating standardized Situation Reports.
@@ -14,7 +13,6 @@ const IncidentSchema = z.object({
 
 const GenerateDailyReportInputSchema = z.object({
   reportDate: z.string().describe('The date of the report (e.g., "18 Feb 26").'),
-  companyName: z.string().describe('The name of the company (e.g., "ALPHA COMPANY").'),
   unitName: z.string().describe('The name of the unit (e.g., "TRS").'),
   dayNumber: z.string().describe('The day number of the attachment.'),
   operationalSummary: z.string().describe('Description of core activities (starts with: "continued performing...").'),
@@ -52,9 +50,9 @@ const reportPrompt = ai.definePrompt({
 
 *SITUATION REPORT AS ON {{{reportDate}}}*
 
-*{{{companyName}}} WITHIN {{{unitName}}}*
+*UNIT: {{{unitName}}}*
 
-1. On Day {{{dayNumber}}} of the attachment, {{{companyName}}} cadets within {{{unitName}}} {{{operationalSummary}}}
+1. On Day {{{dayNumber}}} of the attachment, cadets within {{{unitName}}} {{{operationalSummary}}}
 
 2. The general security situation remained {{{securitySituation}}}. Handled professionally:
 
@@ -69,7 +67,7 @@ At {{{time}}}, {{{description}}}
 *3. Action Taken*: {{{actionTaken}}}
 {{/if}}
 
-*4. Traffic Duties Conducted*
+*4. Duties Conducted*
 
 {{#each dutiesConducted}}
 . {{{this}}}
@@ -92,12 +90,9 @@ At {{{time}}}, {{{description}}}
 
 . Cadets continued to improve operational skills and professionalism. The security situation remains stable.
 
-OC {{companyNamePrefix companyName}}: OC {{{commanderName}}}
+OC {{{unitName}}}: OC {{{commanderName}}}
 
 Respectfully.`,
-  helpers: {
-    companyNamePrefix: (name: string) => name.split(' ')[0],
-  },
 });
 
 const generateDailyReportFlow = ai.defineFlow(

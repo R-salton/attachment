@@ -9,7 +9,6 @@ export interface Incident {
 
 export interface SituationReportInput {
   reportDate: string;
-  companyName: string;
   unitName: string;
   dayNumber: string;
   operationalSummary: string;
@@ -30,7 +29,6 @@ export interface SituationReportInput {
 export function formatDailyReport(input: SituationReportInput): string {
   const {
     reportDate,
-    companyName,
     unitName,
     dayNumber,
     operationalSummary,
@@ -47,9 +45,9 @@ export function formatDailyReport(input: SituationReportInput): string {
 
   let report = `Good evening Sir\n\n`;
   report += `*SITUATION REPORT AS ON ${reportDate}*\n\n`;
-  report += `*${companyName} WITHIN ${unitName}*\n\n`;
+  report += `*UNIT: ${unitName}*\n\n`;
   
-  report += `1. On Day ${dayNumber} of the attachment, ${companyName} cadets within ${unitName} ${operationalSummary}\n\n`;
+  report += `1. On Day ${dayNumber} of the attachment, cadets within ${unitName} ${operationalSummary}\n\n`;
   
   report += `2. The general security situation remained ${securitySituation}. Handled professionally:\n\n`;
   
@@ -89,7 +87,7 @@ export function formatDailyReport(input: SituationReportInput): string {
   report += `. ${overallSummary}\n\n`;
   report += `. Cadets continued to improve operational skills and professionalism. The security situation remains stable.\n\n`;
 
-  report += `OC ${companyName.split(' ')[0]}: OC ${commanderName}\n\n`;
+  report += `OC ${unitName}: OC ${commanderName}\n\n`;
   report += `Respectfully.`;
 
   return report;
