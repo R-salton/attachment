@@ -20,9 +20,8 @@ export function AuthProfileSync() {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // nezasalton@gmail.com is handled as a Leader/Admin in rules.
-          // We set it in data for UI consistency.
-          const initialRole = user.email === 'nezasalton@gmail.com' ? 'LEADER' : 'TRAINEE';
+          // nezasalton@gmail.com is the primary Admin/Commander.
+          const initialRole = (user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1') ? 'COMMANDER' : 'TRAINEE';
           
           await setDoc(userRef, {
             uid: user.uid,

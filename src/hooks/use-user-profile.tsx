@@ -41,7 +41,9 @@ export function useUserProfile() {
   }
 
   const isAdmin = user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
-  const role = profile?.role || (isAdmin ? 'LEADER' : 'TRAINEE');
+  
+  // Default roles if profile isn't fully initialized yet but user exists
+  const role = profile?.role || (isAdmin ? 'COMMANDER' : 'TRAINEE');
   
   const isCommander = role === 'COMMANDER' || isAdmin;
   const isLeader = role === 'LEADER' || isCommander;

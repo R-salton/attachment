@@ -13,51 +13,39 @@ service cloud.firestore {
       );
     }
 
-    function getUserData() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data : {};
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
-      allow delete: if isAdmin();
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
       // 1. ABSOLUTE ADMIN BYPASS
-      // This ensures the Administrator can always query and manage all reports.
+      // This ensures the Administrator can always query and manage all reports globally.
       allow read, write: if isAdmin();
 
       // 2. READ ACCESS for Leaders and Commanders
-      allow read: if isSignedIn() && (
-        let userData = getUserData();
-        userData.role == 'COMMANDER' || 
-        userData.role == 'LEADER'
-      );
+      // This allows authorized personnel to view reports beyond their own unit.
+      allow read: if isSignedIn() && getProfile().role in ['COMMANDER', 'LEADER'];
 
       // 3. UNIT-LOCKED ACCESS for Trainees
-      // Trainees can only list/get reports within their own unit.
-      allow read: if isSignedIn() && (
-        resource.data.unit == getUserData().unit
-      );
+      // Standard personnel can only read reports filtered by their own unit.
+      allow read: if isSignedIn() && resource.data.unit == getProfile().unit;
       
       // 4. CREATION
       allow create: if isSignedIn();
       
       // 5. MODIFICATION
       allow update: if isSignedIn() && (
-        resource.data.unit == getUserData().unit ||
+        resource.data.unit == getProfile().unit ||
         resource.data.ownerId == request.auth.uid
       );
       
       // 6. DELETION (Leaders and above)
-      allow delete: if isSignedIn() && (
-        let userData = getUserData();
-        userData.role == 'COMMANDER' || 
-        userData.role == 'LEADER'
-      );
+      allow delete: if isAdmin() || (isSignedIn() && getProfile().role in ['COMMANDER', 'LEADER']);
     }
   }
 }
