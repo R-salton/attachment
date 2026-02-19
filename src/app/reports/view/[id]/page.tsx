@@ -9,19 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { 
-  ChevronLeft, 
-  User, 
-  Copy, 
-  Printer, 
   CheckCircle, 
   ShieldAlert, 
   Loader2,
   Building2,
-  BadgeCheck,
   Edit3,
   Save,
   ArrowLeft,
-  Shield
+  Shield,
+  Printer,
+  Copy
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -81,12 +78,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 mt-10 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl md:text-2xl font-black text-foreground mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-4 text-base md:text-lg text-slate-800 dark:text-slate-200 leading-relaxed font-bold">{line}</p>;
+      return <p key={i} className="mb-4 text-base md:text-lg text-foreground/90 leading-relaxed font-semibold">{line}</p>;
     });
   };
 
@@ -106,9 +103,9 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
         <h2 className="text-3xl md:text-5xl font-black text-foreground mb-4">Transcript Restricted</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">This operational log is restricted or does not exist in the command vault.</p>
+        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">Access to this registry entry is prohibited or the record does not exist.</p>
         <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">
-          Return to Terminal
+          Return to Dashboard
         </Button>
       </div>
     );
@@ -122,11 +119,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
             <ArrowLeft className="h-6 w-6 md:mr-2" />
-            <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Dashboard</span>
+            <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Back</span>
           </Button>
           <div className="h-8 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-xs md:text-sm font-black text-slate-900 dark:text-white truncate max-w-[140px] md:max-w-xl leading-none mb-1 uppercase tracking-tighter">
+            <h1 className="text-xs md:text-sm font-black text-foreground truncate max-w-[140px] md:max-w-xl leading-none mb-1 uppercase tracking-tighter">
               {report.reportTitle}
             </h1>
             <div className="flex items-center gap-2">
@@ -144,7 +141,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </Button>
               <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-black h-10 px-6">
                 {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Changes
+                Save
               </Button>
             </div>
           ) : (
@@ -176,30 +173,30 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <Building2 className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Operational Archive</span>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Registry Entry #{report.id.substring(0,8).toUpperCase()}</span>
+                <span className="text-xs font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Command Registry</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] uppercase">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground leading-[0.9] uppercase">
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-3 pt-4">
-              <Badge className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest">
+              <Badge className="bg-foreground text-background h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest">
                 UNIT: {report.unit}
               </Badge>
-              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest">
+              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-border text-foreground">
                 COMMANDER: {report.reportingCommanderName}
               </Badge>
             </div>
           </div>
         </div>
 
-        <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
+        <Card className="shadow-2xl border border-border rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
           <div className="h-2 bg-primary" />
-          <CardContent className="p-8 md:p-16 relative">
+          <CardContent className="p-8 md:p-16 relative bg-card">
             {isEditing ? (
               <div className="relative z-10 space-y-4">
-                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Revision Interface</Label>
+                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Transcript Revision</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
@@ -207,9 +204,9 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-foreground tracking-tight relative z-10 max-w-3xl mx-auto">
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
-                   <Shield className="h-[400px] w-[400px]" />
+                   <Shield className="h-[400px] w-[400px] text-foreground" />
                 </div>
                 {formatContent(report.fullText)}
               </div>

@@ -7,20 +7,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Absolute Admin Bypass - High Priority Clearance
+    // Absolute Admin Bypass - High Priority Master Access
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN')
       );
     }
 
     function isHighCommand() {
       return isSignedIn() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER' ||
-        isAdmin()
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'))
       );
     }
 
@@ -36,6 +38,7 @@ service cloud.firestore {
       // 2. REGULAR ACCESS
       allow list, get: if isHighCommand();
       allow list, get: if isSignedIn() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
       );
       

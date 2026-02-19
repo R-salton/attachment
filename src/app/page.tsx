@@ -122,7 +122,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {UNITS.map((unit) => (
               <Link key={unit.id} href={`/reports/unit/${unit.id}`}>
-                <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-none shadow-sm cursor-pointer group overflow-hidden">
+                <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-border shadow-sm cursor-pointer group overflow-hidden bg-card">
                   <div className={`h-1 w-full ${unit.color}`} />
                   <CardHeader className="p-4 space-y-2">
                     <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -138,7 +138,7 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <Card className="lg:col-span-3 border-none shadow-xl rounded-[2.5rem] bg-card overflow-hidden flex flex-col">
+        <Card className="lg:col-span-3 border border-border shadow-xl rounded-[2.5rem] bg-card overflow-hidden flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between p-8 pb-4">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black text-foreground flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function Home() {
                   <Link 
                     key={report.id} 
                     href={`/reports/view/${report.id}`}
-                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/30 hover:bg-background transition-all border border-transparent hover:border-border hover:shadow-xl"
+                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/30 hover:bg-accent/50 transition-all border border-transparent hover:border-border hover:shadow-xl"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[8px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-background">

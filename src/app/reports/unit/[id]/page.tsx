@@ -82,9 +82,9 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-background">
         <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Registry Key Not Recognized</h2>
-        <p className="text-sm text-muted-foreground mb-8 max-w-sm">The unit code "{id}" does not correspond to an active command repository.</p>
-        <Button onClick={() => router.push('/')} className="rounded-xl font-bold px-8 h-12 shadow-xl shadow-primary/10">Return to Terminal</Button>
+        <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Registry Entry Not Found</h2>
+        <p className="text-sm text-muted-foreground mb-8 max-w-sm">The unit code "{id}" is not recognized in the command structure.</p>
+        <Button onClick={() => router.push('/')} className="rounded-xl font-bold px-8 h-12 shadow-xl shadow-primary/10">Return to Dashboard</Button>
       </div>
     );
   }
@@ -94,14 +94,14 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
       <div className="max-w-6xl mx-auto space-y-10">
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{unitName} Archive</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{unitName} Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  Station Registry Registry Entry
+                  Station Operational Archive
                 </Badge>
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-6">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Syncing Registry...</p>
+            <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Synchronizing Registry...</p>
           </div>
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -130,7 +130,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <Link 
                 key={report.id} 
                 href={`/reports/view/${report.id}`}
-                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
+                className="hover:shadow-3xl transition-all cursor-pointer group border border-border shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
               >
                 <CardHeader className="p-8 pb-4">
                   <div className="flex justify-between items-start mb-6">
@@ -153,7 +153,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                           <AlertDialogHeader className="p-4">
                             <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
                             <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                              Expunge report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} archive?
+                              This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} registry.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter className="p-4 gap-3">
@@ -192,7 +192,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                   </div>
                   <div className="pt-6 border-t border-border mt-auto flex justify-end">
                     <Button variant="ghost" size="sm" className="font-black text-primary hover:bg-transparent group-hover:translate-x-2 transition-transform h-auto p-0 text-[10px] uppercase tracking-widest">
-                      View Transcript <Eye className="ml-2 h-3.5 w-3.5" />
+                      Open Transcript <Eye className="ml-2 h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </CardContent>
@@ -205,9 +205,9 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <ShieldAlert className="h-10 w-10 text-primary/50" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Archive Entry Empty</h3>
+              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                No operational logs found in the command registry for the {unitName} unit.
+                No situational logs found in the command registry for the {unitName} unit.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">
