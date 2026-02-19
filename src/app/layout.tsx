@@ -1,7 +1,11 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { AuthProfileSync } from '@/components/AuthProfileSync';
 
 export const metadata: Metadata = {
   title: 'Report Master | Operations Management',
@@ -22,7 +26,19 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          {children}
+          <AuthProfileSync />
+          <SidebarProvider>
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <div className="flex-1 flex flex-col">
+                <header className="md:hidden border-b bg-white p-4 flex items-center gap-4">
+                  <SidebarTrigger />
+                  <span className="font-bold">Report Master</span>
+                </header>
+                {children}
+              </div>
+            </div>
+          </SidebarProvider>
           <Toaster />
         </FirebaseClientProvider>
       </body>

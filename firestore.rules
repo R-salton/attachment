@@ -1,34 +1,42 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
-     * 
-     * Deployment Trigger: 2024-05-20 16:15:00 - Global read for authenticated users.
-     */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'nezasalton@gmail.com';
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isLeader() {
+      return isSignedIn() && (getUserRole() == 'LEADER' || isAdmin());
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Admin can update roles, users can create their own profile as TRAINEE
+      allow update: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == 'TRAINEE';
+    }
+
     // Reports collection
     match /reports/{reportId} {
-      // Allow any signed-in user to read any report
-      allow read: if isSignedIn();
+      // Leaders and Admins can view and list all reports
+      allow read: if isLeader();
       
-      // Allow creation if the user sets themselves as the owner
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      // Leaders can create reports
+      allow create: if isLeader() && request.resource.data.ownerId == request.auth.uid;
       
-      // Allow update/delete only by the owner
-      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-
-      // Recursive access for subcollections (if any)
-      match /{allSubcollections=**} {
-        allow read: if isSignedIn();
-        allow write: if isSignedIn() && 
-          (get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId == request.auth.uid);
-      }
+      // Update/Delete by owner or Admin
+      allow update, delete: if isLeader() && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
   }
 }

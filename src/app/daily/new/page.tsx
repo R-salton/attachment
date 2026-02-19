@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -13,13 +14,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CaseDetailList } from '@/components/reports/CaseDetailList';
-import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye, ShieldAlert } from 'lucide-react';
+import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { formatDailyReport } from '@/lib/report-formatter';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
@@ -88,7 +90,7 @@ export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isLeader, isLoading: isAuthLoading } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -144,8 +146,8 @@ export default function NewDailyReport() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!user) {
-      toast({ variant: "destructive", title: "Authentication Required", description: "You must be signed in to generate reports." });
+    if (!user || !isLeader) {
+      toast({ variant: "destructive", title: "Clearance Required", description: "Only Leaders can generate reports." });
       return;
     }
 
@@ -183,7 +185,6 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
-    // CRITICAL: Use 'ownerId' to match firestore.rules and queries
     const reportData = {
       id: reportId,
       ownerId: user.uid,
@@ -214,21 +215,21 @@ export default function NewDailyReport() {
       .finally(() => setIsLoading(false));
   };
 
-  if (isUserLoading) {
+  if (isAuthLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="flex-1 flex items-center justify-center bg-slate-50">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!user) {
+  if (!isLeader) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
         <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Restricted Access</h2>
-        <p className="text-slate-500 mb-6 text-center max-w-md">You must be authenticated with official credentials to file operational reports.</p>
-        <Button onClick={() => router.push('/login')}>Sign In</Button>
+        <h2 className="text-2xl font-bold">Clearance Level Low</h2>
+        <p className="text-slate-500 max-w-md mt-2">Only officers with <strong>Leader</strong> status can access report creation protocols.</p>
+        <Button onClick={() => router.push('/')} className="mt-6">Return to Dashboard</Button>
       </div>
     );
   }
@@ -246,18 +247,16 @@ export default function NewDailyReport() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-24">
+    <div className="flex-1 bg-[#f8fafc] pb-24">
       <header className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Dashboard
-          </Button>
-          <div className="h-6 w-px bg-slate-200 hidden md:block" />
-          <h1 className="text-xl font-extrabold text-slate-900 hidden md:block">Operational Daily Report</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-extrabold text-slate-900 leading-none">Operational Report</h1>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">Authorized Protocol</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => form.reset()} className="hidden sm:flex">Clear Form</Button>
+          <Button variant="outline" size="sm" onClick={() => form.reset()} className="hidden sm:flex">Reset</Button>
           <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmit)}>
             {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
             Preview
@@ -282,11 +281,11 @@ export default function NewDailyReport() {
             </TabsList>
           </div>
 
-          <Card className="shadow-xl border-none">
-            <CardHeader className="bg-slate-900 text-white rounded-t-2xl">
+          <Card className="shadow-xl border-none rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-slate-900 text-white p-8">
               <CardTitle className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-lg">
-                  <FileText className="h-5 w-5" />
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
                 {tabs.find(t => t.id === activeTab)?.label}
               </CardTitle>
@@ -530,7 +529,7 @@ export default function NewDailyReport() {
               <TabsContent value="preview" className="space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
                   <div className="space-y-6">
-                    <div className="bg-slate-50 p-8 md:p-12 rounded-2xl font-mono text-sm whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800">
+                    <div className="bg-slate-50 p-8 md:p-12 rounded-2xl font-report text-[15px] whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800">
                       {previewContent}
                     </div>
                     <div className="flex flex-col sm:flex-row justify-end gap-3">
@@ -538,7 +537,7 @@ export default function NewDailyReport() {
                         navigator.clipboard.writeText(previewContent);
                         toast({ title: "Copied", description: "Standardized report text copied to clipboard." });
                       }}>
-                        Copy to Clipboard
+                        Copy
                       </Button>
                       <Button className="rounded-xl h-11 px-8 font-bold" onClick={saveReport} disabled={isLoading}>
                         {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}

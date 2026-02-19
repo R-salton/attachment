@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Report": {
@@ -17,6 +18,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "ownerId", "reportTitle", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account metadata and role assignments.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["TRAINEE", "LEADER"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
     }
   },
   "auth": {
@@ -26,6 +40,10 @@
     "/reports/{reportId}": {
       "schema": "Report",
       "description": "Collection of operational reports."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User role and profile data."
     }
   }
 }
