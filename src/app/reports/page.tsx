@@ -49,14 +49,12 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Command level viewing
     if (isLeader) {
       if (unitFilter) {
         return query(baseQuery, where('unit', '==', unitFilter), orderBy('createdAt', 'desc'));
       }
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } else {
-      // Station level viewing
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     }
@@ -237,7 +235,13 @@ export default function ReportsList() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">The vault is empty or no operational logs match the provided search criteria.</p>
+              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">
+                {unitFilter 
+                  ? `No operational logs found for ${unitFilter}.` 
+                  : searchTerm 
+                    ? `No logs match "${searchTerm}".`
+                    : `The registry is currently empty for ${profile?.unit || 'your station'}.`}
+              </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">
               <Link href="/daily/new">File First Report</Link>

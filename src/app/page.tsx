@@ -32,16 +32,13 @@ export default function Home() {
   const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // Crucial: Only run the query once auth and profile are fully loaded and unit/role are available
     if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    // Leaders and Admins see the global feed (all units)
     if (isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
-      // Trainees are restricted to their assigned unit
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
@@ -188,7 +185,9 @@ export default function Home() {
                     <ShieldHalf className="h-8 w-8 text-slate-200" />
                   </div>
                   <h3 className="text-xl font-black text-slate-900 mb-2">Registry Empty</h3>
-                  <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">No operational logs have been recorded for this period.</p>
+                  <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">
+                    No operational logs have been recorded for {isLeader ? 'the command' : profile?.unit} for this period.
+                  </p>
                   <Button asChild className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
                   </Button>
