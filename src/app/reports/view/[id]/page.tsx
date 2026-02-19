@@ -19,7 +19,8 @@ import {
   Building2,
   BadgeCheck,
   Edit3,
-  Save
+  Save,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -79,12 +80,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 mt-12 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-4 text-base md:text-lg text-slate-800 dark:text-slate-100 leading-relaxed font-medium">{line}</p>;
+      return <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-slate-200 leading-relaxed font-bold">{line}</p>;
     });
   };
 
@@ -93,7 +94,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
           <Loader2 className="h-16 w-16 text-primary animate-spin" />
-          <p className="text-muted-foreground font-black tracking-widest uppercase text-xs animate-pulse">Decrypting Registry...</p>
+          <p className="text-muted-foreground font-black tracking-widest uppercase text-xs">Decrypting Transcript...</p>
         </div>
       </div>
     );
@@ -103,10 +104,10 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
-        <h2 className="text-3xl md:text-5xl font-black text-foreground mb-4">Transcript Unreachable</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold">This operational log is restricted or does not exist in the current command vault.</p>
-        <Button onClick={() => router.push('/reports')} size="lg" className="h-14 px-12 font-black rounded-2xl">
-          Return to Registry
+        <h2 className="text-3xl md:text-5xl font-black text-foreground mb-4">Transcript Restricted</h2>
+        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">This operational log is restricted or does not exist in the command vault.</p>
+        <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">
+          Return to Terminal
         </Button>
       </div>
     );
@@ -118,18 +119,18 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
       <header className="border-b bg-background/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
         <div className="flex items-center gap-2 md:gap-8">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/reports')} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
-            <ChevronLeft className="h-6 w-6 md:mr-2" />
-            <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Archives</span>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
+            <ArrowLeft className="h-6 w-6 md:mr-2" />
+            <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Dashboard</span>
           </Button>
           <div className="h-8 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate max-w-[140px] md:max-w-xl leading-none mb-1">
+            <h1 className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate max-w-[140px] md:max-w-xl leading-none mb-1 uppercase tracking-tighter">
               {report.reportTitle}
             </h1>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest h-4 px-1 border-primary/20 text-primary">{report.unit}</Badge>
-              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{report.status}</span>
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{report.reportDate}</span>
             </div>
           </div>
         </div>
@@ -155,65 +156,60 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 )}
                 <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold h-11 border-border">
                   {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 mr-2" />}
-                  Copy
+                  Copy Transcript
                 </Button>
               </div>
-              <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-11 px-6 shadow-lg shadow-primary/20">
-                <Printer className="h-4 w-4 mr-2" /> Print PDF
+              <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-11 px-6 shadow-xl shadow-primary/20">
+                <Printer className="h-4 w-4 mr-2" /> PDF Print
               </Button>
             </div>
           )}
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto mt-16 px-4 md:px-10 space-y-16 print:mt-0 print:px-0">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
-          <div className="space-y-6 flex-1 text-left">
+      <main className="max-w-4xl mx-auto mt-12 px-4 md:px-10 space-y-12 print:mt-0 print:px-0">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-4 flex-1">
             <div className="flex items-center gap-3">
-              <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/10">
-                <Building2 className="h-7 w-7 text-primary-foreground" />
+              <div className="bg-primary p-2.5 rounded-xl shadow-lg shadow-primary/10">
+                <Building2 className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
-                <span className="text-xs font-black text-muted-foreground uppercase tracking-widest leading-none">Security Protocol Active</span>
+                <span className="text-xs font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Operational Archive</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Registry Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] text-left">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] uppercase">
               {report.reportDate}
             </h2>
-            <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
-              <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm">
-                <BadgeCheck className="h-5 w-5 text-primary" />
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Station</span>
-                  <span className="text-sm font-black text-foreground uppercase">{report.unit}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm">
-                <User className="h-5 w-5 text-primary" />
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">In Charge</span>
-                  <span className="text-sm font-black text-foreground uppercase">{report.reportingCommanderName}</span>
-                </div>
-              </div>
+            <div className="flex flex-wrap items-center gap-3 pt-4">
+              <Badge className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 h-8 px-4 font-black rounded-lg">
+                UNIT: {report.unit}
+              </Badge>
+              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2">
+                COMMANDER: {report.reportingCommanderName}
+              </Badge>
             </div>
           </div>
         </div>
 
-        <Card className="shadow-3xl border-none rounded-[3rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
-          <div className="h-3 bg-primary" />
-          <CardContent className="p-8 md:p-20 relative text-left">
+        <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
+          <div className="h-2 bg-primary" />
+          <CardContent className="p-8 md:p-16 relative">
             {isEditing ? (
-              <div className="relative z-10 space-y-6">
-                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Operational Log Revision</Label>
+              <div className="relative z-10 space-y-4">
+                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Revision Interface</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[700px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-border focus:ring-primary/20 p-8 text-slate-900 dark:text-white"
+                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-muted/30 border-border p-8 text-foreground"
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-4xl mx-auto text-left">
+              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-3xl mx-auto">
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
+                   <Shield className="h-[400px] w-[400px]" />
+                </div>
                 {formatContent(report.fullText)}
               </div>
             )}

@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   Shield,
   Eye,
-  Activity
+  Activity,
+  FileText
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -28,7 +29,7 @@ export default function Home() {
   const router = useRouter();
   const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
 
-  const displayLimit = isAdmin ? 20 : 10;
+  const displayLimit = isAdmin ? 50 : 20;
 
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
@@ -80,7 +81,7 @@ export default function Home() {
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">Secure Protocol Active</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none">
-            {isAdmin ? 'Command Center' : `Welcome, ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
+            {isAdmin ? 'Command Registry' : `Welcome, ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="secondary" className="bg-card border-border text-muted-foreground font-bold px-3 py-1 text-xs rounded-lg shadow-sm uppercase">
@@ -101,16 +102,16 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <Card className="lg:col-span-2 border-none shadow-2xl rounded-[3rem] bg-card overflow-hidden flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+        <Card className="lg:col-span-3 border-none shadow-2xl rounded-[3rem] bg-card overflow-hidden flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between p-10 pb-4">
             <div className="space-y-1">
               <CardTitle className="text-3xl font-black text-foreground flex items-center gap-3">
                 <Activity className="h-8 w-8 text-primary" />
-                {(isAdmin || isCommander || isLeader) ? 'Global Command Feed' : 'My Unit Activity'}
+                {isAdmin ? 'Global Operational Registry' : 'Unit Activity Feed'}
               </CardTitle>
               <CardDescription className="text-sm font-bold text-muted-foreground">
-                {(isAdmin || isCommander || isLeader) ? `Displaying latest ${displayLimit} filings across the registry.` : `Recent filings for ${profile?.unit}.`}
+                Displaying latest filings across the command structure.
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -120,7 +121,7 @@ export default function Home() {
             </Button>
           </CardHeader>
           <CardContent className="px-10 pb-12 flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {isReportsLoading ? (
                 <div className="col-span-full py-20 flex flex-col items-center gap-4">
                   <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -131,7 +132,7 @@ export default function Home() {
                   <Link 
                     key={report.id} 
                     href={`/reports/view/${report.id}`}
-                    className="group relative flex flex-col p-5 rounded-3xl bg-accent/50 hover:bg-background transition-all border border-transparent hover:border-border hover:shadow-xl"
+                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/50 hover:bg-background transition-all border border-transparent hover:border-border hover:shadow-xl"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[9px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-background">
@@ -144,14 +145,14 @@ export default function Home() {
                     <h4 className="font-black text-foreground text-base line-clamp-2 leading-tight mb-4 group-hover:text-primary transition-colors">
                       {report.reportTitle}
                     </h4>
-                    <div className="mt-auto flex items-center justify-between pt-2 border-t border-border">
+                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
                       <div className="flex items-center gap-2">
-                        <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center text-[8px] font-black">
+                        <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">
                           {report.reportingCommanderName?.charAt(0)}
                         </div>
-                        <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[100px]">{report.reportingCommanderName}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[120px]">{report.reportingCommanderName}</span>
                       </div>
-                      <Eye className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
+                      <Eye className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))
@@ -173,7 +174,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className="space-y-8">
+        <div className="space-y-8 lg:col-span-1">
           <Card className="bg-foreground text-background border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-700">
               <ShieldCheck className="h-32 w-32" />
@@ -183,30 +184,30 @@ export default function Home() {
               <CardDescription className="text-background/50 font-bold text-xs">Mission critical system tools.</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-0 relative z-10 space-y-4">
-              <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-background/5 border-background/10 hover:bg-background hover:text-foreground font-black transition-all group/btn">
+              <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-background/5 border-background/10 hover:bg-background hover:text-foreground font-black transition-all">
                 <Link href="/reports">
-                  <History className="mr-2 h-5 w-5 group-hover/btn:rotate-12 transition-transform" />
+                  <History className="mr-2 h-5 w-5" />
                   ACCESS ARCHIVES
                 </Link>
               </Button>
               {isAdmin && (
-                <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-background/5 border-background/10 hover:bg-background hover:text-foreground font-black transition-all group/btn">
+                <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-background/5 border-background/10 hover:bg-background hover:text-foreground font-black transition-all">
                   <Link href="/users">
-                    <UserCog className="mr-2 h-5 w-5 group-hover/btn:rotate-12 transition-transform" />
-                    MANAGE PERSONNEL
+                    <UserCog className="mr-2 h-5 w-5" />
+                    PERSONNEL REGISTRY
                   </Link>
                 </Button>
               )}
               {(isAdmin || isCommander || isLeader) && (
                 <div className="pt-6 border-t border-background/5 mt-6">
-                  <div className="bg-primary/20 border border-primary/30 p-5 rounded-3xl space-y-4">
+                  <div className="bg-primary/20 border border-primary/30 p-6 rounded-3xl space-y-4">
                     <div className="flex items-center gap-3">
                       <Shield className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] font-black uppercase text-background tracking-widest">Executive AI Tool</span>
+                      <span className="text-[10px] font-black uppercase text-background tracking-widest">Executive AI</span>
                     </div>
-                    <p className="text-xs text-background/70 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly summary.</p>
+                    <p className="text-xs text-background/70 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly briefing.</p>
                     <Button asChild size="sm" className="w-full rounded-xl font-black shadow-lg shadow-primary/20">
-                      <Link href="/weekly/new">LAUNCH AI ANALYSIS</Link>
+                      <Link href="/weekly/new">LAUNCH ANALYSIS</Link>
                     </Button>
                   </div>
                 </div>

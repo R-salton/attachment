@@ -87,7 +87,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={pathname === '/reports'} className="h-11 rounded-xl">
                       <Link href="/reports">
                         <History className="h-4 w-4" />
-                        <span className="font-bold">Archive</span>
+                        <span className="font-bold">Archive Registry</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -96,7 +96,7 @@ export function AppSidebar() {
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">User Settings</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Terminal</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -120,7 +120,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={pathname === '/users'} className="h-11 rounded-xl">
                         <Link href="/users">
                           <Users className="h-4 w-4" />
-                          <span className="font-bold">User Management</span>
+                          <span className="font-bold">Personnel Mgmt</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
