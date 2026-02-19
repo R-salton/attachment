@@ -25,7 +25,8 @@ import {
   Trash2,
   Clock,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  Lightbulb
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -51,6 +52,7 @@ const FormSchema = z.object({
   casualties: z.string().default('No casualties'),
   disciplinaryCases: z.string().default('No disciplinary cases'),
   challenges: z.string().describe("New line separated list"),
+  recommendations: z.string().describe("New line separated list"),
   overallSummary: z.string().min(1, "Overall summary is required"),
   commanderName: z.string().min(1, "Commander name is required"),
 });
@@ -81,6 +83,7 @@ export default function NewDailyReport() {
       casualties: 'No casualties',
       disciplinaryCases: 'No disciplinary cases',
       challenges: "Delay in shift replacement\nWeather condition changes",
+      recommendations: "Provide portable umbrellas for field personnel\nImprove shift coordination",
       overallSummary: 'Day activities were conducted successfully in accordance with operational procedures.',
       commanderName: profile?.displayName || '',
     },
@@ -103,6 +106,7 @@ export default function NewDailyReport() {
         ...values,
         dutiesConducted: values.dutiesConducted.split('\n').filter(s => s.trim()),
         challenges: values.challenges.split('\n').filter(s => s.trim()),
+        recommendations: values.recommendations.split('\n').filter(s => s.trim()),
         forceDiscipline: {
           casualties: values.casualties,
           disciplinaryCases: values.disciplinaryCases
@@ -346,6 +350,13 @@ export default function NewDailyReport() {
                 <div className="space-y-2 md:space-y-3">
                   <Label className="font-bold text-slate-700 text-xs md:text-sm">Challenges (One per line)</Label>
                   <Textarea {...form.register('challenges')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" />
+                </div>
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="font-bold text-slate-700 text-xs md:text-sm flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                    Recommendations (One per line)
+                  </Label>
+                  <Textarea {...form.register('recommendations')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" placeholder="Suggest improvements based on challenges" />
                 </div>
               </TabsContent>
 

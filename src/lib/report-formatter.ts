@@ -22,6 +22,7 @@ export interface SituationReportInput {
     disciplinaryCases: string;
   };
   challenges: string[];
+  recommendations: string[];
   overallSummary: string;
   commanderName: string;
 }
@@ -39,6 +40,7 @@ export function formatDailyReport(input: SituationReportInput): string {
     dutiesConducted,
     forceDiscipline,
     challenges,
+    recommendations,
     overallSummary,
     commanderName,
   } = input;
@@ -77,6 +79,10 @@ export function formatDailyReport(input: SituationReportInput): string {
 
   if (challenges && challenges.length > 0) {
     report += `*6. Challenges* : ${challenges.join(' and ')}\n\n`;
+  }
+
+  if (recommendations && recommendations.length > 0) {
+    report += `*7. Recommendations* : ${recommendations.join(' and ')}\n\n`;
   }
 
   report += `*Overall*\n\n`;

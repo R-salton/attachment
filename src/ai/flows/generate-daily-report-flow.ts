@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating standardized Situation Reports.
@@ -26,6 +27,7 @@ const GenerateDailyReportInputSchema = z.object({
     disciplinaryCases: z.string(),
   }),
   challenges: z.array(z.string()).describe('List of challenges encountered.'),
+  recommendations: z.array(z.string()).optional().describe('List of recommendations.'),
   overallSummary: z.string().describe('Narrative overall status.'),
   commanderName: z.string().describe('The name of the signing officer.'),
 });
@@ -79,6 +81,10 @@ At {{{time}}}, {{{description}}}
 . {{{forceDiscipline.disciplinaryCases}}}
 
 *6. Challenges* : {{#each challenges}}{{{this}}}{{#unless @last}} and {{/unless}}{{/each}}
+
+{{#if recommendations}}
+*7. Recommendations* : {{#each recommendations}}{{{this}}}{{#unless @last}} and {{/unless}}{{/each}}
+{{/if}}
 
 *Overall*
 
