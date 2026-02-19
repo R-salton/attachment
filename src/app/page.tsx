@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, User, Loader2, ArrowRight } from 'lucide-react';
+import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, ArrowRight } from 'lucide-react';
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,7 @@ export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Defensive query construction for recent reports
+  // Construct query only when user is authenticated
   const recentReportsQuery = useMemoFirebase(() => {
     if (isUserLoading || !user || !db) return null;
     
@@ -55,9 +55,9 @@ export default function Home() {
             <>
               {user ? (
                 <div className="flex items-center gap-4">
-                  <div className="hidden md:flex flex-col items-end">
-                    <span className="text-xs font-medium text-muted-foreground">Logged in as</span>
-                    <span className="text-sm font-bold text-primary truncate max-w-[150px]">{user.email || 'Anonymous User'}</span>
+                  <div className="hidden md:flex flex-col items-end text-right">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Authenticated</span>
+                    <span className="text-xs font-semibold text-primary truncate max-w-[150px]">{user.email || 'User'}</span>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -90,7 +90,7 @@ export default function Home() {
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-primary/5">
             <Link href="/daily/new" className="block p-6">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <PlusCircle className="h-6 w-6 text-primary" />
@@ -100,7 +100,7 @@ export default function Home() {
             </Link>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-accent/5">
             <Link href="/weekly/new" className="block p-6">
               <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                 <Calendar className="h-6 w-6 text-accent" />
@@ -110,7 +110,7 @@ export default function Home() {
             </Link>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-border">
             <Link href="/reports" className="block p-6">
               <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:bg-secondary/80 transition-colors">
                 <History className="h-6 w-6 text-foreground" />
@@ -141,13 +141,13 @@ export default function Home() {
                         <div className="p-2 bg-muted rounded-md">
                           <FileText className="h-4 w-4 text-primary" />
                         </div>
-                        <div>
+                        <div className="flex flex-col">
                           <p className="font-medium text-sm truncate max-w-[150px] md:max-w-[200px]">{report.reportTitle}</p>
-                          <p className="text-xs text-muted-foreground">{report.reportDate} • {report.reportingCommanderName}</p>
+                          <p className="text-[10px] text-muted-foreground">{report.reportDate} • {report.reportingCommanderName}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${report.status === 'SUBMITTED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-green-100 text-green-700">
                           {report.status}
                         </span>
                         <Button 
@@ -164,9 +164,11 @@ export default function Home() {
                 ) : (
                   <div className="text-center py-10">
                     <p className="text-sm text-muted-foreground mb-4">No recent reports found.</p>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/daily/new">Create Report</Link>
-                    </Button>
+                    {user && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/daily/new">Create Report</Link>
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -182,23 +184,23 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="bg-primary text-white overflow-hidden relative">
+          <Card className="bg-primary text-white overflow-hidden relative border-none">
             <CardHeader className="relative z-10">
               <CardTitle className="text-white">Reporting Guidelines</CardTitle>
               <CardDescription className="text-primary-foreground/70">Ensuring consistent and accurate operational documentation.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 space-y-4">
-              <p className="text-sm opacity-90">
+              <p className="text-sm opacity-90 leading-relaxed">
                 Always include security situation status (e.g., Calm), deployment times, and specific case counts for all DPUs. Use the "Other Activities" section for incidents outside the standard unit logs.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                  <p className="text-xs font-bold uppercase mb-1">Accuracy</p>
-                  <p className="text-[10px] opacity-80">Double-check case counts for Nyarugenge and Fox units.</p>
+                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">Accuracy</p>
+                  <p className="text-[10px] font-medium">Verify all case counts before submission.</p>
                 </div>
                 <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                  <p className="text-xs font-bold uppercase mb-1">Format</p>
-                  <p className="text-[10px] opacity-80">Follow the military reporting hierarchy provided.</p>
+                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">Security</p>
+                  <p className="text-[10px] font-medium">Reports are archived securely for audit.</p>
                 </div>
               </div>
             </CardContent>
@@ -207,8 +209,8 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t bg-white px-6 py-8 text-center">
-        <p className="text-sm text-muted-foreground">© 2026 Report Master Systems. For official use only.</p>
+      <footer className="border-t bg-white px-6 py-8 text-center mt-auto">
+        <p className="text-xs text-muted-foreground">© 2026 Report Master Systems. For official use only. Access is restricted to authorized personnel.</p>
       </footer>
     </div>
   );

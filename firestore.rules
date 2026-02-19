@@ -1,11 +1,11 @@
 /**
  * @fileoverview Firestore Security Rules for the Cadet Commander Reporting System.
- *
+ * 
  * Core Philosophy:
- * This ruleset implements ownership-based access control. 
- * All operational reports are owned by the creator (ownerId).
+ * This ruleset implements ownership-based access control while allowing
+ * authenticated users to read and list the reports collection.
  *
- * Deployment Trigger: 2024-02-18 17:30 UTC - Explicitly allowing collection list for authenticated users
+ * Deployment Trigger: 2024-02-18 18:45 UTC - Standardizing list/get for all auth users.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -19,43 +19,42 @@ service cloud.firestore {
     }
 
     /**
-     * @description Helper to check if the user is the owner of the document.
+     * @description Helper to check if the user is the owner.
      */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
     }
 
     /**
-     * @description Master data for companies and units.
+     * @description Master data (Companies, Units).
      */
-    match /companies/{companyId} {
+    match /companies/{id} {
       allow read: if isSignedIn();
       allow write: if false;
     }
 
-    match /operationalUnits/{unitId} {
+    match /operationalUnits/{id} {
       allow read: if isSignedIn();
       allow write: if false;
     }
 
     /**
-     * @description Main reports collection.
+     * @description Reports collection.
      */
     match /reports/{reportId} {
-      // Allow any authenticated user to list the collection or get a specific report.
-      // The application code filters by ownerId at the query level.
-      allow list: if isSignedIn();
-      allow get: if isSignedIn();
+      // Explicitly allow list and get for all authenticated users.
+      // The application logic filters results by ownerId via the client SDK.
+      allow read: if isSignedIn();
       
-      // Allow creation if the ownerId in the document data matches the auth UID.
+      // Allow creation only if the ownerId matches the authenticated user.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
       // Allow updates/deletes only for the owner.
       allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
 
-      // Recursive match for all report-specific subcollections.
+      // Recursive match for all report subcollections.
       match /{allSubcollections=**} {
-        allow list, get: if isSignedIn();
+        allow read: if isSignedIn();
         allow write: if isSignedIn() && (
           (resource != null && resource.data.ownerId == request.auth.uid) ||
           (resource == null && request.resource.data.ownerId == request.auth.uid)
@@ -64,10 +63,10 @@ service cloud.firestore {
     }
 
     /**
-     * @description Commander role check (DBAC).
+     * @description Role checks.
      */
-    match /roles_cadet_commanders/{commanderId} {
-      allow get: if isOwner(commanderId);
+    match /roles_cadet_commanders/{uid} {
+      allow get: if isOwner(uid);
       allow list, write: if false;
     }
   }
