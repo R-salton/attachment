@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -60,7 +61,7 @@ export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { user, isLeader, isLoading: isAuthLoading } = useUserProfile();
+  const { user, profile, isLeader, isLoading: isAuthLoading } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export default function NewDailyReport() {
     defaultValues: {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
       companyName: 'ALPHA COMPANY',
-      unitName: 'TRS',
+      unitName: profile?.unit || 'TRS',
       dayNumber: '1',
       operationalSummary: 'continued performing Traffic regulations, control, traffic recoveries, public education and enforcing laws through punishments.',
       securitySituation: 'calm and stable',
@@ -81,7 +82,7 @@ export default function NewDailyReport() {
       disciplinaryCases: 'No disciplinary cases',
       challenges: "Delay in shift replacement\nWeather condition changes",
       overallSummary: 'Day activities were conducted successfully in accordance with operational procedures.',
-      commanderName: '',
+      commanderName: profile?.displayName || '',
     },
   });
 
@@ -121,7 +122,7 @@ export default function NewDailyReport() {
   };
 
   const saveReport = () => {
-    if (!user || !db || !previewContent) return;
+    if (!user || !db || !previewContent || !profile) return;
     setIsLoading(true);
 
     const values = form.getValues();
@@ -132,6 +133,7 @@ export default function NewDailyReport() {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
+      unit: profile.unit || 'TRS',
       cadetIntake: 'N/A',
       reportTitle: `SITUATION REPORT - ${values.companyName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
@@ -194,7 +196,7 @@ export default function NewDailyReport() {
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg md:text-xl font-extrabold text-slate-900 leading-none">Situation Report</h1>
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary mt-1">Authorized Protocol</span>
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary mt-1">{profile?.unit || 'TRS'} Command</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -251,7 +253,7 @@ export default function NewDailyReport() {
                   </div>
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Unit Name</Label>
-                    <Input {...form.register('unitName')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. TRS" />
+                    <Input {...form.register('unitName')} readOnly className="h-10 md:h-11 rounded-xl text-sm bg-slate-50" />
                   </div>
                   <div className="col-span-1 md:col-span-2 space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Name)</Label>

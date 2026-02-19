@@ -1,9 +1,10 @@
+
 "use client";
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -18,10 +19,13 @@ import {
   FileCheck,
   Building2,
   BadgeCheck,
-  ArrowLeft
+  Edit3,
+  Save,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -30,6 +34,9 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const { toast } = useToast();
   const db = useFirestore();
   const [isCopied, setIsCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableText, setEditableText] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const reportRef = useMemoFirebase(() => {
     if (!db || !id || !user) return null;
@@ -38,12 +45,32 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const { data: report, isLoading } = useDoc(reportRef);
 
+  useEffect(() => {
+    if (report?.fullText) {
+      setEditableText(report.fullText);
+    }
+  }, [report?.fullText]);
+
   const handleCopy = () => {
     if (report?.fullText) {
       navigator.clipboard.writeText(report.fullText);
       setIsCopied(true);
       toast({ title: "Copied", description: "Standardized report content copied to clipboard." });
       setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!reportRef) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(reportRef, { fullText: editableText });
+      setIsEditing(false);
+      toast({ title: "Update Successful", description: "Operational log has been modified." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes." });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -82,7 +109,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           <ShieldAlert className="h-12 w-12 md:h-20 md:w-20 text-destructive/80" />
         </div>
         <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3 md:mb-4 tracking-tight">Record Unreachable</h2>
-        <p className="text-slate-500 mb-8 md:mb-10 max-w-md text-sm md:text-lg leading-relaxed">This operational log is restricted or does not exist in the current secure database.</p>
+        <p className="text-slate-500 mb-8 md:mb-10 max-w-md text-sm md:text-lg leading-relaxed">This operational log is restricted or does not exist in the current unit vault.</p>
         <Button onClick={() => router.push('/reports')} size="lg" className="px-8 md:px-10 font-bold rounded-2xl shadow-xl shadow-primary/20">
           Return to Archive
         </Button>
@@ -103,18 +130,36 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             <h1 className="text-xs md:text-sm font-black text-slate-900 truncate max-w-[120px] md:max-w-md leading-none mb-0.5 md:mb-1">
               {report.reportTitle}
             </h1>
-            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Command Log</span>
+            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{report.unit} Unit</span>
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold bg-white border-slate-200 h-8 md:h-10 text-[10px] md:text-sm px-3 md:px-4">
-            {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 sm:mr-2" />}
-            <span className="hidden sm:inline">{isCopied ? 'Copied' : 'Copy'}</span>
-          </Button>
-          <Button size="sm" onClick={() => window.print()} className="rounded-xl font-bold shadow-lg shadow-primary/20 h-8 md:h-10 text-[10px] md:text-sm px-3 md:px-4">
-            <Printer className="h-3.5 w-3.5 sm:mr-2" />
-            <span className="hidden sm:inline">PDF</span>
-          </Button>
+          {isEditing ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-8 md:h-10">
+                <X className="h-4 w-4 mr-2" /> Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-bold h-8 md:h-10">
+                {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold bg-white h-8 md:h-10">
+                <Edit3 className="h-3.5 w-3.5 sm:mr-2" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold bg-white h-8 md:h-10">
+                {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 sm:mr-2" />}
+                <span className="hidden sm:inline">Copy</span>
+              </Button>
+              <Button size="sm" onClick={() => window.print()} className="rounded-xl font-bold h-8 md:h-10">
+                <Printer className="h-3.5 w-3.5 sm:mr-2" />
+                <span className="hidden sm:inline">PDF</span>
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
@@ -133,7 +178,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             <div className="flex flex-wrap items-center gap-x-4 md:gap-x-8 gap-y-2 md:gap-y-3 text-[11px] md:text-[13px] font-bold text-slate-500 mt-4 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm">
               <span className="flex items-center gap-2">
                 <BadgeCheck className="h-4 w-4 md:h-5 md:w-5 text-primary/60" />
-                Intake: <span className="text-slate-900">{report.cadetIntake}</span>
+                Unit: <span className="text-slate-900">{report.unit}</span>
               </span>
               <span className="flex items-center gap-2">
                 <User className="h-4 w-4 md:h-5 md:w-5 text-primary/60" />
@@ -158,9 +203,20 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               <Building2 className="h-[300px] w-[300px] md:h-[400px] md:w-[400px]" />
             </div>
 
-            <div className="font-report text-[14px] md:text-[15px] leading-relaxed text-slate-800 tracking-normal document-content relative z-10 overflow-x-auto">
-              {formatContent(report.fullText)}
-            </div>
+            {isEditing ? (
+              <div className="relative z-10 space-y-4">
+                <Label className="text-xs font-black uppercase tracking-widest text-primary">Modify Transcript</Label>
+                <Textarea 
+                  value={editableText} 
+                  onChange={(e) => setEditableText(e.target.value)}
+                  className="min-h-[600px] font-report text-[14px] md:text-[15px] leading-relaxed rounded-xl bg-slate-50 border-slate-200 focus:ring-primary/20"
+                />
+              </div>
+            ) : (
+              <div className="font-report text-[14px] md:text-[15px] leading-relaxed text-slate-800 tracking-normal document-content relative z-10 overflow-x-auto">
+                {formatContent(report.fullText)}
+              </div>
+            )}
             
             <div className="mt-12 md:mt-20 pt-8 md:pt-10 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
               <div className="space-y-1">

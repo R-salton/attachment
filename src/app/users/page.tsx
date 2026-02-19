@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -53,8 +54,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -70,6 +73,7 @@ export default function UserManagementPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('TRAINEE');
+  const [newUnit, setNewUnit] = useState('TRS');
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !isAdmin) return null;
@@ -85,6 +89,16 @@ export default function UserManagementPage() {
       toast({ title: "Role Updated", description: "User permissions have been modified." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error", description: "Could not update user role." });
+    }
+  };
+
+  const handleUnitChange = async (userId: string, newUnit: string) => {
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, 'users', userId), { unit: newUnit });
+      toast({ title: "Unit Updated", description: "User station has been reassigned." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error", description: "Could not update user unit." });
     }
   };
 
@@ -121,6 +135,7 @@ export default function UserManagementPage() {
         email: newEmail,
         displayName: newName,
         role: newRole,
+        unit: newUnit,
         createdAt: serverTimestamp(),
       };
 
@@ -136,6 +151,7 @@ export default function UserManagementPage() {
       setNewPassword('');
       setNewName('');
       setNewRole('TRAINEE');
+      setNewUnit('TRS');
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
@@ -239,17 +255,31 @@ export default function UserManagementPage() {
                     className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="role" className="text-xs">Access Role</Label>
-                  <Select value={newRole} onValueChange={setNewRole}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TRAINEE">Trainee (View Only)</SelectItem>
-                      <SelectItem value="LEADER">Leader (Full Operations)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 md:space-y-2">
+                    <Label htmlFor="role" className="text-xs">Access Role</Label>
+                    <Select value={newRole} onValueChange={setNewRole}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TRAINEE">Trainee</SelectItem>
+                        <SelectItem value="LEADER">Leader</SelectItem>
+                        <SelectItem value="COMMANDER">Caded Commander</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 md:space-y-2">
+                    <Label htmlFor="unit" className="text-xs">Unit</Label>
+                    <Select value={newUnit} onValueChange={setNewUnit}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Select Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <DialogFooter className="pt-4">
                   <Button type="submit" className="w-full h-10 text-sm" disabled={isCreating}>
@@ -278,8 +308,8 @@ export default function UserManagementPage() {
                 <TableHeader className="bg-slate-50">
                   <TableRow>
                     <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Name</TableHead>
-                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12 hidden sm:table-cell">Email</TableHead>
                     <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Role</TableHead>
+                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Unit</TableHead>
                     <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -289,61 +319,67 @@ export default function UserManagementPage() {
                       <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
                         <div className="flex flex-col">
                           <span>{u.displayName}</span>
-                          <span className="sm:hidden text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs md:text-sm">
-                        <div className="flex items-center gap-2 text-slate-500">
-                          <Mail className="h-3 w-3" />
-                          {u.email}
+                          <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-3 md:py-4">
-                        <Badge variant={u.role === 'LEADER' ? 'default' : 'secondary'} className="font-bold text-[9px] md:text-[10px] px-2 py-0">
-                          {u.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Select 
+                            disabled={u.email === 'nezasalton@gmail.com'}
+                            defaultValue={u.role} 
+                            onValueChange={(val) => handleRoleChange(u.uid, val)}
+                          >
+                            <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
+                              <SelectValue placeholder="Role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TRAINEE" className="text-[10px] md:text-xs">Trainee</SelectItem>
+                              <SelectItem value="LEADER" className="text-[10px] md:text-xs">Leader</SelectItem>
+                              <SelectItem value="COMMANDER" className="text-[10px] md:text-xs">Commander</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 md:py-4">
+                        <Select 
+                          disabled={u.email === 'nezasalton@gmail.com'}
+                          defaultValue={u.unit || 'TRS'} 
+                          onValueChange={(val) => handleUnitChange(u.uid, val)}
+                        >
+                          <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
+                            <SelectValue placeholder="Unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {UNITS.map(unit => <SelectItem key={unit} value={unit} className="text-[10px] md:text-xs">{unit}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-right py-3 md:py-4">
                         <div className="flex items-center justify-end gap-2">
                           {u.email === 'nezasalton@gmail.com' ? (
                             <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Admin</span>
                           ) : (
-                            <>
-                              <Select 
-                                defaultValue={u.role} 
-                                onValueChange={(val) => handleRoleChange(u.uid, val)}
-                              >
-                                <SelectTrigger className="w-[100px] md:w-[130px] h-8 md:h-9 text-[10px] md:text-xs">
-                                  <SelectValue placeholder="Role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="TRAINEE" className="text-[10px] md:text-xs">Trainee</SelectItem>
-                                  <SelectItem value="LEADER" className="text-[10px] md:text-xs">Leader</SelectItem>
-                                </SelectContent>
-                              </Select>
-
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
-                                    {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-xs md:text-sm">
-                                      This will permanently remove <strong>{u.displayName}</strong>. You must also manually delete the Auth record in Firebase Console.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter className="gap-2">
-                                    <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
-                                      Confirm Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
+                                  {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-xs md:text-sm">
+                                    This will permanently remove <strong>{u.displayName}</strong>.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-2">
+                                  <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
+                                    Confirm Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </TableCell>

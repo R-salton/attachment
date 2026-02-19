@@ -16,13 +16,15 @@ export function useUserProfile() {
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
   const isAdmin = user?.email === 'nezasalton@gmail.com';
-  const isLeader = profile?.role === 'LEADER' || isAdmin;
-  const isTrainee = profile?.role === 'TRAINEE' && !isAdmin;
+  const isCommander = profile?.role === 'COMMANDER' || isAdmin;
+  const isLeader = profile?.role === 'LEADER' || isCommander;
+  const isTrainee = profile?.role === 'TRAINEE' && !isCommander && !isLeader;
 
   return { 
     profile, 
     isLoading: isAuthLoading || isProfileLoading, 
     isAdmin, 
+    isCommander,
     isLeader, 
     isTrainee,
     user 

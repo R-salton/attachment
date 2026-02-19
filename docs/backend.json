@@ -9,7 +9,7 @@
         "id": { "type": "string" },
         "ownerId": { "type": "string", "description": "The UID of the user who owns this report." },
         "reportDate": { "type": "string" },
-        "cadetIntake": { "type": "string" },
+        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"] },
         "reportTitle": { "type": "string" },
         "reportingCommanderName": { "type": "string" },
         "reportingCommanderTitle": { "type": "string" },
@@ -17,7 +17,7 @@
         "status": { "type": "string", "enum": ["DRAFT", "SUBMITTED"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "ownerId", "reportTitle", "createdAt"]
+      "required": ["id", "ownerId", "reportTitle", "createdAt", "unit"]
     },
     "UserProfile": {
       "title": "UserProfile",
@@ -27,10 +27,11 @@
         "uid": { "type": "string" },
         "email": { "type": "string" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["TRAINEE", "LEADER"] },
+        "role": { "type": "string", "enum": ["TRAINEE", "LEADER", "COMMANDER"] },
+        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role"]
+      "required": ["uid", "email", "role", "unit"]
     }
   },
   "auth": {

@@ -1,12 +1,13 @@
+
 "use client";
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search, ShieldAlert, ArrowLeft, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -14,33 +15,30 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
-  const { isLeader, isLoading: isAuthLoading } = useUserProfile();
+  const { isCommander, profile, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !isLeader) return null;
-    return query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
-  }, [db, isLeader]);
+    if (!db || !profile) return null;
+    
+    const baseQuery = collection(db, 'reports');
+    // Caded Commander and Admin see all reports. Others see their unit only.
+    if (isCommander) {
+      return query(baseQuery, orderBy('createdAt', 'desc'));
+    } else {
+      return query(baseQuery, where('unit', '==', profile.unit || 'TRS'), orderBy('createdAt', 'desc'));
+    }
+  }, [db, isCommander, profile?.unit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
   const filteredReports = reports?.filter(r => 
     r.reportTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.reportDate?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.reportDate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.unit?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const isLoading = isAuthLoading || isReportsLoading;
-
-  if (!isAuthLoading && !isLeader) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold">Access Restricted</h2>
-        <p className="text-slate-500 max-w-md mt-2">Only authorized personnel with Leader clearance can view operational archives.</p>
-        <Button onClick={() => router.push('/')} className="mt-6">Return Home</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 bg-[#f8fafc] pb-20 p-4 md:p-10">
@@ -52,7 +50,9 @@ export default function ReportsList() {
             </Button>
             <div className="space-y-0.5 md:space-y-1">
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900">Archive</h1>
-              <p className="text-xs md:text-sm text-slate-500 font-medium">Historical operational registry.</p>
+              <p className="text-xs md:text-sm text-slate-500 font-medium">
+                {isCommander ? 'All Units central registry.' : `${profile?.unit} Unit operational registry.`}
+              </p>
             </div>
           </div>
           <div className="relative w-full md:w-80">
@@ -84,6 +84,11 @@ export default function ReportsList() {
                     <div className="p-2.5 md:p-3 bg-primary/10 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors text-primary">
                       <FileText className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
+                    {isCommander && (
+                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary">
+                        {report.unit}
+                      </Badge>
+                    )}
                   </div>
                   <CardTitle className="text-base md:text-lg font-bold line-clamp-2 leading-tight text-slate-900">
                     {report.reportTitle}
