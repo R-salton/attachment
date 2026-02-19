@@ -15,6 +15,7 @@ import {
   Printer, 
   CheckCircle, 
   ShieldAlert, 
+  ShieldCheck,
   Loader2,
   FileCheck,
   Building2,
@@ -322,7 +323,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
               <div className="text-left sm:text-right space-y-2">
-                <p className="text-[9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
+                <p className="text-9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
                 <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2">
                   <p className="text-[10px] font-mono text-slate-400 break-all leading-none">{report.id}</p>
                   <ExternalLink className="h-3 w-3 text-slate-300" />
