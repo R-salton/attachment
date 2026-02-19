@@ -5,10 +5,7 @@ service cloud.firestore {
     /**
      * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
      * 
-     * Deployment Trigger: 2024-05-20 15:45:00 - Hardened ownership-based listing.
-     * 
-     * Rules are NOT filters. To list reports, the client must provide a filter 
-     * where 'ownerId' matches their UID.
+     * Deployment Trigger: 2024-05-20 16:15:00 - Global read for authenticated users.
      */
 
     function isSignedIn() {
@@ -17,9 +14,8 @@ service cloud.firestore {
 
     // Reports collection
     match /reports/{reportId} {
-      // Allow read (get and list) only for the owner.
-      // Firestore enforces that 'list' queries must include the 'ownerId' filter.
-      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      // Allow any signed-in user to read any report
+      allow read: if isSignedIn();
       
       // Allow creation if the user sets themselves as the owner
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
@@ -29,7 +25,8 @@ service cloud.firestore {
 
       // Recursive access for subcollections (if any)
       match /{allSubcollections=**} {
-        allow read, write: if isSignedIn() && 
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && 
           (get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId == request.auth.uid);
       }
     }

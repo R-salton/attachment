@@ -8,7 +8,7 @@ import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, Shield
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { collection, query, orderBy, where, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -18,18 +18,16 @@ export default function Home() {
   const { toast } = useToast();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // Only construct the query if the user is authenticated and services are available
-    // and explicitly wait for isUserLoading to be false to avoid race conditions.
-    if (!user?.uid || !db || isUserLoading) return null;
+    // Only construct the query if services are available
+    if (!db || isUserLoading || !user) return null;
     
-    // Explicitly filter by ownerId to satisfy Firestore Security Rules
+    // Ownership requirement removed: any authenticated user can list all reports
     return query(
       collection(db, 'reports'),
-      where('ownerId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isUserLoading]);
+  }, [db, isUserLoading, user]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -127,8 +125,8 @@ export default function Home() {
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Recent Filing</CardTitle>
-                <CardDescription>Your last 5 operational reports.</CardDescription>
+                <CardTitle>Recent Filings</CardTitle>
+                <CardDescription>All recent operational reports.</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/reports">View All</Link>
@@ -174,7 +172,7 @@ export default function Home() {
                   )
                 ) : (
                   <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed">
-                    <p className="text-sm text-slate-500 mb-4">Sign in to view your operational reports.</p>
+                    <p className="text-sm text-slate-500 mb-4">Sign in to view operational reports.</p>
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/login">Authenticate</Link>
                     </Button>

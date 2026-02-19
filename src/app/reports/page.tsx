@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { FileText, PlusCircle, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search } from 'lucide-react';
@@ -16,16 +16,15 @@ export default function ReportsList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const reportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Defensive query construction to ensure rule compliance.
-    // Explicitly wait for isUserLoading to be false and check for user.uid.
-    if (!user?.uid || !db || isUserLoading) return null;
+    // Only construct query if user is signed in and services are ready
+    if (!db || isUserLoading || !user) return null;
     
+    // Ownership requirement removed: authenticated users can list all reports
     return query(
       collection(db, 'reports'),
-      where('ownerId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-  }, [db, user?.uid, isUserLoading]);
+  }, [db, isUserLoading, user]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -56,7 +55,7 @@ export default function ReportsList() {
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Operation Records</h2>
-            <p className="text-slate-500">Secure access to all historical operational daily reports.</p>
+            <p className="text-slate-500">Secure access to historical operational daily reports.</p>
           </div>
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
