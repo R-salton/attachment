@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Absolute Admin Bypass - Ensures global list/get operations are always permitted
+    // Absolute Admin Bypass - High Priority Clearance
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
@@ -25,8 +25,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {

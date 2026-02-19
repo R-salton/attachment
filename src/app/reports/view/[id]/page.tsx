@@ -4,13 +4,12 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { 
   ChevronLeft, 
-  Calendar, 
   User, 
   Copy, 
   Printer, 
@@ -20,8 +19,7 @@ import {
   Building2,
   BadgeCheck,
   Edit3,
-  Save,
-  FileDown
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -81,7 +79,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
@@ -184,18 +182,18 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-8 pt-6">
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-border shadow-sm">
+              <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm">
                 <BadgeCheck className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Station</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white uppercase">{report.unit}</span>
+                  <span className="text-sm font-black text-foreground uppercase">{report.unit}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-border shadow-sm">
+              <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm">
                 <User className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">In Charge</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white uppercase">{report.reportingCommanderName}</span>
+                  <span className="text-sm font-black text-foreground uppercase">{report.reportingCommanderName}</span>
                 </div>
               </div>
             </div>

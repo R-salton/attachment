@@ -5,9 +5,10 @@ import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * Standardized Redirect component using 'id' parameter to avoid slug-name mismatch conflicts.
+ * Uniform Dynamic Path Handler.
+ * Standardized parameter name to 'id' to resolve Next.js routing collision.
  */
-export default function LegacyUnitRedirect({ params }: { params: Promise<{ id: string }> }) {
+export default function UnitSlugRedirect({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
 
@@ -20,10 +21,10 @@ export default function LegacyUnitRedirect({ params }: { params: Promise<{ id: s
   }, [id, router]);
 
   return (
-    <div className="flex-1 bg-slate-50 flex items-center justify-center">
+    <div className="flex-1 bg-background flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Accessing Station Vault...</p>
+        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Accessing Unit Archive...</p>
       </div>
     </div>
   );
