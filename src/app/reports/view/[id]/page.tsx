@@ -80,7 +80,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     if (report?.fullText) {
       navigator.clipboard.writeText(report.fullText);
       setIsCopied(true);
-      toast({ title: "Copied", description: "Standardized report content copied to clipboard." });
+      toast({ title: "Copied", description: "Transcript copied to clipboard." });
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
@@ -158,12 +158,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-base md:text-xl font-black text-foreground mt-8 md:mt-12 mb-4 md:mb-6 border-b-2 border-border pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-base md:text-xl font-black text-slate-900 dark:text-white mt-8 md:mt-12 mb-4 md:mb-6 border-b-2 border-border pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-3 md:mb-4 text-sm md:text-base text-muted-foreground leading-relaxed">{line}</p>;
+      return <p key={i} className="mb-3 md:mb-4 text-sm md:text-base text-slate-700 dark:text-slate-300 leading-relaxed">{line}</p>;
     });
   };
 
@@ -203,7 +203,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </Button>
           <div className="h-8 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-sm md:text-base font-black text-foreground truncate max-w-[140px] md:max-w-xl leading-none mb-1">
+            <h1 className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate max-w-[140px] md:max-w-xl leading-none mb-1">
               {report.reportTitle}
             </h1>
             <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <span className="text-[10px] md:text-xs font-black text-muted-foreground uppercase tracking-widest leading-none">Security Protocol 04-A</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-foreground leading-[0.9]">
+            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9]">
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
@@ -294,21 +294,21 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <BadgeCheck className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Station</span>
-                  <span className="text-sm font-black text-foreground uppercase">{report.unit}</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white uppercase">{report.unit}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm min-w-[140px]">
                 <User className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">In Charge</span>
-                  <span className="text-sm font-black text-foreground uppercase">{report.reportingCommanderName}</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white uppercase">{report.reportingCommanderName}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm min-w-[140px]">
                 <Clock className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Registry Time</span>
-                  <span className="text-sm font-black text-foreground uppercase">{report.creationDateTime ? new Date(report.creationDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white uppercase">{report.creationDateTime ? new Date(report.creationDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -337,11 +337,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[500px] md:min-h-[700px] font-report text-[14px] md:text-lg leading-relaxed rounded-2xl md:rounded-3xl bg-background border-border focus:ring-primary/20 shadow-inner p-4 md:p-8 text-foreground"
+                  className="min-h-[500px] md:min-h-[700px] font-report text-[14px] md:text-lg leading-relaxed rounded-2xl md:rounded-3xl bg-background border-border focus:ring-primary/20 shadow-inner p-4 md:p-8 text-slate-900 dark:text-white"
                 />
               </div>
             ) : (
-              <div className="font-report text-[14px] md:text-lg leading-relaxed text-card-foreground tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-[14px] md:text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-3xl mx-auto">
                 {formatContent(report.fullText)}
               </div>
             )}
@@ -350,7 +350,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.3em]">Signature Authority</p>
-                  <p className="font-report font-black text-foreground text-lg md:text-2xl">{report.reportingCommanderName}</p>
+                  <p className="font-report font-black text-slate-900 dark:text-white text-lg md:text-2xl">{report.reportingCommanderName}</p>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">OC {report.unit}</span>
@@ -379,7 +379,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </AlertDialogTrigger>
               <AlertDialogContent className="rounded-2xl md:rounded-[2.5rem] border-none shadow-3xl max-w-[95vw] sm:max-w-lg bg-card">
                 <AlertDialogHeader className="p-4">
-                  <AlertDialogTitle className="text-xl md:text-2xl font-black text-foreground">Archive Deletion Protocol</AlertDialogTitle>
+                  <AlertDialogTitle className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">Archive Deletion Protocol</AlertDialogTitle>
                   <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
                     This will permanently expunge this transcript from the Command Registry. This action is irreversible and will be logged.
                   </AlertDialogDescription>

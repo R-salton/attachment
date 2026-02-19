@@ -1,19 +1,25 @@
-
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { use, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
- * Redirect component to resolve routing ambiguity between [id] and [unitSlug].
+ * Redirect component to resolve routing ambiguity.
+ * Now standardized to use 'id' consistently across the registry.
  */
-export default function ReportRedirect() {
+export default function LegacyReportRedirect({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { id } = useParams();
+  const { id } = use(params);
 
   useEffect(() => {
     if (id) {
-      router.replace(`/reports/view/${id}`);
+      // Check if the ID looks like a unit slug to handle legacy deep links
+      const slugs = ['gasabodpu', 'kicukirodpu', 'nyarugengedpu', 'trs', 'sif', 'tfu'];
+      if (slugs.includes(id.toLowerCase())) {
+        router.replace(`/reports/unit/${id.toLowerCase()}`);
+      } else {
+        router.replace(`/reports/view/${id}`);
+      }
     } else {
       router.replace('/reports');
     }

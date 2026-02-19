@@ -1,32 +1,22 @@
-
 "use client";
 
-import { useEffect, use } from 'react';
+import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const SLUG_TO_UNIT: Record<string, string> = {
-  'gasabodpu': 'Gasabo DPU',
-  'kicukirodpu': 'Kicukiro DPU',
-  'nyarugengedpu': 'Nyarugenge DPU',
-  'trs': 'TRS',
-  'sif': 'SIF',
-  'tfu': 'TFU',
-};
-
 /**
- * Redirect component to resolve routing ambiguity and stabilize unit registry access.
+ * Standardized Redirect component using 'id' parameter to avoid slug-name mismatch conflicts.
  */
-export default function UnitRedirect({ params }: { params: Promise<{ unitSlug: string }> }) {
+export default function LegacyUnitRedirect({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { unitSlug } = use(params);
+  const { id } = use(params);
 
   useEffect(() => {
-    if (unitSlug && SLUG_TO_UNIT[unitSlug.toLowerCase()]) {
-      router.replace(`/reports/unit/${unitSlug.toLowerCase()}`);
+    if (id) {
+      router.replace(`/reports/unit/${id.toLowerCase()}`);
     } else {
       router.replace('/reports');
     }
-  }, [unitSlug, router]);
+  }, [id, router]);
 
   return (
     <div className="flex-1 bg-slate-50 flex items-center justify-center">

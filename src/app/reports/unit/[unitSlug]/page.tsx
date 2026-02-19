@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useState } from 'react';
@@ -34,7 +33,7 @@ const SLUG_TO_UNIT: Record<string, string> = {
   'tfu': 'TFU',
 };
 
-export default function UnitReportsList({ params }: { params: Promise<{ unitSlug: string }> }) {
+export default function UnitReportsArchive({ params }: { params: Promise<{ unitSlug: string }> }) {
   const router = useRouter();
   const { unitSlug } = use(params);
   const db = useFirestore();
