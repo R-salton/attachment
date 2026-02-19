@@ -99,7 +99,7 @@ export default function LoginPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Configuration Required</AlertTitle>
               <AlertDescription className="text-xs">
-                This domain is not authorized for Google Sign-in. Please add this URL to <b>Authorized domains</b> in the Firebase Console (Authentication > Settings).
+                This domain is not authorized for Google Sign-in. Please add this URL to <b>Authorized domains</b> in the Firebase Console (Authentication &gt; Settings).
               </AlertDescription>
             </Alert>
           )}
