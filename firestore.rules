@@ -5,7 +5,7 @@
  * This ruleset implements ownership-based access control while allowing
  * authenticated users to read and list the reports collection.
  *
- * Deployment Trigger: 2024-02-18 18:45 UTC - Standardizing list/get for all auth users.
+ * Deployment Trigger: 2024-02-18 19:15 UTC - Explicitly granting list and get for all auth users.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -43,8 +43,8 @@ service cloud.firestore {
      */
     match /reports/{reportId} {
       // Explicitly allow list and get for all authenticated users.
-      // The application logic filters results by ownerId via the client SDK.
-      allow read: if isSignedIn();
+      // This is necessary because the application queries this collection filtered by ownerId.
+      allow get, list: if isSignedIn();
       
       // Allow creation only if the ownerId matches the authenticated user.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
