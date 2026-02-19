@@ -36,11 +36,11 @@ export function AppSidebar() {
 
   const handleSignOut = () => signOut(auth);
 
-  if (isLoading) return null;
+  if (isLoading || !user) return null;
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+    <Sidebar collapsible="icon" className="max-md:bg-white/40 max-md:backdrop-blur-md">
+      <SidebarHeader className="p-4 bg-transparent">
         <div className="flex items-center gap-3">
           <div className="bg-primary p-2 rounded-lg">
             <ShieldCheck className="h-5 w-5 text-white" />
@@ -49,7 +49,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-transparent">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -63,26 +63,22 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {user && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/daily/new'}>
-                      <Link href="/daily/new">
-                        <FilePlus className="h-4 w-4" />
-                        <span>New Report</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/reports'}>
-                      <Link href="/reports">
-                        <History className="h-4 w-4" />
-                        <span>Archive</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-              )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/daily/new'}>
+                  <Link href="/daily/new">
+                    <FilePlus className="h-4 w-4" />
+                    <span>New Report</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/reports'}>
+                  <Link href="/reports">
+                    <History className="h-4 w-4" />
+                    <span>Archive</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -122,7 +118,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t">
+      <SidebarFooter className="p-4 border-t bg-transparent">
         <div className="flex flex-col gap-4 group-data-[collapsible=icon]:items-center">
           <div className="flex items-center gap-3 px-2">
             <UserCircle className="h-5 w-5 text-slate-400" />
