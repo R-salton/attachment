@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -21,22 +21,36 @@ import {
   BadgeCheck,
   Edit3,
   Save,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
   const { user } = useUser();
+  const { isLeader } = useUserProfile();
   const { toast } = useToast();
   const db = useFirestore();
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editableText, setEditableText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const reportRef = useMemoFirebase(() => {
     if (!db || !id || !user) return null;
@@ -71,6 +85,19 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes." });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!reportRef) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(reportRef);
+      toast({ title: "Record Deleted", description: "Operational log has been removed from the archive." });
+      router.push('/reports');
+    } catch (e) {
+      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove report." });
+      setIsDeleting(false);
     }
   };
 
@@ -146,6 +173,31 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             </>
           ) : (
             <>
+              {isLeader && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="rounded-xl font-bold text-destructive hover:bg-destructive/10 h-8 md:h-10">
+                      <Trash2 className="h-3.5 w-3.5 sm:mr-2" />
+                      <span className="hidden sm:inline">Delete</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Purge Report Record?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this operational transcript from the Command Registry.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl" disabled={isDeleting}>
+                        {isDeleting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                        Confirm Deletion
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold bg-white h-8 md:h-10">
                 <Edit3 className="h-3.5 w-3.5 sm:mr-2" />
                 <span className="hidden sm:inline">Edit</span>

@@ -54,7 +54,8 @@ service cloud.firestore {
         (getUserData().unit == resource.data.unit)
       );
       
-      allow delete: if isAdmin() || isCommander();
+      // Leaders and above can delete reports
+      allow delete: if isSignedIn() && isLeader();
     }
   }
 }

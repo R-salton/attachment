@@ -3,22 +3,36 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft } from 'lucide-react';
+import { FileText, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
+  const { toast } = useToast();
   const { isLeader, isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const reportsQuery = useMemoFirebase(() => {
     // Defensive guard: Ensure db, profile, and user are present before creating query
@@ -36,6 +50,20 @@ export default function ReportsList() {
   }, [db, isLeader, profile, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
+
+  const handleDelete = async (e: React.MouseEvent, reportId: string) => {
+    e.stopPropagation();
+    if (!db) return;
+    setDeletingId(reportId);
+    try {
+      await deleteDoc(doc(db, 'reports', reportId));
+      toast({ title: "Record Deleted", description: "The operational log has been removed." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not delete report." });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredReports = reports?.filter(r => 
     r.reportTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,9 +142,43 @@ export default function ReportsList() {
                     <div className="p-2.5 md:p-3 bg-primary/10 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors text-primary">
                       <FileText className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
-                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                      {report.unit}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary">
+                        {report.unit}
+                      </Badge>
+                      {isLeader && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl" onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Logbook Entry?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove the record for <strong>{report.reportDate}</strong> from the archive.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => handleDelete(e, report.id)} 
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                              >
+                                {deletingId === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                Confirm Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   </div>
                   <CardTitle className="text-base md:text-lg font-bold line-clamp-2 leading-tight text-slate-900">
                     {report.reportTitle}
