@@ -19,7 +19,8 @@ import {
   Building2,
   BadgeCheck,
   Edit3,
-  Save
+  Save,
+  Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -79,12 +80,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 dark:border-slate-800 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-4 text-base text-slate-800 dark:text-slate-100 leading-relaxed font-medium">{line}</p>;
+      return <p key={i} className="mb-4 text-base md:text-lg text-slate-800 dark:text-slate-100 leading-relaxed font-medium">{line}</p>;
     });
   };
 
@@ -168,7 +169,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
       <main className="max-w-5xl mx-auto mt-16 px-4 md:px-10 space-y-16 print:mt-0 print:px-0">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
-          <div className="space-y-6 flex-1">
+          <div className="space-y-6 flex-1 text-left">
             <div className="flex items-center gap-3">
               <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/10">
                 <Building2 className="h-7 w-7 text-primary-foreground" />
@@ -178,10 +179,10 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <span className="text-xs font-black text-muted-foreground uppercase tracking-widest leading-none">Security Protocol Active</span>
               </div>
             </div>
-            <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9]">
+            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] text-left">
               {report.reportDate}
             </h2>
-            <div className="flex flex-wrap items-center gap-8 pt-6">
+            <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
               <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-2xl border border-border shadow-sm">
                 <BadgeCheck className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
@@ -202,7 +203,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
         <Card className="shadow-3xl border-none rounded-[3rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
           <div className="h-3 bg-primary" />
-          <CardContent className="p-8 md:p-20 relative">
+          <CardContent className="p-8 md:p-20 relative text-left">
             {isEditing ? (
               <div className="relative z-10 space-y-6">
                 <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Operational Log Revision</Label>
@@ -213,7 +214,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-4xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-4xl mx-auto text-left">
                 {formatContent(report.fullText)}
               </div>
             )}

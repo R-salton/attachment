@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 /**
  * Uniform Dynamic Path Handler.
- * Consolidates 'id', 'slug', and 'unitSlug' into a single segment to resolve Next.js routing conflicts.
+ * Consolidates dynamic routing logic into a single segment to resolve Next.js conflicts.
  */
 export default function StandardizedRedirect({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function StandardizedRedirect({ params }: { params: Promise<{ id:
     <div className="flex-1 bg-background flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Re-routing Terminal...</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">Synchronizing Registry...</p>
       </div>
     </div>
   );
