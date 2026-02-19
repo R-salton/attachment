@@ -17,7 +17,8 @@ import {
   LayoutDashboard,
   ShieldHalf,
   Navigation,
-  ExternalLink
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -32,20 +33,20 @@ export default function Home() {
   const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Prevent query until auth and profile are fully synchronized
+    // CRITICAL: Prevent query until auth and profile are fully synchronized and we know the role
     if (!db || !user?.uid || isLoading || !profile || profile.uid !== user.uid) return null;
     
     const baseQuery = collection(db, 'reports');
     
     // Admins and Leaders see a global feed (latest 6 across all units)
-    if (isLeader) {
+    if (isAdmin || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
       // Trainees see only their unit's logs
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
-  }, [db, isLeader, profile, user?.uid, isLoading]);
+  }, [db, isAdmin, isLeader, profile, user?.uid, isLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -138,10 +139,10 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
                 <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                {isLeader ? 'Operational Feed' : 'My Unit Activity'}
+                {isAdmin || isLeader ? 'Operational Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
-                {isLeader ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
+                {isAdmin || isLeader ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -189,7 +190,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-xl font-black text-slate-900 mb-2">Registry Empty</h3>
                   <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">
-                    No operational logs have been recorded for {isLeader ? 'the command' : profile?.unit} for this period.
+                    No operational logs have been recorded for {isAdmin || isLeader ? 'the command' : profile?.unit} for this period.
                   </p>
                   <Button asChild className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
@@ -224,7 +225,7 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              {isLeader && (
+              {(isAdmin || isLeader) && (
                 <div className="pt-6 border-t border-white/5 mt-6">
                   <div className="bg-primary/20 border border-primary/30 p-5 rounded-3xl space-y-4">
                     <div className="flex items-center gap-3">

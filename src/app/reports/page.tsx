@@ -53,7 +53,7 @@ export default function ReportsList() {
     const baseQuery = collection(db, 'reports');
     
     // Admins and Leaders can see everything, or filter by unit
-    if (isLeader) {
+    if (isAdmin || isLeader) {
       if (unitFilter) {
         return query(baseQuery, where('unit', '==', unitFilter), orderBy('createdAt', 'desc'));
       }
@@ -64,7 +64,7 @@ export default function ReportsList() {
     if (!profile.unit || profile.unit === 'N/A') return null;
     return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     
-  }, [db, isLeader, profile, user?.uid, unitFilter, isAuthLoading]);
+  }, [db, isAdmin, isLeader, profile, user?.uid, unitFilter, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -102,9 +102,9 @@ export default function ReportsList() {
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {unitFilter ? `Unit: ${unitFilter}` : isLeader ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
+                  {unitFilter ? `Unit: ${unitFilter}` : (isAdmin || isLeader) ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
                 </Badge>
-                {unitFilter && isLeader && (
+                {unitFilter && (isAdmin || isLeader) && (
                   <Button variant="ghost" size="sm" className="h-6 text-[8px] font-black uppercase px-2 hover:bg-slate-200" onClick={() => {
                     setUnitFilter('');
                     router.replace('/reports');
@@ -132,7 +132,7 @@ export default function ReportsList() {
           </div>
         </section>
 
-        {isLeader && !unitFilter && (
+        {(isAdmin || isLeader) && !unitFilter && (
           <div className="bg-primary/5 border border-primary/10 p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center gap-6">
               <div className="h-16 w-16 bg-primary rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30">
@@ -171,7 +171,7 @@ export default function ReportsList() {
                       <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.15em] border-slate-200 text-slate-500 group-hover:border-primary/20 group-hover:text-primary transition-colors">
                         {report.unit}
                       </Badge>
-                      {isLeader && (
+                      {(isAdmin || isLeader) && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
@@ -243,10 +243,10 @@ export default function ReportsList() {
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
               <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">
                 {unitFilter 
-                  ? `No operational logs found for ${unitFilter}.` 
+                  ? `No operational logs found in the command registry for the ${unitFilter} unit.` 
                   : searchTerm 
-                    ? `No logs match "${searchTerm}".`
-                    : `The registry is currently empty for ${profile?.unit || 'your station'}.`}
+                    ? `No logs match the criteria "${searchTerm}".`
+                    : `The registry is currently empty for the ${profile?.unit || 'Station'} deployment area.`}
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

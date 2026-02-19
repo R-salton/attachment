@@ -26,20 +26,19 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. Privileged roles (Admin, Commander, Leader) can list ALL reports.
-      // This allows broad queries without filters.
+      // Allow broad list for Admins, Commanders, and Leaders.
+      // Separate from the resource-dependent Trainee rule to avoid query optimization rejection.
       allow list: if isAdmin() || (isSignedIn() && (
         let role = getUserData().role;
         role == 'COMMANDER' || role == 'LEADER'
       ));
 
-      // 2. Trainees can only list reports if they filter by their own unit.
-      // This rule requires a matching filter in the query.
+      // Allow unit-specific filtered list for Trainees.
       allow list: if isSignedIn() && (
         resource.data.unit == getUserData().unit
       );
       
-      // Get operation is simpler: allow if role permits or unit matches
+      // Get operation: allow if admin, leader, commander, or unit matches
       allow get: if isAdmin() || (isSignedIn() && (
         let userData = getUserData();
         userData.role == 'COMMANDER' || 
@@ -53,7 +52,8 @@ service cloud.firestore {
         let userData = getUserData();
         userData.role == 'COMMANDER' || 
         userData.role == 'LEADER' || 
-        (resource.data.unit == userData.unit)
+        (resource.data.unit == userData.unit) ||
+        (resource.data.ownerId == request.auth.uid)
       ));
       
       allow delete: if isAdmin() || (isSignedIn() && (
