@@ -5,7 +5,7 @@
  * This ruleset implements ownership-based access control while allowing
  * authenticated users to read and list the reports collection.
  *
- * Deployment Trigger: 2024-02-18 19:15 UTC - Explicitly granting list and get for all auth users.
+ * Deployment Trigger: 2024-02-18 20:30 UTC - Explicitly granting list and get for all auth users to resolve permission errors.
  */
 rules_version = '2';
 service cloud.firestore {
