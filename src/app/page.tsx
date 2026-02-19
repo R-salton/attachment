@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -17,7 +18,6 @@ import {
   Navigation,
   ExternalLink,
   ShieldAlert,
-  ChevronRight,
   Shield
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
@@ -44,11 +44,9 @@ export default function Home() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins and High Command see the first 6 reports of the day (global)
     if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
-      // Trainees see only their unit's logs
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
@@ -95,7 +93,7 @@ export default function Home() {
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm uppercase">
-              ROLE: <span className="text-primary ml-1">{isAdmin ? 'Admin' : profile?.role || 'User'}</span>
+              ROLE: <span className="text-primary ml-1">{profile?.role || 'User'}</span>
             </Badge>
             <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm uppercase">
               UNIT: <span className="text-slate-900 ml-1">{profile?.unit || 'Station'}</span>
@@ -112,7 +110,7 @@ export default function Home() {
         </div>
       </header>
 
-      {isAdmin && (
+      {(isAdmin || isCommander) && (
         <section className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-900 rounded-lg">
@@ -125,7 +123,7 @@ export default function Home() {
               <Card 
                 key={unit.slug} 
                 className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-2xl md:rounded-3xl overflow-hidden bg-white hover:-translate-y-1 duration-300" 
-                onClick={() => router.push(`/reports/${unit.slug}`)}
+                onClick={() => router.push(`/reports/unit/${unit.slug}`)}
               >
                 <CardContent className="p-4 md:p-6 flex flex-col items-center text-center space-y-3">
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
@@ -149,7 +147,7 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
                 <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                {(isAdmin || isCommander || isLeader) ? 'Daily Operational Feed' : 'My Unit Activity'}
+                {(isAdmin || isCommander || isLeader) ? 'Command Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
                 {(isAdmin || isCommander || isLeader) ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
@@ -200,7 +198,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-xl font-black text-slate-900 mb-2 uppercase">Registry Empty</h3>
                   <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">
-                    No operational logs have been recorded for {(isAdmin || isCommander || isLeader) ? 'the command' : profile?.unit} for this period.
+                    No operational logs recorded for {(isAdmin || isCommander || isLeader) ? 'the command' : profile?.unit}.
                   </p>
                   <Button asChild className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
@@ -242,9 +240,9 @@ export default function Home() {
                       <Shield className="h-5 w-5 text-primary" />
                       <span className="text-[10px] font-black uppercase text-white tracking-widest">Executive AI Tool</span>
                     </div>
-                    <p className="text-xs text-slate-300 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly summary with Gemini AI.</p>
+                    <p className="text-xs text-slate-300 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly summary.</p>
                     <Button asChild size="sm" className="w-full rounded-xl font-black shadow-lg shadow-primary/20">
-                      <Link href="/weekly/new">LAUNCH AI CONSOLIDATION</Link>
+                      <Link href="/weekly/new">LAUNCH AI ANALYSIS</Link>
                     </Button>
                   </div>
                 </div>

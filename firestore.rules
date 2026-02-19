@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -6,23 +7,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper to get user data safely
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     // Unrestricted ADMIN check - Absolute bypass for command oversight
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-        getUserData().role == 'ADMIN'
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
       );
     }
 
     // High command check (Commander, Leader)
     function isHighCommand() {
-      let role = getUserData().role;
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return role == 'COMMANDER' || role == 'LEADER';
     }
 
@@ -32,29 +28,31 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. COMMAND OVERWATCH (Admin/Commander/Leader)
-      // Admins and High Command have unrestricted access to all reports (list and get)
+      // 1. COMMAND OVERWATCH
+      // Administrators and High Command staff can list and get any report.
+      // Explicitly allowing list without filters for these roles.
       allow list, get: if isAdmin() || isHighCommand();
 
       // 2. UNIT-SPECIFIC ACCESS (Trainees)
-      // Allow list only if the query is filtered by the user's unit
-      allow list: if isSignedIn() && resource.data.unit == getUserData().unit;
-      // Allow get if the document belongs to the user's unit
-      allow get: if isSignedIn() && resource.data.unit == getUserData().unit;
+      // Trainees can only list reports filtered by their unit.
+      allow list: if isSignedIn() && (
+        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
+      );
+      
+      allow get: if isSignedIn() && (
+        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
+      );
       
       // 3. OPERATIONAL FILING
-      // Any authenticated user can file a report
       allow create: if isSignedIn();
       
       // 4. MODIFICATION
-      // Restricted to report owners or Admins
       allow update: if isSignedIn() && (
         isAdmin() || 
         resource.data.ownerId == request.auth.uid
       );
       
       // 5. ARCHIVE PURGING
-      // Absolute high-command operation restricted to Administrators
       allow delete: if isAdmin();
     }
   }

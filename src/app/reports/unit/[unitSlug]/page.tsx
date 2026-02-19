@@ -1,7 +1,7 @@
 
 "use client";
 
-import Link from 'next/link';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
@@ -21,32 +21,38 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
-export default function ReportsList() {
+const SLUG_TO_UNIT: Record<string, string> = {
+  'gasabodpu': 'Gasabo DPU',
+  'kicukirodpu': 'Kicukiro DPU',
+  'nyarugengedpu': 'Nyarugenge DPU',
+  'trs': 'TRS',
+  'sif': 'SIF',
+  'tfu': 'TFU',
+};
+
+export default function UnitReportsList({ params }: { params: Promise<{ unitSlug: string }> }) {
   const router = useRouter();
+  const { unitSlug } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isLeader, isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const unitName = SLUG_TO_UNIT[unitSlug?.toLowerCase()] || null;
+
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isAuthLoading || !profile) return null;
+    if (!db || !user?.uid || isAuthLoading || !unitName) return null;
     
     const baseQuery = collection(db, 'reports');
+    return query(baseQuery, where('unit', '==', unitName), orderBy('createdAt', 'desc'));
     
-    if (isAdmin || isCommander || isLeader) {
-      return query(baseQuery, orderBy('createdAt', 'desc'));
-    } 
-    
-    if (!profile.unit || profile.unit === 'N/A') return null;
-    return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
-    
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
+  }, [db, unitName, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -66,25 +72,35 @@ export default function ReportsList() {
 
   const filteredReports = reports?.filter(r => 
     r.reportTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.reportDate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.unit?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.reportDate?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const isLoading = isAuthLoading || isReportsLoading;
+
+  if (!unitName && !isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-2xl font-black text-slate-900 uppercase">Registry Entry Not Found</h2>
+        <p className="text-sm text-slate-500 mb-6">The requested station code "{unitSlug}" is not recognized.</p>
+        <Button onClick={() => router.push('/')} className="rounded-xl font-bold px-8">Return to Terminal</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-[#f8fafc] pb-20 p-4 md:p-10">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-10">
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-white shadow-sm border md:hidden">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-white shadow-sm border">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">Archive Registry</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">{unitName} Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander || isLeader) ? 'Global Command Logs' : `${profile?.unit || 'Station'} Logs`}
+                  Station Registry
                 </Badge>
               </div>
             </div>
@@ -93,7 +109,7 @@ export default function ReportsList() {
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
-                placeholder="Search command logs..." 
+                placeholder={`Search ${unitName} logs...`} 
                 className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm text-sm font-bold"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -105,7 +121,7 @@ export default function ReportsList() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-6">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Accessing Vault Registry...</p>
+            <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Syncing Registry...</p>
           </div>
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -120,43 +136,38 @@ export default function ReportsList() {
                     <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-slate-400 group-hover:shadow-lg group-hover:shadow-primary/20">
                       <FileText className="h-6 w-6" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.15em] border-slate-200 text-slate-500 group-hover:border-primary/20 group-hover:text-primary transition-colors">
-                        {report.unit}
-                      </Badge>
-                      {isAdmin && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-10 w-10 text-slate-200 hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
-                              onClick={(e) => e.stopPropagation()}
+                    {isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 text-slate-200 hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl" onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader className="p-4">
+                            <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm font-bold text-slate-500 leading-relaxed">
+                              Expunge report for <span className="text-slate-900">{report.reportDate}</span> from the {unitName} archive?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="p-4 gap-3">
+                            <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={(e) => handleDelete(e, report.id)} 
+                              className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
                             >
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl" onClick={(e) => e.stopPropagation()}>
-                            <AlertDialogHeader className="p-4">
-                              <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Operational Record?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm font-bold text-slate-500 leading-relaxed">
-                                This action is irreversible. The record for <span className="text-slate-900">{report.reportDate}</span> will be permanently expunged.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={(e) => handleDelete(e, report.id)} 
-                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
-                              >
-                                {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
-                                Confirm Purge
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
+                              {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                              Confirm Purge
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                   <CardTitle className="text-lg md:text-xl font-black line-clamp-2 leading-[1.1] text-slate-900 group-hover:text-primary transition-colors duration-500">
                     {report.reportTitle}
@@ -194,8 +205,8 @@ export default function ReportsList() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">
-                The command registry is currently empty for the {(isAdmin || isCommander || isLeader) ? 'selected criteria' : profile?.unit}.
+              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold uppercase">
+                No operational logs found in the command registry for the {unitName} unit.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">
