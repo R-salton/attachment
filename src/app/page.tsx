@@ -25,7 +25,14 @@ import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+const UNITS = [
+  { name: "Gasabo DPU", slug: "gasabodpu" },
+  { name: "Kicukiro DPU", slug: "kicukirodpu" },
+  { name: "Nyarugenge DPU", slug: "nyarugengedpu" },
+  { name: "TRS", slug: "trs" },
+  { name: "SIF", slug: "sif" },
+  { name: "TFU", slug: "tfu" }
+];
 
 export default function Home() {
   const db = useFirestore();
@@ -33,16 +40,13 @@ export default function Home() {
   const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Prevent query until auth and profile are fully synchronized and we know the role
     if (!db || !user?.uid || isLoading || !profile || profile.uid !== user.uid) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins and Leaders see a global feed (latest 6 across all units)
     if (isAdmin || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
-      // Trainees see only their unit's logs
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
@@ -117,17 +121,17 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             {UNITS.map((unit) => (
               <Card 
-                key={unit} 
+                key={unit.slug} 
                 className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-2xl md:rounded-3xl overflow-hidden bg-white hover:-translate-y-1 duration-300" 
-                onClick={() => router.push(`/reports?unit=${encodeURIComponent(unit)}`)}
+                onClick={() => router.push(`/reports/${unit.slug}`)}
               >
                 <CardContent className="p-4 md:p-6 flex flex-col items-center text-center space-y-3">
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                     <Navigation className="h-5 w-5 md:h-6 md:w-6 text-slate-400 group-hover:text-primary transition-colors" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{unit.split(' ')[1] || ''}</p>
-                    <p className="text-sm md:text-base font-black text-slate-900 leading-none">{unit.split(' ')[0]}</p>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{unit.name.split(' ')[1] || ''}</p>
+                    <p className="text-sm md:text-base font-black text-slate-900 leading-none">{unit.name.split(' ')[0]}</p>
                   </div>
                   <ExternalLink className="h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </CardContent>
@@ -164,7 +168,7 @@ export default function Home() {
                 </div>
               ) : reports && reports.length > 0 ? (
                 reports.map((report) => (
-                  <Link key={report.id} href={`/reports/${report.id}`} className="group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50">
+                  <Link key={report.id} href={`/reports/view/${report.id}`} className="group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50">
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[8px] md:text-[9px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-white">
                         {report.unit}
@@ -244,29 +248,6 @@ export default function Home() {
                 </div>
               )}
             </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-xl rounded-[2rem] bg-white p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
-                <LayoutDashboard className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Operational Info</h3>
-            </div>
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <span className="text-primary font-black text-lg leading-none">01</span>
-                <p className="text-xs text-slate-500 font-bold leading-relaxed">
-                  {isAdmin ? 'Admins have visibility across all DPU units for oversight.' : `Reports are station-locked. You are currently attached to ${profile?.unit || 'a Station'}.`}
-                </p>
-              </div>
-              <div className="flex gap-4">
-                <span className="text-primary font-black text-lg leading-none">02</span>
-                <p className="text-xs text-slate-500 font-bold leading-relaxed">
-                  Standardized SITREP protocol must be followed for all operational submissions.
-                </p>
-              </div>
-            </div>
           </Card>
         </div>
       </div>

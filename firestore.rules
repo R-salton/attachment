@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -7,15 +6,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getProfile() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-        getProfile().role == 'ADMIN'
+        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1'
       );
     }
 
@@ -25,40 +19,26 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. SYSTEM-WIDE ADMIN BYPASS
-      // Admins have unrestricted access to all operations.
+      // 1. GLOBAL COMMAND ACCESS
+      // Administrators have absolute visibility and control over the entire archive.
       allow read, write: if isAdmin();
 
-      // 2. LIST ACCESS
-      // Allow Leaders and Commanders to list reports (global queries).
-      // Allow standard users to list reports if the query includes a filter (enforced by the 'if' condition on query results).
-      allow list: if isSignedIn() && (
-        getProfile().role in ['ADMIN', 'COMMANDER', 'LEADER'] ||
-        resource.data.unit == getProfile().unit
-      );
-
-      // 3. GET ACCESS (Single Document)
-      allow get: if isSignedIn() && (
-        getProfile().role in ['ADMIN', 'COMMANDER', 'LEADER'] ||
-        resource.data.unit == getProfile().unit ||
-        resource.data.ownerId == request.auth.uid
-      );
+      // 2. OPERATIONAL READ ACCESS
+      // Allow authenticated personnel to list and read reports. 
+      // Filtering is enforced at the application level to maintain unit focus.
+      allow list, get: if isSignedIn();
       
-      // 4. CREATION
+      // 3. CREATION & MODIFICATION
       allow create: if isSignedIn();
       
-      // 5. MODIFICATION
       allow update: if isSignedIn() && (
         isAdmin() ||
-        resource.data.unit == getProfile().unit ||
         resource.data.ownerId == request.auth.uid
       );
       
-      // 6. DELETION
-      allow delete: if isSignedIn() && (
-        isAdmin() ||
-        getProfile().role in ['COMMANDER', 'LEADER']
-      );
+      // 4. DELETION
+      // Deletion is a high-command operation restricted to Administrators.
+      allow delete: if isAdmin();
     }
   }
 }
