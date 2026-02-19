@@ -19,7 +19,8 @@ import {
   ExternalLink,
   ShieldAlert,
   Shield,
-  Eye
+  Eye,
+  Activity
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -44,18 +45,21 @@ export default function Home() {
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+  // Admins see more recent activity to provide better oversight
+  const displayLimit = isAdmin ? 12 : 6;
+
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
     if (isAdmin || isCommander || isLeader) {
-      return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
+      return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
       if (!profile.unit || profile.unit === 'N/A') return null;
-      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
+      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading]);
+  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -91,7 +95,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 bg-[#f8fafc] p-4 md:p-8 lg:p-12 space-y-8 md:space-y-12">
+    <div className="flex-1 bg-[#f8fafc] p-4 md:p-8 lg:p-12 space-y-8 md:space-y-12 pb-32">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -156,16 +160,16 @@ export default function Home() {
           <CardHeader className="flex flex-row items-center justify-between p-6 md:p-10 pb-2 md:pb-4">
             <div className="space-y-1">
               <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
-                <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                {(isAdmin || isCommander || isLeader) ? 'Command Feed' : 'My Unit Activity'}
+                <Activity className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                {(isAdmin || isCommander || isLeader) ? 'Global Command Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
-                {(isAdmin || isCommander || isLeader) ? 'Latest filings across the entire command.' : `Recent filings for ${profile?.unit}.`}
+                {(isAdmin || isCommander || isLeader) ? `Displaying latest ${displayLimit} filings across all units.` : `Recent filings for ${profile?.unit}.`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
               <Link href="/reports" className="flex items-center gap-1.5 text-xs md:text-sm">
-                View All <ArrowRight className="h-4 w-4" />
+                Full Archive <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardHeader>

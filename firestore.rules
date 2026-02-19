@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Unrestricted ADMIN check - Absolute bypass for command oversight
+    // Absolute Admin Bypass - Ensures global list/get operations are always permitted
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
@@ -16,7 +16,6 @@ service cloud.firestore {
       );
     }
 
-    // High command check (Commander, Leader)
     function isHighCommand() {
       return isSignedIn() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
@@ -30,24 +29,26 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. COMMAND OVERWATCH
-      // Administrators can do anything.
+      // 1. GLOBAL COMMAND ACCESS
+      // Admins can perform unfiltered list/get and full mutations.
       allow list, get, create, update, delete: if isAdmin();
 
-      // 2. OPERATIONAL OVERSIGHT
-      // High Command can view everything.
+      // Commanders and Leaders can view all registries for oversight.
       allow list, get: if isHighCommand();
 
-      // 3. UNIT-SPECIFIC ACCESS (Trainees)
-      // Restricted to their own station deployments.
+      // 2. UNIT-SPECIFIC ACCESS (Trainees / Regular Personnel)
+      // Only allowed to view reports matching their own station code.
+      // This rule requires unit-specific filtering in the client query.
       allow list, get: if isSignedIn() && (
         resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
       );
       
-      // 4. OPERATIONAL FILING
+      // 3. OPERATIONAL FILING
+      // Every authenticated user can submit logs.
       allow create: if isSignedIn();
       
-      // 5. MODIFICATION
+      // 4. MODIFICATION
+      // Users can modify their own submitted logs (DRAFTS/SUBMISSIONS).
       allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
   }
