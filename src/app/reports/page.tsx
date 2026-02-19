@@ -194,7 +194,7 @@ export default function ReportsList() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">
+              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold uppercase">
                 The command registry is currently empty for the {(isAdmin || isCommander || isLeader) ? 'selected criteria' : profile?.unit}.
               </p>
             </div>
