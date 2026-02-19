@@ -16,35 +16,13 @@ import {
   Printer, 
   CheckCircle, 
   ShieldAlert, 
-  ShieldCheck,
   Loader2,
   Building2,
   BadgeCheck,
   Edit3,
   Save,
-  X,
-  Trash2,
-  FileDown,
-  Clock,
-  ExternalLink,
-  MoreVertical
+  FileDown
 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,7 +39,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const [isEditing, setIsEditing] = useState(false);
   const [editableText, setEditableText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const reportRef = useMemoFirebase(() => {
     if (!db || !id || !user) return null;
@@ -85,47 +62,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleExportWord = async () => {
-    if (!report?.fullText) return;
-    
-    setIsSaving(true);
-    try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
-      const { saveAs } = await import('file-saver');
-
-      const paragraphs = report.fullText.split('\n').map((line: string) => {
-        const isHeader = line.startsWith('*') && line.endsWith('*');
-        return new Paragraph({
-          heading: isHeader ? HeadingLevel.HEADING_3 : undefined,
-          spacing: { after: 120, before: isHeader ? 240 : 0 },
-          children: [
-            new TextRun({
-              text: isHeader ? line.replace(/\*/g, '') : line,
-              bold: isHeader,
-              size: isHeader ? 28 : 22,
-              font: "Calibri"
-            }),
-          ],
-        });
-      });
-
-      const docObj = new Document({
-        sections: [{
-          properties: {},
-          children: paragraphs,
-        }],
-      });
-
-      const blob = await Packer.toBlob(docObj);
-      saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
-      toast({ title: "Export Successful", description: "Word document has been generated." });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleSaveEdit = async () => {
     if (!reportRef) return;
     setIsSaving(true);
@@ -140,30 +76,17 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleDelete = async () => {
-    if (!reportRef) return;
-    setIsDeleting(true);
-    try {
-      await deleteDoc(reportRef);
-      toast({ title: "Record Deleted", description: "Operational log has been removed." });
-      router.push('/reports');
-    } catch (e) {
-      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove report." });
-      setIsDeleting(false);
-    }
-  };
-
   const formatContent = (text: string) => {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-base md:text-xl font-black text-slate-900 dark:text-white mt-8 md:mt-12 mb-4 md:mb-6 border-b-2 border-slate-200 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl font-black text-slate-900 dark:text-white mt-12 mb-6 border-b-2 border-slate-200 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-3 md:mb-4 text-sm md:text-base text-slate-800 dark:text-slate-200 leading-relaxed font-medium">{line}</p>;
+      return <p key={i} className="mb-4 text-base text-slate-800 dark:text-slate-100 leading-relaxed font-medium">{line}</p>;
     });
   };
 
@@ -236,9 +159,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                   {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 mr-2" />}
                   Copy
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportWord} disabled={isSaving} className="rounded-xl font-bold h-11 border-border">
-                  <FileDown className="h-4 w-4 mr-2" /> Word
-                </Button>
               </div>
               <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-11 px-6 shadow-lg shadow-primary/20">
                 <Printer className="h-4 w-4 mr-2" /> Print PDF
@@ -248,22 +168,22 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto mt-6 md:mt-16 px-4 md:px-10 space-y-10 md:space-y-16 print:mt-0 print:px-0">
+      <main className="max-w-5xl mx-auto mt-16 px-4 md:px-10 space-y-16 print:mt-0 print:px-0">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
           <div className="space-y-6 flex-1">
             <div className="flex items-center gap-3">
-              <div className="bg-primary p-2 md:p-3 rounded-2xl shadow-xl shadow-primary/10">
-                <Building2 className="h-5 w-5 md:h-7 md:w-7 text-primary-foreground" />
+              <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/10">
+                <Building2 className="h-7 w-7 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] md:text-xs font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
-                <span className="text-[10px] md:text-xs font-black text-muted-foreground uppercase tracking-widest leading-none">Security Protocol Active</span>
+                <span className="text-xs font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
+                <span className="text-xs font-black text-muted-foreground uppercase tracking-widest leading-none">Security Protocol Active</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9]">
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9]">
               {report.reportDate}
             </h2>
-            <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
+            <div className="flex flex-wrap items-center gap-8 pt-6">
               <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-border shadow-sm">
                 <BadgeCheck className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
@@ -280,44 +200,25 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-4 self-start md:self-end">
-            <div className="bg-emerald-500/10 text-emerald-500 px-6 py-3 rounded-2xl border border-emerald-500/20 shadow-sm flex items-center gap-3">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-xs font-black uppercase tracking-widest">{report.status}</span>
-            </div>
-          </div>
         </div>
 
-        <Card className="shadow-3xl border-none rounded-[1.5rem] md:rounded-[3rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
+        <Card className="shadow-3xl border-none rounded-[3rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
           <div className="h-3 bg-primary" />
-          <CardContent className="p-6 md:p-20 relative">
+          <CardContent className="p-8 md:p-20 relative">
             {isEditing ? (
               <div className="relative z-10 space-y-6">
                 <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Operational Log Revision</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[500px] md:min-h-[700px] font-report text-base md:text-lg leading-relaxed rounded-2xl bg-slate-50 border-border focus:ring-primary/20 p-4 md:p-8 text-slate-900"
+                  className="min-h-[700px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-border focus:ring-primary/20 p-8 text-slate-900 dark:text-white"
                 />
               </div>
             ) : (
-              <div className="font-report text-base md:text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-4xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-slate-100 tracking-tight relative z-10 max-w-4xl mx-auto">
                 {formatContent(report.fullText)}
               </div>
             )}
-            
-            <div className="mt-16 md:mt-32 pt-12 md:pt-16 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-10 max-w-4xl mx-auto">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.3em]">Signature Authority</p>
-                  <p className="font-report font-black text-slate-900 dark:text-white text-lg md:text-2xl">{report.reportingCommanderName}</p>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">Officer in Charge</span>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Official Operational Signature</span>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </main>
