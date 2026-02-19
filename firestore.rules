@@ -15,21 +15,17 @@ service cloud.firestore {
       return exists(path) ? get(path).data : {};
     }
 
-    function hasProfile() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
     function isCommander() {
       return isSignedIn() && (
         isAdmin() || 
-        (hasProfile() && getUserData().role == 'COMMANDER')
+        (getUserData().role == 'COMMANDER')
       );
     }
 
     function isLeader() {
       return isSignedIn() && (
         isCommander() || 
-        (hasProfile() && getUserData().role == 'LEADER')
+        (getUserData().role == 'LEADER')
       );
     }
 
@@ -41,21 +37,21 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // Visibility: Admin and Commander see all. Others see their unit only.
+      // Visibility: Admin, Commander, and Leaders see all. Trainees see their unit only.
       allow read: if isSignedIn() && (
         isAdmin() || 
-        isCommander() || 
-        (hasProfile() && resource.data.unit == getUserData().unit)
+        isLeader() || 
+        (getUserData().unit == resource.data.unit)
       );
       
-      // Everyone who is signed in can now create reports
+      // Everyone who is signed in can create reports
       allow create: if isSignedIn();
       
-      // Everyone in the unit can edit any report in that unit
+      // Leaders and above can edit any report. Trainees can edit reports in their unit.
       allow update: if isSignedIn() && (
         isAdmin() || 
-        isCommander() || 
-        (hasProfile() && resource.data.unit == getUserData().unit)
+        isLeader() || 
+        (getUserData().unit == resource.data.unit)
       );
       
       allow delete: if isAdmin() || isCommander();

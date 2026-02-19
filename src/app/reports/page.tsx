@@ -16,24 +16,24 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
-  const { isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isLeader, isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
 
   const reportsQuery = useMemoFirebase(() => {
     // Defensive guard: Ensure db, profile, and user are present before creating query
-    if (!db || !profile || !user) return null;
+    if (!db || !profile || !user || !profile.role) return null;
     
     const baseQuery = collection(db, 'reports');
-    // Commander and Admin see all reports. Others see their unit only.
-    if (isCommander) {
+    // Commanders, Admins, and Leaders see all reports. Trainees see their unit only.
+    if (isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } else {
       // Only query if the profile has a unit, otherwise it will cause a permission error
       if (!profile.unit) return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     }
-  }, [db, isCommander, profile, user?.uid]);
+  }, [db, isLeader, profile, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -56,7 +56,7 @@ export default function ReportsList() {
             <div className="space-y-0.5 md:space-y-1">
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900">Archive</h1>
               <p className="text-xs md:text-sm text-slate-500 font-medium">
-                {isCommander ? 'Global Command Registry' : `${profile?.unit || 'Unit'} Registry`}
+                {isLeader ? 'Global Command Registry' : `${profile?.unit || 'Unit'} Registry`}
               </p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function ReportsList() {
           </div>
         </section>
 
-        {isCommander && (
+        {(isLeader || isCommander || isAdmin) && (
           <div className="bg-primary/5 border border-primary/10 p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">

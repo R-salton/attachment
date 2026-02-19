@@ -11,10 +11,10 @@ import {
   Loader2, 
   ShieldCheck, 
   ArrowRight,
-  AlertTriangle,
   Lock,
   UserCog,
-  Building2
+  Building2,
+  LayoutDashboard
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -28,17 +28,18 @@ export default function Home() {
 
   const recentReportsQuery = useMemoFirebase(() => {
     // Defensive guard: Ensure db, profile, and user are present before creating query
-    if (!db || !profile || !user) return null;
+    if (!db || !profile || !user || !profile.role) return null;
     
     const baseQuery = collection(db, 'reports');
-    if (isCommander) {
+    // Leaders and above have a dashboard view of all units
+    if (isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(3));
     } else {
-      // Only query if the profile has a unit, otherwise it will cause a permission error
+      // Trainees only query their unit
       if (!profile.unit) return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(3));
     }
-  }, [db, isCommander, profile, user?.uid]);
+  }, [db, isLeader, profile, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -104,7 +105,7 @@ export default function Home() {
               <History className="h-6 w-6 md:h-7 md:w-7 text-slate-700" />
             </div>
             <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Archive</h3>
-            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Access the operational logbook for {isCommander ? 'all units' : profile?.unit}.</p>
+            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Access the operational logbook for {isLeader ? 'all units' : profile?.unit}.</p>
           </Link>
         </Card>
 
@@ -126,7 +127,7 @@ export default function Home() {
           <CardHeader className="flex flex-row items-center justify-between p-6 md:p-8">
             <div>
               <CardTitle className="text-xl md:text-2xl font-black">Recent Logs</CardTitle>
-              <CardDescription className="text-xs md:text-sm">{isCommander ? 'Latest cross-unit filings.' : `Latest ${profile?.unit} filings.`}</CardDescription>
+              <CardDescription className="text-xs md:text-sm">{isLeader ? 'Latest cross-unit filings.' : `Latest ${profile?.unit} filings.`}</CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-bold text-primary">
               <Link href="/reports" className="flex items-center gap-1 text-xs md:text-sm">View All <ArrowRight className="h-3 w-3 md:h-4 md:w-4" /></Link>
@@ -150,7 +151,7 @@ export default function Home() {
                         <p className="font-bold text-slate-900 text-sm md:text-base truncate">{report.reportTitle}</p>
                         <div className="flex items-center gap-2">
                           <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">{report.reportDate}</p>
-                          {isCommander && (
+                          {isLeader && (
                             <Badge variant="outline" className="text-[7px] py-0 px-1 font-black h-3.5 border-primary/20 text-primary">
                               {report.unit}
                             </Badge>
@@ -186,13 +187,13 @@ export default function Home() {
               <div className="flex gap-4 md:gap-5">
                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-black">01</div>
                 <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                  Reports are partitioned by Unit. You can only view and edit logs filed within <strong>{profile?.unit || 'your assigned unit'}</strong>.
+                  {isLeader ? 'As a Leader, you have oversight across all station registries for centralized management.' : `Reports are partitioned by Unit. You can only view and edit logs filed within ${profile?.unit || 'your assigned unit'}.`}
                 </p>
               </div>
               <div className="flex gap-4 md:gap-5">
                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-black">02</div>
                 <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                  Personnel with <strong>Commander</strong> clearance have oversight of all unit registries for central summary generation.
+                  Personnel with <strong>Commander</strong> or <strong>Leader</strong> clearance have access to AI-powered summary generation tools.
                 </p>
               </div>
             </div>
