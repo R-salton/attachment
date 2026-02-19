@@ -44,17 +44,16 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2 } from 'lucide-react';
+import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UserManagementPage() {
@@ -94,9 +93,9 @@ export default function UserManagementPage() {
     setIsDeleting(userId);
     try {
       await deleteDoc(doc(db, 'users', userId));
-      toast({ title: "Registry Updated", description: "User profile has been removed from the operational registry." });
+      toast({ title: "Registry Updated", description: "User profile has been removed." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove user from database." });
+      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove user." });
     } finally {
       setIsDeleting(null);
     }
@@ -129,7 +128,7 @@ export default function UserManagementPage() {
 
       toast({ 
         title: "User Provisioned", 
-        description: `${newName} has been successfully added to the system.` 
+        description: `${newName} added successfully.` 
       });
       
       setIsAddUserOpen(false);
@@ -141,7 +140,7 @@ export default function UserManagementPage() {
       toast({ 
         variant: "destructive", 
         title: "Provisioning Failed", 
-        description: error.message || "Could not create the user account." 
+        description: error.message || "Could not create user." 
       });
     } finally {
       if (secondaryApp) {
@@ -162,55 +161,62 @@ export default function UserManagementPage() {
   if (!isAdmin) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold">Access Restricted</h2>
-        <p className="text-slate-500 max-w-md mt-2">Only system administrators can access user management controls.</p>
+        <ShieldAlert className="h-12 w-12 md:h-16 md:w-16 text-destructive mb-4" />
+        <h2 className="text-xl md:text-2xl font-bold">Access Restricted</h2>
+        <p className="text-slate-500 max-w-md mt-2 text-sm md:text-base">Only system administrators can access user management controls.</p>
+        <Button onClick={() => router.push('/')} className="mt-6">Return Dashboard</Button>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#f8fafc] p-6 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-              <UserCog className="h-8 w-8 text-primary" />
-              User Management
-            </h1>
-            <p className="text-slate-500">Assign roles and manage access levels for personnel.</p>
+    <div className="flex-1 bg-[#f8fafc] p-4 md:p-10">
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="md:hidden">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex flex-col gap-0.5 md:gap-1">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2 md:gap-3">
+                <UserCog className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                Management
+              </h1>
+              <p className="text-xs md:text-sm text-slate-500">Personnel registry and role assignments.</p>
+            </div>
           </div>
 
           <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl font-bold h-12 px-6 shadow-lg shadow-primary/20">
-                <UserPlus className="mr-2 h-5 w-5" />
+              <Button className="rounded-xl font-bold h-10 md:h-12 px-6 shadow-lg shadow-primary/20 text-xs md:text-sm w-full md:w-auto">
+                <UserPlus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                 Add Personnel
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-2xl md:rounded-lg">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2 text-lg">
                   <ShieldPlus className="h-5 w-5 text-primary" />
-                  Provision New Account
+                  Provision Account
                 </DialogTitle>
-                <DialogDescription>
-                  Enter official credentials to authorize a new user in the protocol.
+                <DialogDescription className="text-xs md:text-sm">
+                  Enter official credentials to authorize a new user.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddUser} className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Label htmlFor="name" className="text-xs">Full Name</Label>
                   <Input 
                     id="name" 
                     value={newName} 
                     onChange={(e) => setNewName(e.target.value)} 
                     placeholder="e.g. Jean Damascene" 
                     required 
+                    className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Official Email</Label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Label htmlFor="email" className="text-xs">Official Email</Label>
                   <Input 
                     id="email" 
                     type="email" 
@@ -218,10 +224,11 @@ export default function UserManagementPage() {
                     onChange={(e) => setNewEmail(e.target.value)} 
                     placeholder="name@example.com" 
                     required 
+                    className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Temporary Password</Label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Label htmlFor="password" className="text-xs">Initial Password</Label>
                   <Input 
                     id="password" 
                     type="password" 
@@ -229,12 +236,13 @@ export default function UserManagementPage() {
                     onChange={(e) => setNewPassword(e.target.value)} 
                     placeholder="Min 6 characters" 
                     required 
+                    className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Initial Access Role</Label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Label htmlFor="role" className="text-xs">Access Role</Label>
                   <Select value={newRole} onValueChange={setNewRole}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Select Role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -244,9 +252,9 @@ export default function UserManagementPage() {
                   </Select>
                 </div>
                 <DialogFooter className="pt-4">
-                  <Button type="submit" className="w-full" disabled={isCreating}>
+                  <Button type="submit" className="w-full h-10 text-sm" disabled={isCreating}>
                     {isCreating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                    Create Personnel Record
+                    Create Record
                   </Button>
                 </DialogFooter>
               </form>
@@ -254,78 +262,83 @@ export default function UserManagementPage() {
           </Dialog>
         </div>
 
-        <Card className="border-none shadow-xl overflow-hidden rounded-[2rem]">
-          <CardHeader className="bg-slate-900 text-white p-8">
-            <CardTitle>Personnel Registry</CardTitle>
-            <CardDescription className="text-slate-400">Total registered users: {users?.length || 0}</CardDescription>
+        <Card className="border-none shadow-xl overflow-hidden rounded-[1.5rem] md:rounded-[2rem]">
+          <CardHeader className="bg-slate-900 text-white p-6 md:p-8">
+            <CardTitle className="text-lg md:text-xl">Personnel Registry</CardTitle>
+            <CardDescription className="text-slate-400 text-xs md:text-sm">Active records: {users?.length || 0}</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             {isUsersLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-slate-500">Fetching records...</p>
+              <div className="flex flex-col items-center justify-center py-16 md:py-20 gap-4">
+                <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin text-primary" />
+                <p className="text-xs md:text-sm font-medium text-slate-500">Fetching records...</p>
               </div>
             ) : (
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead className="font-bold">Name</TableHead>
-                    <TableHead className="font-bold">Email</TableHead>
-                    <TableHead className="font-bold">Current Role</TableHead>
-                    <TableHead className="font-bold text-right">Actions</TableHead>
+                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Name</TableHead>
+                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12 hidden sm:table-cell">Email</TableHead>
+                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Role</TableHead>
+                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users?.map((u) => (
                     <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
-                      <TableCell className="font-medium">{u.displayName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-slate-500 text-xs">
+                      <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
+                        <div className="flex flex-col">
+                          <span>{u.displayName}</span>
+                          <span className="sm:hidden text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs md:text-sm">
+                        <div className="flex items-center gap-2 text-slate-500">
                           <Mail className="h-3 w-3" />
                           {u.email}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={u.role === 'LEADER' ? 'default' : 'secondary'} className="font-bold">
+                      <TableCell className="py-3 md:py-4">
+                        <Badge variant={u.role === 'LEADER' ? 'default' : 'secondary'} className="font-bold text-[9px] md:text-[10px] px-2 py-0">
                           {u.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right py-3 md:py-4">
                         <div className="flex items-center justify-end gap-2">
                           {u.email === 'nezasalton@gmail.com' ? (
-                            <span className="text-xs text-slate-400 italic px-4">System Admin</span>
+                            <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Admin</span>
                           ) : (
                             <>
                               <Select 
                                 defaultValue={u.role} 
                                 onValueChange={(val) => handleRoleChange(u.uid, val)}
                               >
-                                <SelectTrigger className="w-[140px] h-9">
+                                <SelectTrigger className="w-[100px] md:w-[130px] h-8 md:h-9 text-[10px] md:text-xs">
                                   <SelectValue placeholder="Role" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="TRAINEE">Trainee</SelectItem>
-                                  <SelectItem value="LEADER">Leader</SelectItem>
+                                  <SelectItem value="TRAINEE" className="text-[10px] md:text-xs">Trainee</SelectItem>
+                                  <SelectItem value="LEADER" className="text-[10px] md:text-xs">Leader</SelectItem>
                                 </SelectContent>
                               </Select>
 
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 w-9">
-                                    {isDeleting === u.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
+                                    {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Revoke Personnel Access?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently remove <strong>{u.displayName}</strong> from the operational registry. Note: You must also manually delete the authentication record in the Firebase Console to prevent re-login.
+                                    <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
+                                    <AlertDialogDescription className="text-xs md:text-sm">
+                                      This will permanently remove <strong>{u.displayName}</strong>. You must also manually delete the Auth record in Firebase Console.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                      Confirm Deletion
+                                  <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
+                                      Confirm Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
