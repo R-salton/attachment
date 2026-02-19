@@ -113,10 +113,10 @@ export default function ReportsList() {
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredReports.map((report) => (
-              <Card 
+              <Link 
                 key={report.id} 
-                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500" 
-                onClick={() => router.push(`/reports/view/${report.id}`)}
+                href={`/reports/view/${report.id}`}
+                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
               >
                 <CardHeader className="p-8 pb-4">
                   <div className="flex justify-between items-start mb-6">
@@ -182,7 +182,7 @@ export default function ReportsList() {
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Link>
             ))}
           </div>
         ) : (
@@ -191,7 +191,7 @@ export default function ReportsList() {
               <ShieldAlert className="h-10 w-10 text-primary/50" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Entry Not Found</h3>
+              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
                 The command registry is currently empty for the {(isAdmin || isCommander || isLeader) ? 'selected criteria' : profile?.unit}.
               </p>

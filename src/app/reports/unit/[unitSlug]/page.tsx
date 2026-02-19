@@ -127,10 +127,10 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ unitS
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredReports.map((report) => (
-              <Card 
+              <Link 
                 key={report.id} 
-                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2.5rem] overflow-hidden hover:-translate-y-2 duration-500" 
-                onClick={() => router.push(`/reports/view/${report.id}`)}
+                href={`/reports/view/${report.id}`}
+                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2.5rem] overflow-hidden hover:-translate-y-2 duration-500"
               >
                 <CardHeader className="p-8 pb-4">
                   <div className="flex justify-between items-start mb-6">
@@ -196,7 +196,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ unitS
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Link>
             ))}
           </div>
         ) : (
