@@ -6,47 +6,58 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Helper to get user data safely
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // High command check (Admin, Commander, Leader)
+    function isHighCommand() {
+      let role = getUserData().role;
+      return request.auth.token.email == 'nezasalton@gmail.com' ||
+             request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+             role == 'ADMIN' || 
+             role == 'COMMANDER' || 
+             role == 'LEADER';
+    }
+
+    // Strict Admin check for sensitive modifications
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
-      );
+      let role = getUserData().role;
+      return request.auth.token.email == 'nezasalton@gmail.com' ||
+             request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+             role == 'ADMIN';
     }
 
     match /users/{userId} {
-      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isHighCommand());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
-      // 1. GLOBAL COMMAND ACCESS
-      // Administrators have absolute visibility and control over the entire archive.
-      // Explicitly allowing list and get to avoid broad query permission errors.
-      allow list, get, create, update, delete: if isAdmin();
+      // 1. COMMAND OVERWATCH
+      // Allow unrestricted list and get for all Command Staff (Admin, Commander, Leader)
+      allow list, get: if isSignedIn() && isHighCommand();
 
-      // 2. OPERATIONAL READ ACCESS
-      // Allow authenticated personnel to list and read reports. 
-      // Filtering is enforced at the application level to maintain unit focus.
-      allow list: if isSignedIn() && (
-        isAdmin() || 
-        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
-      );
-
-      allow get: if isSignedIn() && (
-        isAdmin() || 
-        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
-      );
+      // 2. UNIT-SPECIFIC ACCESS (Trainees)
+      // Allow list if the query is filtered by the user's unit
+      allow list: if isSignedIn() && resource.data.unit == getUserData().unit;
+      // Allow get if the document belongs to the user's unit
+      allow get: if isSignedIn() && resource.data.unit == getUserData().unit;
       
-      // 3. CREATION & MODIFICATION
+      // 3. OPERATIONAL FILING
+      // Any authenticated user can file a report
       allow create: if isSignedIn();
       
+      // 4. MODIFICATION
+      // Restricted to report owners or Admins
       allow update: if isSignedIn() && (
-        isAdmin() ||
+        isAdmin() || 
         resource.data.ownerId == request.auth.uid
       );
       
-      // 4. DELETION
-      // Deletion is a high-command operation restricted to Administrators.
+      // 5. ARCHIVE PURGING
+      // Absolute high-command operation restricted to Administrators
       allow delete: if isAdmin();
     }
   }

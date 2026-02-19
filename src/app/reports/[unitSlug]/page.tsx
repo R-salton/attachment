@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldHalf, Navigation } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Navigation } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const SLUG_TO_UNIT: Record<string, string> = {
   'gasabodpu': 'Gasabo DPU',
@@ -47,8 +48,7 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isAuthLoading || !unitName) return null;
     
-    // Admins and Leaders can view all units. Trainees can only view their own.
-    // However, if we are on a specific unit page, we strictly filter by that unit.
+    // Explicitly filter by unit for this route
     const baseQuery = collection(db, 'reports');
     return query(baseQuery, where('unit', '==', unitName), orderBy('createdAt', 'desc'));
     
@@ -80,8 +80,8 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
   if (!unitName && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-2xl font-black text-slate-900">Invalid Station Code</h2>
-        <Button onClick={() => router.push('/reports')} className="mt-4">Return to Registry</Button>
+        <h2 className="text-2xl font-black text-slate-900 uppercase">Invalid Station Code</h2>
+        <Button onClick={() => router.push('/reports')} className="mt-4 rounded-xl font-bold">Return to Registry</Button>
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">{unitName}</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">{unitName}</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
                   Operational Registry
@@ -197,14 +197,14 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
             ))}
           </div>
         ) : (
-          <div className="text-center py-32 md:py-48 bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-10 shadow-sm">
+          <div className="text-center py-32 md:py-48 bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
             <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center">
-              <ShieldHalf className="h-10 w-10 text-slate-200" />
+              <ShieldAlert className="h-10 w-10 text-slate-200" />
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold">
-                No operational logs have been recorded in the {unitName} command registry for this period.
+              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold uppercase">
+                No operational logs found in the command registry for the {unitName} unit.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

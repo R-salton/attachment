@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldCheck, ShieldHalf, Navigation } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldCheck, ShieldAlert, Navigation } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -190,7 +190,7 @@ export default function ReportsList() {
         ) : (
           <div className="text-center py-32 md:py-48 bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
             <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center">
-              <ShieldHalf className="h-10 w-10 text-slate-200" />
+              <ShieldAlert className="h-10 w-10 text-slate-200" />
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
