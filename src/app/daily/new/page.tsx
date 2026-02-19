@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/card';
 import { 
   Select, 
   SelectContent, 
@@ -57,20 +57,20 @@ const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TF
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
   unitName: z.string().min(1, "Unit name is required"),
-  dayNumber: z.string().min(1, "Day number is required"),
-  operationalSummary: z.string().min(1, "Summary is required"),
-  securitySituation: z.string().min(1, "Security status is required"),
+  dayNumber: z.string().optional().default(''),
+  operationalSummary: z.string().optional().default(''),
+  securitySituation: z.string().optional().default('calm and stable'),
   incidents: z.array(z.object({
-    time: z.string(),
-    description: z.string()
+    time: z.string().optional().default(''),
+    description: z.string().optional().default('')
   })).default([]),
-  actionTaken: z.string().optional(),
-  dutiesConducted: z.string().min(1, "Duties are required"),
-  casualties: z.string().default('No casualties'),
-  disciplinaryCases: z.string().default('No disciplinary cases'),
-  challenges: z.string().min(1, "Challenges are required"),
-  recommendations: z.string().optional(),
-  overallSummary: z.string().min(1, "Overall summary is required"),
+  actionTaken: z.string().optional().default(''),
+  dutiesConducted: z.string().optional().default(''),
+  casualties: z.string().optional().default('No casualties'),
+  disciplinaryCases: z.string().optional().default('No disciplinary cases'),
+  challenges: z.string().optional().default(''),
+  recommendations: z.string().optional().default(''),
+  overallSummary: z.string().optional().default(''),
   commanderName: z.string().min(1, "Commander name is required"),
 });
 
@@ -90,7 +90,7 @@ export default function NewDailyReport() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-      unitName: profile?.unit || '',
+      unitName: '',
       dayNumber: '',
       operationalSummary: '',
       securitySituation: 'calm and stable',
@@ -102,9 +102,20 @@ export default function NewDailyReport() {
       challenges: '',
       recommendations: '',
       overallSummary: '',
-      commanderName: profile?.displayName || '',
+      commanderName: '',
     },
   });
+
+  // Sync profile data to form once loaded
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        ...form.getValues(),
+        unitName: profile.unit || '',
+        commanderName: profile.displayName || '',
+      });
+    }
+  }, [profile, form]);
 
   const { fields: incidentFields, append: appendIncident, remove: removeIncident } = useFieldArray({
     control: form.control,
@@ -121,12 +132,13 @@ export default function NewDailyReport() {
     try {
       const formattedInput: SituationReportInput = {
         ...values,
-        dutiesConducted: values.dutiesConducted.split('\n').filter(s => s.trim()),
-        challenges: values.challenges.split('\n').filter(s => s.trim()),
+        dayNumber: values.dayNumber || 'N/A',
+        dutiesConducted: values.dutiesConducted?.split('\n').filter(s => s.trim()) || [],
+        challenges: values.challenges?.split('\n').filter(s => s.trim()) || [],
         recommendations: values.recommendations?.split('\n').filter(s => s.trim()) || [],
         forceDiscipline: {
-          casualties: values.casualties,
-          disciplinaryCases: values.disciplinaryCases
+          casualties: values.casualties || 'No casualties',
+          disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
         actionTaken: values.actionTaken || ''
       };
@@ -273,7 +285,7 @@ export default function NewDailyReport() {
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Unit Name</Label>
                     <Select 
-                      defaultValue={form.getValues('unitName')} 
+                      value={form.watch('unitName')} 
                       onValueChange={(val) => form.setValue('unitName', val)}
                     >
                       <SelectTrigger className="h-11 rounded-xl text-sm">
