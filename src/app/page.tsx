@@ -18,6 +18,7 @@ export default function Home() {
   const { toast } = useToast();
 
   const recentReportsQuery = useMemoFirebase(() => {
+    // Only construct the query if the user is authenticated and services are available
     if (!user || !db) return null;
     
     // Explicitly filter by ownerId to satisfy Firestore Security Rules
@@ -134,7 +135,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {isReportsLoading ? (
+                {isUserLoading || isReportsLoading ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="text-xs text-muted-foreground">Retrieving secure data...</p>

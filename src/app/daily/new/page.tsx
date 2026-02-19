@@ -183,7 +183,7 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
-    // CRITICAL: use 'ownerId' to match firestore.rules and queries
+    // CRITICAL: Use 'ownerId' to match firestore.rules and queries
     const reportData = {
       id: reportId,
       ownerId: user.uid,
@@ -204,11 +204,12 @@ export default function NewDailyReport() {
         router.push('/reports');
       })
       .catch(error => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
+        const contextualError = new FirestorePermissionError({
           path: reportRef.path,
           operation: 'create',
           requestResourceData: reportData
-        }));
+        });
+        errorEmitter.emit('permission-error', contextualError);
       })
       .finally(() => setIsLoading(false));
   };

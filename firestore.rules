@@ -8,7 +8,7 @@ service cloud.firestore {
      * This ruleset implements an Ownership-Based Access Control model.
      * All operational reports are owned by the creator (ownerId).
      * 
-     * Deployment Trigger: 2024-02-18 15:45:00 - Explicit list permission fix.
+     * Deployment Trigger: 2024-02-19 10:00:00 - Hardened ownership-based listing.
      */
 
     function isSignedIn() {
@@ -33,7 +33,8 @@ service cloud.firestore {
     match /reports/{reportId} {
       // allow 'get' and 'list' for the owner. 
       // Firestore enforces that 'list' queries must include the 'ownerId' filter.
-      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
       
       // Allow creation if the user sets themselves as the owner
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;

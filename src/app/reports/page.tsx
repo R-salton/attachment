@@ -16,7 +16,8 @@ export default function ReportsList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const reportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Defensive query construction to ensure rule compliance
+    // CRITICAL: Defensive query construction to ensure rule compliance.
+    // The query MUST include the ownerId filter to match the security rules.
     if (!user || !db) return null;
     
     return query(
