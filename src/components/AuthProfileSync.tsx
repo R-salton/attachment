@@ -21,8 +21,8 @@ export function AuthProfileSync() {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // nezasalton@gmail.com is handled as a Leader/Admin in rules, 
-          // but we set it in data for UI consistency.
+          // nezasalton@gmail.com is handled as a Leader/Admin in rules.
+          // We set it in data for UI consistency.
           const initialRole = user.email === 'nezasalton@gmail.com' ? 'LEADER' : 'TRAINEE';
           
           await setDoc(userRef, {
@@ -34,7 +34,8 @@ export function AuthProfileSync() {
           });
         }
       } catch (e) {
-        // Silently fail if rules block initial read/write (e.g. if rule sync is pending)
+        // Silently fail if rules block initial read/write
+        console.error("Profile sync failed:", e);
       }
     };
 

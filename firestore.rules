@@ -8,34 +8,43 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // System admin email check
       return isSignedIn() && request.auth.token.email == 'nezasalton@gmail.com';
     }
 
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
     function isLeader() {
-      return isSignedIn() && (getUserRole() == 'LEADER' || isAdmin());
+      // Check if admin OR if user has the LEADER role in their profile
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER')
+      );
     }
 
     // User profiles
     match /users/{userId} {
+      // Allow users to read their own profile or admins to read all
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Admin can update roles, users can create their own profile as TRAINEE
-      allow update: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == 'TRAINEE';
+      
+      // Allow profile creation. Special case for the admin email to be LEADER immediately.
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        (request.auth.token.email == 'nezasalton@gmail.com' && request.resource.data.role == 'LEADER') ||
+        (request.resource.data.role == 'TRAINEE')
+      );
+      
+      // Allow admins to update roles, or users to update their own data (excluding role changes)
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
+      
+      allow delete: if isAdmin();
     }
 
     // Reports collection
     match /reports/{reportId} {
-      // Leaders and Admins can view and list all reports
-      allow read: if isLeader();
+      // All signed-in users can read/list reports
+      allow read: if isSignedIn();
       
-      // Leaders can create reports
+      // Only Leaders/Admins can create/update/delete
       allow create: if isLeader() && request.resource.data.ownerId == request.auth.uid;
-      
-      // Update/Delete by owner or Admin
       allow update, delete: if isLeader() && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
   }
