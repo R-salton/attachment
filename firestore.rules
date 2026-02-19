@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -12,29 +11,32 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : {};
+    }
+
+    function hasProfile() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function isCommander() {
       return isSignedIn() && (
         isAdmin() || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'COMMANDER')
+        (hasProfile() && getUserData().role == 'COMMANDER')
       );
     }
 
     function isLeader() {
       return isSignedIn() && (
         isCommander() || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'LEADER')
+        (hasProfile() && getUserData().role == 'LEADER')
       );
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && (
-        (request.auth.uid == userId) || isAdmin()
-      );
-      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email'])));
       allow delete: if isAdmin();
     }
 
@@ -43,7 +45,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() || 
         isCommander() || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && resource.data.unit == getUserData().unit)
+        (hasProfile() && resource.data.unit == getUserData().unit)
       );
       
       allow create: if isLeader();
@@ -51,7 +53,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isAdmin() || 
         isCommander() || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && resource.data.unit == getUserData().unit)
+        (hasProfile() && resource.data.unit == getUserData().unit)
       );
       
       allow delete: if isAdmin() || isCommander();

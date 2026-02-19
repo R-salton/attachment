@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -35,7 +34,9 @@ export default function Home() {
     if (isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(3));
     } else {
-      return query(baseQuery, where('unit', '==', profile.unit || 'TRS'), orderBy('createdAt', 'desc'), limit(3));
+      // Only query if the profile has a unit, otherwise it will cause a permission error
+      if (!profile.unit) return null;
+      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(3));
     }
   }, [db, isCommander, profile, user?.uid]);
 
@@ -121,7 +122,7 @@ export default function Home() {
             <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-slate-100 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
               <History className="h-6 w-6 md:h-7 md:w-7 text-slate-700" />
             </div>
-            <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">History</h3>
+            <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Archive</h3>
             <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Access the operational logbook for {isCommander ? 'all units' : profile?.unit}.</p>
           </Link>
         </Card>

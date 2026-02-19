@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -30,7 +29,9 @@ export default function ReportsList() {
     if (isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } else {
-      return query(baseQuery, where('unit', '==', profile.unit || 'TRS'), orderBy('createdAt', 'desc'));
+      // Only query if the profile has a unit, otherwise it will cause a permission error
+      if (!profile.unit) return null;
+      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     }
   }, [db, isCommander, profile, user?.uid]);
 

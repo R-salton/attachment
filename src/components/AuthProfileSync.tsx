@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -30,6 +29,7 @@ export function AuthProfileSync() {
             email: user.email,
             displayName: user.displayName || 'Cadet',
             role: initialRole,
+            unit: 'N/A', // Every user must be attached to a unit for security rules to work
             createdAt: serverTimestamp(),
           });
         }
