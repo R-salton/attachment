@@ -7,22 +7,29 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Absolute Admin Bypass - High Priority Master Access
-    function isAdmin() {
+    // ABSOLUTE MASTER BYPASS
+    // Prioritizing the owner's UID and email for zero-latency, unrestricted access.
+    function isMasterAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN')
+        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
+        request.auth.token.email == 'nezasalton@gmail.com'
+      );
+    }
+
+    function isAdmin() {
+      return isMasterAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
       );
     }
 
     function isHighCommand() {
-      return isSignedIn() && (
-        isAdmin() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'))
+      return isAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER')
       );
     }
 
@@ -31,20 +38,30 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. GLOBAL COMMAND ACCESS
-      // Admins and high command can access EVERYTHING
+      // 1. GLOBAL COMMAND ACCESS (Master Bypass)
+      // This allows 'list' operations on the collection without resource.data dependencies.
       allow read, list, write: if isAdmin();
       
-      // 2. REGULAR ACCESS
-      allow list, get: if isHighCommand();
-      allow list, get: if isSignedIn() && (
+      // 2. REGULAR OPERATIONAL ACCESS
+      // Regular units can access reports if they belong to that unit.
+      // For 'list', clients MUST apply a query filter for their unit to match this rule.
+      allow get: if isHighCommand() || (
+        isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
       );
       
-      // 3. OPERATIONAL FILING
+      allow list: if isHighCommand() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        // Rules are not filters: clients must query where unit == user.unit
+        (resource == null || resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit)
+      );
+      
+      // 3. FILING PROTOCOL
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
   }
 }

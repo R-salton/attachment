@@ -78,12 +78,16 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl md:text-2xl font-black text-foreground mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-4 text-base md:text-lg text-foreground/90 leading-relaxed font-semibold">{line}</p>;
+      return (
+        <p key={i} className="mb-4 text-base md:text-lg text-slate-800 dark:text-slate-100 leading-relaxed font-semibold">
+          {line}
+        </p>
+      );
     });
   };
 
@@ -117,7 +121,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
       <header className="border-b bg-background/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
             <ArrowLeft className="h-6 w-6 md:mr-2" />
             <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Back</span>
           </Button>
@@ -177,36 +181,36 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground leading-[0.9] uppercase">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] uppercase">
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-3 pt-4">
-              <Badge className="bg-foreground text-background h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest">
+              <Badge className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest">
                 UNIT: {report.unit}
               </Badge>
-              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-border text-foreground">
+              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
                 COMMANDER: {report.reportingCommanderName}
               </Badge>
             </div>
           </div>
         </div>
 
-        <Card className="shadow-2xl border border-border rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
+        <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-950 print:shadow-none print:border-none print:rounded-none">
           <div className="h-2 bg-primary" />
-          <CardContent className="p-8 md:p-16 relative bg-card">
+          <CardContent className="p-8 md:p-16 relative">
             {isEditing ? (
               <div className="relative z-10 space-y-4">
                 <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Transcript Revision</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-muted/30 border-border p-8 text-foreground"
+                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-slate-900 dark:text-white"
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-foreground tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-slate-800 dark:text-slate-100 tracking-tight relative z-10 max-w-3xl mx-auto">
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
-                   <Shield className="h-[400px] w-[400px] text-foreground" />
+                   <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-white" />
                 </div>
                 {formatContent(report.fullText)}
               </div>
