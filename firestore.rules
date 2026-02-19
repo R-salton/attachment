@@ -5,7 +5,10 @@ service cloud.firestore {
     /**
      * CADET COMMANDER REPORTING SYSTEM - SECURITY RULES
      * 
-     * Deployment Trigger: 2024-02-18 12:00:00 - Full system reset and permission fix.
+     * This ruleset implements an Ownership-Based Access Control model.
+     * All operational reports are owned by the creator (ownerId).
+     * 
+     * Deployment Trigger: 2024-02-18 15:45:00 - Explicit list permission fix.
      */
 
     function isSignedIn() {
@@ -28,20 +31,20 @@ service cloud.firestore {
 
     // Reports collection
     match /reports/{reportId} {
-      // allow read (get/list) for the owner. 
-      // For 'list', the query MUST include a filter: where('ownerId', '==', auth.uid)
-      allow read: if isOwner(resource.data.ownerId);
+      // allow 'get' and 'list' for the owner. 
+      // Firestore enforces that 'list' queries must include the 'ownerId' filter.
+      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       
       // Allow creation if the user sets themselves as the owner
-      allow create: if isOwner(request.resource.data.ownerId);
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
       // Allow update/delete only by the owner
-      allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-      allow delete: if isOwner(resource.data.ownerId);
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
 
-      // Hierarchical subcollections (if any are used in the future)
+      // Allow recursive access to subcollections for the owner
       match /{allSubcollections=**} {
-        allow read, write: if isOwner(get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId);
+        allow read, write: if isSignedIn() && 
+          (get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId == request.auth.uid);
       }
     }
   }

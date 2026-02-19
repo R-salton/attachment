@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -18,10 +18,9 @@ export default function Home() {
   const { toast } = useToast();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // CRITICAL: Only construct the query if the user is explicitly authenticated.
-    // This prevents the 'Missing or insufficient permissions' error on initial load.
     if (!user || !db) return null;
     
+    // Explicitly filter by ownerId to satisfy Firestore Security Rules
     return query(
       collection(db, 'reports'),
       where('ownerId', '==', user.uid),
@@ -45,7 +44,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc]">
       <nav className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
           <div className="bg-primary w-10 h-10 rounded-lg flex items-center justify-center">
             <FileText className="text-white w-6 h-6" />
           </div>
@@ -97,7 +96,7 @@ export default function Home() {
                 <PlusCircle className="h-6 w-6 text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-2">Create Report</h3>
-              <p className="text-sm text-slate-500">Document daily deployments, cases, and unit status for the command hierarchy.</p>
+              <p className="text-sm text-slate-500">Document daily deployments, cases, and unit status.</p>
             </Link>
           </Card>
 
@@ -107,7 +106,7 @@ export default function Home() {
                 <Calendar className="h-6 w-6 text-accent" />
               </div>
               <h3 className="text-xl font-bold mb-2">Weekly Summary</h3>
-              <p className="text-sm text-slate-500">Use AI to synthesize multiple daily logs into a high-level weekly executive summary.</p>
+              <p className="text-sm text-slate-500">Synthesize multiple logs into high-level summaries.</p>
             </Link>
           </Card>
 
@@ -117,7 +116,7 @@ export default function Home() {
                 <History className="h-6 w-6 text-slate-700" />
               </div>
               <h3 className="text-xl font-bold mb-2">Archive</h3>
-              <p className="text-sm text-slate-500">Access and export previously filed reports for historical review and audit trails.</p>
+              <p className="text-sm text-slate-500">Access and export previously filed records.</p>
             </Link>
           </Card>
         </section>
@@ -150,7 +149,7 @@ export default function Home() {
                           </div>
                           <div className="flex flex-col">
                             <p className="font-bold text-sm text-slate-900 truncate max-w-[180px] md:max-w-[240px]">{report.reportTitle}</p>
-                            <p className="text-[11px] text-slate-500 font-medium">{report.reportDate} • By {report.reportingCommanderName}</p>
+                            <p className="text-[11px] text-slate-500 font-medium">{report.reportDate}</p>
                           </div>
                         </div>
                         <Button 
@@ -159,7 +158,7 @@ export default function Home() {
                           className="h-9 px-4 font-semibold"
                           asChild
                         >
-                          <Link href={`/reports/${report.id}`}>Review</Link>
+                          <Link href={`/reports/${report.id}`}>View</Link>
                         </Button>
                       </div>
                     ))
@@ -190,38 +189,28 @@ export default function Home() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Security Protocol</span>
               </div>
               <CardTitle className="text-white text-2xl">Standard Operating Procedures</CardTitle>
-              <CardDescription className="text-slate-400">Ensure all reports adhere to the following command guidelines.</CardDescription>
+              <CardDescription className="text-slate-400">Guidelines for reporting.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 space-y-6">
               <div className="space-y-4">
                 <div className="flex gap-4">
                   <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs font-bold">01</div>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    All case counts must be verified by the DPU Duty Officer before submission.
+                    Verify all case counts before submission.
                   </p>
                 </div>
                 <div className="flex gap-4">
                   <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs font-bold">02</div>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    'Other Activities' should capture any non-routine interactions or incidents.
+                    Capture all non-routine interactions.
                   </p>
                 </div>
-              </div>
-              
-              <div className="pt-4 border-t border-slate-800">
-                <p className="text-[10px] text-slate-500 font-mono italic">
-                  Systems encryption active. All data is archived for official review only.
-                </p>
               </div>
             </CardContent>
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-[80px]"></div>
           </Card>
         </section>
       </main>
-
-      <footer className="border-t bg-white px-6 py-8 text-center mt-auto">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">© 2026 Report Master Command Systems</p>
-      </footer>
     </div>
   );
 }
