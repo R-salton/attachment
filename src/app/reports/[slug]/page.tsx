@@ -1,11 +1,12 @@
+
 "use client";
 
 import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * Consolidated Redirect component to resolve Next.js routing conflicts.
- * This single dynamic segment handles both report IDs and unit slugs.
+ * Consolidated Redirect component to resolve Next.js dynamic routing conflicts.
+ * This single segment handles both unit station codes and direct report access redirects.
  */
 export default function StandardizedRedirect({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
@@ -20,9 +21,11 @@ export default function StandardizedRedirect({ params }: { params: Promise<{ slu
     const unitSlugs = ['gasabodpu', 'kicukirodpu', 'nyarugengedpu', 'trs', 'sif', 'tfu'];
     const normalizedSlug = slug.toLowerCase();
 
+    // Check if the landing slug is a recognized station code
     if (unitSlugs.includes(normalizedSlug)) {
       router.replace(`/reports/unit/${normalizedSlug}`);
     } else {
+      // Otherwise, assume it's a report ID attempt and redirect to the viewer
       router.replace(`/reports/view/${slug}`);
     }
   }, [slug, router]);

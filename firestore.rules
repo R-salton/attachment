@@ -37,18 +37,14 @@ service cloud.firestore {
       allow list, get: if isHighCommand();
 
       // 2. UNIT-SPECIFIC ACCESS (Trainees / Regular Personnel)
-      // Only allowed to view reports matching their own station code.
-      // This rule requires unit-specific filtering in the client query.
       allow list, get: if isSignedIn() && (
         resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
       );
       
       // 3. OPERATIONAL FILING
-      // Every authenticated user can submit logs.
       allow create: if isSignedIn();
       
       // 4. MODIFICATION
-      // Users can modify their own submitted logs (DRAFTS/SUBMISSIONS).
       allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
   }

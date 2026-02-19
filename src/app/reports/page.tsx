@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { FileText, Calendar, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye } from 'lucide-react';
 import {
   AlertDialog,
@@ -38,10 +39,12 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
+    // Admins, Commanders, and Leaders can view the global feed
     if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
+    // Regular personnel are limited to their unit's logs
     if (!profile.unit || profile.unit === 'N/A') return null;
     return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     
@@ -73,15 +76,15 @@ export default function ReportsList() {
   const isLoading = isAuthLoading || isReportsLoading;
 
   return (
-    <div className="flex-1 bg-[#f8fafc] pb-20 p-4 md:p-10">
+    <div className="flex-1 bg-[#f8fafc] dark:bg-slate-950 pb-20 p-4 md:p-10">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-10">
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-white shadow-sm border md:hidden">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border md:hidden">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">Archive Registry</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none uppercase">Archive Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
                   {(isAdmin || isCommander || isLeader) ? 'Global Command Logs' : `${profile?.unit || 'Station'} Logs`}
@@ -94,7 +97,7 @@ export default function ReportsList() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                 placeholder="Search command logs..." 
-                className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm text-sm font-bold"
+                className="pl-11 h-12 rounded-2xl bg-white dark:bg-slate-900 border-slate-200 shadow-sm text-sm font-bold"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -112,16 +115,16 @@ export default function ReportsList() {
             {filteredReports.map((report) => (
               <Card 
                 key={report.id} 
-                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-white rounded-[2rem] md:rounded-[2.5rem] overflow-hidden hover:-translate-y-2 duration-500" 
+                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500" 
                 onClick={() => router.push(`/reports/view/${report.id}`)}
               >
                 <CardHeader className="p-6 md:p-8 pb-4">
                   <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-slate-400 group-hover:shadow-lg group-hover:shadow-primary/20">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-slate-400">
                       <FileText className="h-6 w-6" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.15em] border-slate-200 text-slate-500 group-hover:border-primary/20 group-hover:text-primary transition-colors">
+                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.15em] border-slate-200 text-slate-500 group-hover:text-primary transition-colors">
                         {report.unit}
                       </Badge>
                       {isAdmin && (
@@ -147,7 +150,7 @@ export default function ReportsList() {
                               <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
-                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
+                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12"
                               >
                                 {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
                                 Confirm Purge
@@ -158,7 +161,7 @@ export default function ReportsList() {
                       )}
                     </div>
                   </div>
-                  <CardTitle className="text-lg md:text-xl font-black line-clamp-2 leading-[1.1] text-slate-900 group-hover:text-primary transition-colors duration-500">
+                  <CardTitle className="text-lg md:text-xl font-black line-clamp-2 leading-[1.1] text-slate-900 dark:text-white group-hover:text-primary transition-colors duration-500">
                     {report.reportTitle}
                   </CardTitle>
                 </CardHeader>
@@ -169,16 +172,16 @@ export default function ReportsList() {
                       {report.reportDate}
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400">
                         {report.reportingCommanderName?.charAt(0)}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Officer in Charge</span>
-                        <span className="text-xs font-bold text-slate-900 truncate max-w-[140px] leading-none">{report.reportingCommanderName}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate max-w-[140px] leading-none">{report.reportingCommanderName}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-slate-50 mt-auto flex justify-end">
+                  <div className="pt-6 border-t border-slate-50 dark:border-slate-800 mt-auto flex justify-end">
                     <Button variant="ghost" size="sm" className="font-black text-primary hover:bg-transparent group-hover:translate-x-2 transition-transform h-auto p-0 text-xs">
                       View Transcript <Eye className="ml-2 h-4 w-4" />
                     </Button>
@@ -188,12 +191,12 @@ export default function ReportsList() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-32 md:py-48 bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
-            <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center">
+          <div className="text-center py-32 md:py-48 bg-white dark:bg-slate-900 rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
+            <div className="h-20 w-20 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center">
               <ShieldAlert className="h-10 w-10 text-slate-200" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Registry Entry Not Found</h3>
               <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold uppercase">
                 The command registry is currently empty for the {(isAdmin || isCommander || isLeader) ? 'selected criteria' : profile?.unit}.
               </p>
