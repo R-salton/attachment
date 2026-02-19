@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, ArrowRight } from 'lucide-react';
+import { FileText, Calendar, PlusCircle, History, LogIn, LogOut, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -17,9 +17,10 @@ export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Construct query only when user is authenticated
   const recentReportsQuery = useMemoFirebase(() => {
-    if (isUserLoading || !user || !db) return null;
+    // CRITICAL: Only construct the query if the user is explicitly authenticated.
+    // This prevents the 'Missing or insufficient permissions' error on initial load.
+    if (!user || !db) return null;
     
     return query(
       collection(db, 'reports'),
@@ -27,7 +28,7 @@ export default function Home() {
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [db, user?.uid, isUserLoading]);
+  }, [db, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -42,8 +43,8 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <nav className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc]">
+      <nav className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-2">
           <div className="bg-primary w-10 h-10 rounded-lg flex items-center justify-center">
             <FileText className="text-white w-6 h-6" />
@@ -56,10 +57,10 @@ export default function Home() {
               {user ? (
                 <div className="flex items-center gap-4">
                   <div className="hidden md:flex flex-col items-end text-right">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Authenticated</span>
-                    <span className="text-xs font-semibold text-primary truncate max-w-[150px]">{user.email || 'User'}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Duty</span>
+                    <span className="text-xs font-semibold text-primary truncate max-w-[150px]">{user.email || 'Cadet'}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </Button>
@@ -85,132 +86,141 @@ export default function Home() {
 
       <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
         <section className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">Operations Dashboard</h1>
-          <p className="text-muted-foreground text-lg">Streamlined report generation for cadets and operational units.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Operations Command</h1>
+          <p className="text-slate-500 text-lg">Centralized operational reporting and GenAI consolidation.</p>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-primary/5">
+          <Card className="hover:shadow-lg transition-all border-none shadow-sm group">
             <Link href="/daily/new" className="block p-6">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <PlusCircle className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Create Daily Report</h3>
-              <p className="text-sm text-muted-foreground">Log daily activities, cases, and unit operations for internal filing.</p>
+              <h3 className="text-xl font-bold mb-2">Create Report</h3>
+              <p className="text-sm text-slate-500">Document daily deployments, cases, and unit status for the command hierarchy.</p>
             </Link>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-accent/5">
+          <Card className="hover:shadow-lg transition-all border-none shadow-sm group">
             <Link href="/weekly/new" className="block p-6">
-              <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+              <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Calendar className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Weekly Summary</h3>
-              <p className="text-sm text-muted-foreground">Consolidate daily reports into a comprehensive weekly overview using GenAI.</p>
+              <h3 className="text-xl font-bold mb-2">Weekly Summary</h3>
+              <p className="text-sm text-slate-500">Use AI to synthesize multiple daily logs into a high-level weekly executive summary.</p>
             </Link>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group border-border">
+          <Card className="hover:shadow-lg transition-all border-none shadow-sm group">
             <Link href="/reports" className="block p-6">
-              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:bg-secondary/80 transition-colors">
-                <History className="h-6 w-6 text-foreground" />
+              <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <History className="h-6 w-6 text-slate-700" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Report History</h3>
-              <p className="text-sm text-muted-foreground">Review and export previously generated reports for auditing and review.</p>
+              <h3 className="text-xl font-bold mb-2">Archive</h3>
+              <p className="text-sm text-slate-500">Access and export previously filed reports for historical review and audit trails.</p>
             </Link>
           </Card>
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Reports</CardTitle>
-              <CardDescription>Your 5 most recently generated operational reports.</CardDescription>
+          <Card className="border-none shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Recent Filing</CardTitle>
+                <CardDescription>Your last 5 operational reports.</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/reports">View All</Link>
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {isReportsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <p className="text-xs text-muted-foreground">Loading reports...</p>
+                  <div className="flex flex-col items-center justify-center py-12 gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-xs text-muted-foreground">Retrieving secure data...</p>
                   </div>
-                ) : reports && reports.length > 0 ? (
-                  reports.map((report) => (
-                    <div key={report.id} className="flex items-center justify-between p-3 rounded-lg bg-white border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-muted rounded-md">
-                          <FileText className="h-4 w-4 text-primary" />
+                ) : user ? (
+                  reports && reports.length > 0 ? (
+                    reports.map((report) => (
+                      <div key={report.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-transparent hover:border-primary/20 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2.5 bg-white rounded-lg shadow-sm">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-sm text-slate-900 truncate max-w-[180px] md:max-w-[240px]">{report.reportTitle}</p>
+                            <p className="text-[11px] text-slate-500 font-medium">{report.reportDate} • By {report.reportingCommanderName}</p>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <p className="font-medium text-sm truncate max-w-[150px] md:max-w-[200px]">{report.reportTitle}</p>
-                          <p className="text-[10px] text-muted-foreground">{report.reportDate} • {report.reportingCommanderName}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-green-100 text-green-700">
-                          {report.status}
-                        </span>
                         <Button 
-                          variant="ghost" 
+                          variant="secondary" 
                           size="sm" 
-                          className="h-8 px-2 text-xs"
-                          onClick={() => router.push(`/reports/${report.id}`)}
+                          className="h-9 px-4 font-semibold"
+                          asChild
                         >
-                          View
+                          <Link href={`/reports/${report.id}`}>Review</Link>
                         </Button>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-10">
-                    <p className="text-sm text-muted-foreground mb-4">No recent reports found.</p>
-                    {user && (
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href="/daily/new">Create Report</Link>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-sm text-muted-foreground mb-4">No reports filed yet.</p>
+                      <Button variant="default" size="sm" asChild>
+                        <Link href="/daily/new">Start First Report</Link>
                       </Button>
-                    )}
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed">
+                    <p className="text-sm text-slate-500 mb-4">Sign in to view your operational reports.</p>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/login">Authenticate</Link>
+                    </Button>
                   </div>
                 )}
               </div>
-              {reports && reports.length > 0 && (
-                <div className="mt-4 flex justify-center border-t pt-4">
-                  <Button variant="link" size="sm" asChild className="text-primary">
-                    <Link href="/reports">
-                      View All Reports <ArrowRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          <Card className="bg-primary text-white overflow-hidden relative border-none">
+          <Card className="bg-slate-900 text-white overflow-hidden relative border-none shadow-xl">
             <CardHeader className="relative z-10">
-              <CardTitle className="text-white">Reporting Guidelines</CardTitle>
-              <CardDescription className="text-primary-foreground/70">Ensuring consistent and accurate operational documentation.</CardDescription>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Security Protocol</span>
+              </div>
+              <CardTitle className="text-white text-2xl">Standard Operating Procedures</CardTitle>
+              <CardDescription className="text-slate-400">Ensure all reports adhere to the following command guidelines.</CardDescription>
             </CardHeader>
-            <CardContent className="relative z-10 space-y-4">
-              <p className="text-sm opacity-90 leading-relaxed">
-                Always include security situation status (e.g., Calm), deployment times, and specific case counts for all DPUs. Use the "Other Activities" section for incidents outside the standard unit logs.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">Accuracy</p>
-                  <p className="text-[10px] font-medium">Verify all case counts before submission.</p>
+            <CardContent className="relative z-10 space-y-6">
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs font-bold">01</div>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    All case counts must be verified by the DPU Duty Officer before submission.
+                  </p>
                 </div>
-                <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">Security</p>
-                  <p className="text-[10px] font-medium">Reports are archived securely for audit.</p>
+                <div className="flex gap-4">
+                  <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs font-bold">02</div>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    'Other Activities' should capture any non-routine interactions or incidents.
+                  </p>
                 </div>
               </div>
+              
+              <div className="pt-4 border-t border-slate-800">
+                <p className="text-[10px] text-slate-500 font-mono italic">
+                  Systems encryption active. All data is archived for official review only.
+                </p>
+              </div>
             </CardContent>
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-accent/20 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-[80px]"></div>
           </Card>
         </section>
       </main>
 
       <footer className="border-t bg-white px-6 py-8 text-center mt-auto">
-        <p className="text-xs text-muted-foreground">© 2026 Report Master Systems. For official use only. Access is restricted to authorized personnel.</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">© 2026 Report Master Command Systems</p>
       </footer>
     </div>
   );

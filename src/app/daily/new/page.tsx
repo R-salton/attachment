@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CaseDetailList } from '@/components/reports/CaseDetailList';
-import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye } from 'lucide-react';
+import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -88,7 +88,7 @@ export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -145,7 +145,7 @@ export default function NewDailyReport() {
 
   const onSubmit = async (values: FormValues) => {
     if (!user) {
-      toast({ variant: "destructive", title: "Not Authenticated", description: "You must be signed in to save reports." });
+      toast({ variant: "destructive", title: "Authentication Required", description: "You must be signed in to generate reports." });
       return;
     }
 
@@ -167,12 +167,9 @@ export default function NewDailyReport() {
       const content = formatDailyReport(formattedInput as any);
       setPreviewContent(content);
       setActiveTab("preview");
+      toast({ title: "Preview Generated", description: "Review the formatted report below before saving." });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Generation Failed",
-        description: "There was an error formatting the report content.",
-      });
+      toast({ variant: "destructive", title: "Formatting Error", description: "Could not format the report data." });
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +183,7 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
+    // CRITICAL: use 'ownerId' to match firestore.rules and queries
     const reportData = {
       id: reportId,
       ownerId: user.uid,
@@ -202,7 +200,7 @@ export default function NewDailyReport() {
 
     setDoc(reportRef, reportData)
       .then(() => {
-        toast({ title: "Report Saved", description: "The daily report has been archived successfully." });
+        toast({ title: "Report Saved", description: "Operation log has been archived successfully." });
         router.push('/reports');
       })
       .catch(error => {
@@ -215,314 +213,343 @@ export default function NewDailyReport() {
       .finally(() => setIsLoading(false));
   };
 
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+        <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Restricted Access</h2>
+        <p className="text-slate-500 mb-6 text-center max-w-md">You must be authenticated with official credentials to file operational reports.</p>
+        <Button onClick={() => router.push('/login')}>Sign In</Button>
+      </div>
+    );
+  }
+
   const tabs = [
-    { id: "header", label: "Metadata" },
+    { id: "header", label: "Basics" },
     { id: "gasabo", label: "Gasabo" },
     { id: "kicukiro", label: "Kicukiro" },
     { id: "nyarugenge", label: "Nyarugenge" },
     { id: "sif", label: "SIF" },
     { id: "trs", label: "TRS" },
     { id: "fox", label: "Fox Unit" },
-    { id: "general", label: "Review" },
-    { id: "preview", label: "Preview", icon: Eye },
+    { id: "general", label: "Misc" },
+    { id: "preview", label: "Review", icon: Eye },
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div className="min-h-screen bg-[#f8fafc] pb-24">
+      <header className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
+            Dashboard
           </Button>
-          <h1 className="text-xl font-bold text-primary">New Daily Report</h1>
+          <div className="h-6 w-px bg-slate-200 hidden md:block" />
+          <h1 className="text-xl font-extrabold text-slate-900 hidden md:block">Operational Daily Report</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => form.reset()}>Reset</Button>
+          <Button variant="outline" size="sm" onClick={() => form.reset()} className="hidden sm:flex">Clear Form</Button>
           <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmit)}>
             {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-            Preview Report
+            Preview
           </Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto mt-8 px-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="bg-white p-1 rounded-xl border shadow-sm">
-            <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1 bg-transparent border-none p-0">
+      <main className="max-w-4xl mx-auto mt-10 px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <div className="bg-white p-1.5 rounded-2xl border shadow-sm sticky top-[73px] z-40 overflow-x-auto">
+            <TabsList className="w-full h-auto flex justify-start gap-1 bg-transparent border-none p-0">
               {tabs.map((tab) => (
                 <TabsTrigger 
                   key={tab.id} 
                   value={tab.id}
-                  className="px-4 py-2 text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+                  className="px-4 py-2 text-xs font-bold data-[state=active]:bg-primary data-[state=active]:text-white rounded-xl transition-all whitespace-nowrap"
                 >
-                  {tab.icon && <tab.icon className="w-3 h-3 mr-1.5" />}
+                  {tab.icon && <tab.icon className="w-3.5 h-3.5 mr-2" />}
                   {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
 
-          <Card className="shadow-lg border-primary/10">
-            <CardHeader className="bg-primary/5 border-b">
-              <CardTitle className="text-primary flex items-center gap-2">
+          <Card className="shadow-xl border-none">
+            <CardHeader className="bg-slate-900 text-white rounded-t-2xl">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <FileText className="h-5 w-5" />
+                </div>
                 {tabs.find(t => t.id === activeTab)?.label}
               </CardTitle>
-              <CardDescription>Fill in operational details for this section.</CardDescription>
+              <CardDescription className="text-slate-400">Section {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-8 px-8">
               
-              <TabsContent value="header" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Report Date</Label>
-                    <Input {...form.register('reportDate')} placeholder="e.g. 16 FEB 26" />
+              <TabsContent value="header" className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Report Date</Label>
+                    <Input {...form.register('reportDate')} className="h-11 rounded-xl" placeholder="e.g. 16 FEB 26" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Cadets Intake</Label>
-                    <Input {...form.register('cadetsIntake')} placeholder="e.g. 14/2025-2026" />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Cadets Intake</Label>
+                    <Input {...form.register('cadetsIntake')} className="h-11 rounded-xl" placeholder="e.g. 14/2025-2026" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Cadet Commander Name</Label>
-                    <Input {...form.register('commanderName')} placeholder="Full Name" />
+                  <div className="col-span-1 md:col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Reporting Officer / Commander Name</Label>
+                    <Input {...form.register('commanderName')} className="h-11 rounded-xl" placeholder="Full Official Name" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="gasabo" className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Security Situation</Label>
-                    <Input {...form.register('gasaboSecuritySituation')} placeholder="e.g. calm" />
+              <TabsContent value="gasabo" className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Security Situation</Label>
+                    <Input {...form.register('gasaboSecuritySituation')} className="h-11 rounded-xl" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Activities (One per line)</Label>
-                    <Textarea {...form.register('gasaboActivities')} className="min-h-[200px]" />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Operational Activities (One per line)</Label>
+                    <Textarea {...form.register('gasaboActivities')} className="min-h-[240px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
+                    <Label className="font-bold text-slate-700 cursor-pointer" htmlFor="gasabo-sentry">Sentry duties were subsequently undertaken?</Label>
                     <Switch 
+                      id="gasabo-sentry"
                       checked={form.watch('gasaboSentryDuties')} 
                       onCheckedChange={(val) => form.setValue('gasaboSentryDuties', val)} 
                     />
-                    <Label>Sentry duties undertaken?</Label>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="kicukiro" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Security Situation</Label>
-                    <Input {...form.register('kicukiroSecuritySituation')} />
+              <TabsContent value="kicukiro" className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Security Status</Label>
+                    <Input {...form.register('kicukiroSecuritySituation')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Operation Time</Label>
-                    <Input {...form.register('kicukiroOperationTime')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Operation Window</Label>
+                    <Input {...form.register('kicukiroOperationTime')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Operation Focus</Label>
-                    <Input {...form.register('kicukiroOperationFocus')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Primary Operation Focus</Label>
+                    <Input {...form.register('kicukiroOperationFocus')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Introduction By</Label>
-                    <Input {...form.register('kicukiroIntroductionBy')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Introduction/Briefing Conducted By</Label>
+                    <Input {...form.register('kicukiroIntroductionBy')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Emphasized Points (One per line)</Label>
-                    <Textarea {...form.register('kicukiroEmphasizedPoints')} className="min-h-[150px]" />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Emphasized Command Points (One per line)</Label>
+                    <Textarea {...form.register('kicukiroEmphasizedPoints')} className="min-h-[180px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="nyarugenge" className="space-y-8">
-                <div className="space-y-2">
-                  <Label>Security Situation</Label>
-                  <Input {...form.register('nyarugengeSecuritySituation')} />
+              <TabsContent value="nyarugenge" className="space-y-8 animate-in fade-in duration-300">
+                <div className="space-y-3">
+                  <Label className="font-bold text-slate-700">Nyarugenge District Security Status</Label>
+                  <Input {...form.register('nyarugengeSecuritySituation')} className="rounded-xl h-11" />
                 </div>
                 
-                <CaseDetailList 
-                  label="Nyabugogo Post Cases" 
-                  cases={form.watch('nyarugengeNyabugogoCases')} 
-                  onChange={(val) => form.setValue('nyarugengeNyabugogoCases', val)} 
-                />
-                
-                <CaseDetailList 
-                  label="Inkundamahoro Post Cases" 
-                  cases={form.watch('nyarugengeInkundamahoroCases')} 
-                  onChange={(val) => form.setValue('nyarugengeInkundamahoroCases', val)} 
-                />
-
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-6">
                   <CaseDetailList 
-                    label="Kimisagara Post Cases" 
-                    cases={form.watch('nyarugengeKimisagaraCases')} 
-                    onChange={(val) => form.setValue('nyarugengeKimisagaraCases', val)} 
+                    label="Nyabugogo Post Case Log" 
+                    cases={form.watch('nyarugengeNyabugogoCases')} 
+                    onChange={(val) => form.setValue('nyarugengeNyabugogoCases', val)} 
                   />
-                  <div className="space-y-2">
-                    <Label>Additional Notes for Kimisagara</Label>
-                    <Input {...form.register('nyarugengeKimisagaraNotes')} placeholder="e.g. 101 cases of substandard home-brewed drinks recovered" />
+                  
+                  <CaseDetailList 
+                    label="Inkundamahoro Post Case Log" 
+                    cases={form.watch('nyarugengeInkundamahoroCases')} 
+                    onChange={(val) => form.setValue('nyarugengeInkundamahoroCases', val)} 
+                  />
+
+                  <div className="space-y-4">
+                    <CaseDetailList 
+                      label="Kimisagara Post Case Log" 
+                      cases={form.watch('nyarugengeKimisagaraCases')} 
+                      onChange={(val) => form.setValue('nyarugengeKimisagaraCases', val)} 
+                    />
+                    <div className="space-y-3">
+                      <Label className="font-bold text-slate-700">Recovery / Intelligence Notes (Kimisagara)</Label>
+                      <Input {...form.register('nyarugengeKimisagaraNotes')} placeholder="e.g. 101 cases of substandard drinks recovered" className="rounded-xl h-11" />
+                    </div>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="sif" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Operation Time</Label>
-                    <Input {...form.register('sifOperationTime')} />
+              <TabsContent value="sif" className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Operation Window</Label>
+                    <Input {...form.register('sifOperationTime')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Company</Label>
-                    <Input {...form.register('sifCompany')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Deployed Company</Label>
+                    <Input {...form.register('sifCompany')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Area of Operation (Comma separated)</Label>
-                    <Input {...form.register('sifAreaOfOperation')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Areas of Operation (Comma separated)</Label>
+                    <Input {...form.register('sifAreaOfOperation')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Security Situation</Label>
-                    <Input {...form.register('sifSecuritySituation')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Security Status</Label>
+                    <Input {...form.register('sifSecuritySituation')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Operation Focus</Label>
-                    <Input {...form.register('sifOperationFocus')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Operation Focus</Label>
+                    <Input {...form.register('sifOperationFocus')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Introduction By</Label>
-                    <Input {...form.register('sifIntroductionBy')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Introduction By</Label>
+                    <Input {...form.register('sifIntroductionBy')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Emphasized Points (One per line)</Label>
-                    <Textarea {...form.register('sifEmphasizedPoints')} className="min-h-[150px]" />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Points Emphasized (One per line)</Label>
+                    <Textarea {...form.register('sifEmphasizedPoints')} className="min-h-[160px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Patrol Operations Description</Label>
-                    <Input {...form.register('sifPatrolOperations')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Patrol Types</Label>
+                    <Input {...form.register('sifPatrolOperations')} className="rounded-xl h-11" />
                   </div>
-                  <div className="flex items-center gap-2 pt-8">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border mt-7">
+                    <Label className="font-bold text-slate-700 cursor-pointer" htmlFor="sif-incident">Incident Free?</Label>
                     <Switch 
+                      id="sif-incident"
                       checked={form.watch('sifPatrolIncidentsFree')} 
                       onCheckedChange={(val) => form.setValue('sifPatrolIncidentsFree', val)} 
                     />
-                    <Label>Incident Free?</Label>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="trs" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Company</Label>
-                    <Input {...form.register('trsCompany')} />
+              <TabsContent value="trs" className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Deployed Company</Label>
+                    <Input {...form.register('trsCompany')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Induction Training Topics (Comma separated)</Label>
-                    <Textarea {...form.register('trsInductionTraining')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Induction Training Core Topics (Comma separated)</Label>
+                    <Textarea {...form.register('trsInductionTraining')} className="rounded-xl" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Remarks By</Label>
-                    <Input {...form.register('trsRemarksBy')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">High-Level Remarks Delivered By</Label>
+                    <Input {...form.register('trsRemarksBy')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Remarks Timeframe</Label>
-                    <Input {...form.register('trsRemarksTime')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Training Session Time</Label>
+                    <Input {...form.register('trsRemarksTime')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Deployment Timeframe</Label>
-                    <Input {...form.register('trsDeploymentTime')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Field Deployment Time</Label>
+                    <Input {...form.register('trsDeploymentTime')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Deployment Locations (Comma separated)</Label>
-                    <Textarea {...form.register('trsDeploymentLocations')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Deployment Grid Locations (Comma separated)</Label>
+                    <Textarea {...form.register('trsDeploymentLocations')} className="rounded-xl" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="fox" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Security Situation</Label>
-                    <Input {...form.register('foxSecuritySituation')} />
+              <TabsContent value="fox" className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Security Situation</Label>
+                    <Input {...form.register('foxSecuritySituation')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Shift Duration</Label>
-                    <Input {...form.register('foxShiftDuration')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Shift Window</Label>
+                    <Input {...form.register('foxShiftDuration')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Company</Label>
-                    <Input {...form.register('foxCompany')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Deployed Company</Label>
+                    <Input {...form.register('foxCompany')} className="rounded-xl h-11" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Briefing By</Label>
-                    <Input {...form.register('foxBriefingBy')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Briefing Officer</Label>
+                    <Input {...form.register('foxBriefingBy')} className="rounded-xl h-11" />
                   </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Induction Location</Label>
-                    <Input {...form.register('foxInductionTrainingLocation')} />
+                  <div className="col-span-2 space-y-3">
+                    <Label className="font-bold text-slate-700">Induction Location</Label>
+                    <Input {...form.register('foxInductionTrainingLocation')} className="rounded-xl h-11" />
                   </div>
                 </div>
 
-                <div className="space-y-4 mt-4">
+                <div className="space-y-6 mt-8">
                   <CaseDetailList 
-                    label="Fox Unit Cases" 
+                    label="Fox Unit Detailed Case Log" 
                     cases={form.watch('foxCasesReportedDetails')} 
                     onChange={(val) => form.setValue('foxCasesReportedDetails', val)} 
                   />
-                  <div className="space-y-2">
-                    <Label>Fox District for Cases</Label>
-                    <Input {...form.register('foxCasesReportedDistrict')} />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Primary District of Focus</Label>
+                    <Input {...form.register('foxCasesReportedDistrict')} className="rounded-xl h-11" />
                   </div>
                 </div>
 
-                <div className="space-y-2 mt-4">
-                  <Label>Foot Patrols Description</Label>
-                  <Textarea {...form.register('foxFootPatrols')} />
+                <div className="space-y-3 mt-8">
+                  <Label className="font-bold text-slate-700">Foot Patrol & Community Policing Narrative</Label>
+                  <Textarea {...form.register('foxFootPatrols')} className="min-h-[140px] rounded-xl font-mono text-sm" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Night Shifts Information</Label>
-                  <Input {...form.register('foxNightShiftsScheduled')} />
+                <div className="space-y-3">
+                  <Label className="font-bold text-slate-700">Night Shift Coordination Info</Label>
+                  <Input {...form.register('foxNightShiftsScheduled')} className="rounded-xl h-11" />
                 </div>
               </TabsContent>
 
-              <TabsContent value="general" className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Challenges (One per line)</Label>
-                    <Textarea {...form.register('challenges')} className="min-h-[150px]" />
+              <TabsContent value="general" className="space-y-8 animate-in fade-in duration-300">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Command Challenges (One per line)</Label>
+                    <Textarea {...form.register('challenges')} className="min-h-[150px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Recommendations (One per line)</Label>
-                    <Textarea {...form.register('recommendations')} className="min-h-[100px]" />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Command Recommendations (One per line)</Label>
+                    <Textarea {...form.register('recommendations')} className="min-h-[120px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Other Activities (One per line)</Label>
-                    <Textarea {...form.register('otherActivities')} className="min-h-[150px]" />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Miscellaneous Activities (One per line)</Label>
+                    <Textarea {...form.register('otherActivities')} className="min-h-[150px] rounded-xl font-mono text-sm leading-relaxed" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="preview" className="space-y-6">
+              <TabsContent value="preview" className="space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
-                  <div className="space-y-4">
-                    <div className="bg-muted p-6 rounded-lg font-mono text-sm whitespace-pre-wrap border shadow-inner leading-relaxed">
+                  <div className="space-y-6">
+                    <div className="bg-slate-50 p-8 md:p-12 rounded-2xl font-mono text-sm whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800">
                       {previewContent}
                     </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => {
+                    <div className="flex flex-col sm:flex-row justify-end gap-3">
+                      <Button variant="outline" className="rounded-xl h-11 px-6 font-bold" onClick={() => {
                         navigator.clipboard.writeText(previewContent);
-                        toast({ title: "Copied", description: "Report content copied to clipboard" });
+                        toast({ title: "Copied", description: "Standardized report text copied to clipboard." });
                       }}>
                         Copy to Clipboard
                       </Button>
-                      <Button onClick={saveReport} disabled={isLoading}>
+                      <Button className="rounded-xl h-11 px-8 font-bold" onClick={saveReport} disabled={isLoading}>
                         {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                        Finalize and Save
+                        Finalize & Archive
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-20 text-muted-foreground">
-                    <p>Complete the form sections and click "Preview Report" to see the output here.</p>
+                  <div className="text-center py-32 text-slate-400">
+                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg">No content to preview yet.</p>
+                    <p className="text-sm">Please fill in the operational sections and click "Preview".</p>
                   </div>
                 )}
               </TabsContent>
@@ -531,24 +558,25 @@ export default function NewDailyReport() {
           </Card>
         </Tabs>
 
-        {/* Navigation Buttons for Tabs */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-12 flex justify-between">
           <Button 
             type="button"
             variant="ghost" 
             disabled={activeTab === tabs[0].id}
+            className="font-bold text-slate-600"
             onClick={() => {
               const idx = tabs.findIndex(t => t.id === activeTab);
               setActiveTab(tabs[idx-1].id);
             }}
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Previous Section
+            Previous
           </Button>
           <Button 
             type="button"
             variant="outline" 
             disabled={activeTab === tabs[tabs.length-1].id}
+            className="font-bold bg-white"
             onClick={() => {
               const idx = tabs.findIndex(t => t.id === activeTab);
               setActiveTab(tabs[idx+1].id);
