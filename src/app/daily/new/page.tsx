@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -11,77 +10,47 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CaseDetailList } from '@/components/reports/CaseDetailList';
-import { FileText, Save, Loader2, ChevronRight, ChevronLeft, Eye, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { 
+  FileText, 
+  Save, 
+  Loader2, 
+  ChevronRight, 
+  ChevronLeft, 
+  Eye, 
+  ShieldAlert, 
+  ShieldCheck, 
+  Plus, 
+  Trash2,
+  Clock,
+  AlertTriangle
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { formatDailyReport } from '@/lib/report-formatter';
+import { formatDailyReport, SituationReportInput } from '@/lib/report-formatter';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
-  cadetsIntake: z.string().min(1, "Intake is required"),
+  companyName: z.string().min(1, "Company is required"),
+  unitName: z.string().min(1, "Unit name is required"),
+  dayNumber: z.string().min(1, "Day number is required"),
+  operationalSummary: z.string().min(1, "Summary is required"),
+  securitySituation: z.string().default('calm and stable'),
+  incidents: z.array(z.object({
+    time: z.string(),
+    description: z.string()
+  })).default([]),
+  actionTaken: z.string().optional(),
+  dutiesConducted: z.string().describe("New line separated list"),
+  casualties: z.string().default('No casualties'),
+  disciplinaryCases: z.string().default('No disciplinary cases'),
+  challenges: z.string().describe("New line separated list"),
+  overallSummary: z.string().min(1, "Overall summary is required"),
   commanderName: z.string().min(1, "Commander name is required"),
-
-  // Gasabo
-  gasaboSecuritySituation: z.string().default('calm'),
-  gasaboActivities: z.string().default(''),
-  gasaboSentryDuties: z.boolean().default(true),
-
-  // Kicukiro
-  kicukiroSecuritySituation: z.string().default('calm'),
-  kicukiroOperationTime: z.string().default('0600hrs to 1900hrs'),
-  kicukiroOperationFocus: z.string().default('introduction to Station Duties and responsibilities of the OC Station'),
-  kicukiroIntroductionBy: z.string().default('DPC Kicukiro'),
-  kicukiroEmphasizedPoints: z.string().default(''),
-
-  // Nyarugenge
-  nyarugengeSecuritySituation: z.string().default('calm'),
-  nyarugengeNyabugogoCases: z.array(z.object({ caseType: z.string(), count: z.number() })).default([]),
-  nyarugengeInkundamahoroCases: z.array(z.object({ caseType: z.string(), count: z.number() })).default([]),
-  nyarugengeKimisagaraCases: z.array(z.object({ caseType: z.string(), count: z.number() })).default([]),
-  nyarugengeKimisagaraNotes: z.string().default(''),
-
-  // SIF
-  sifOperationTime: z.string().default('1400hrs to 2000hrs'),
-  sifCompany: z.string().default('Delta Company'),
-  sifAreaOfOperation: z.string().default('Giporoso, Gisimenti, Nyabugogo, Ku Iposita'),
-  sifSecuritySituation: z.string().default('calm'),
-  sifOperationFocus: z.string().default('introduction to SIF duties and responsibilities'),
-  sifIntroductionBy: z.string().default('Operations Commander'),
-  sifEmphasizedPoints: z.string().default(''),
-  sifPatrolOperations: z.string().default('foot and vehicle'),
-  sifPatrolIncidentsFree: z.boolean().default(true),
-
-  // TRS
-  trsCompany: z.string().default('Echo company'),
-  trsInductionTraining: z.string().default('TRS structure, core values, and expected attitude of police officers on the road'),
-  trsRemarksBy: z.string().default('various Directors and the Deputy Commissioner in charge of Operations'),
-  trsRemarksTime: z.string().default('0700hrs to 1130hrs'),
-  trsDeploymentTime: z.string().default('1400hrs to 2000hrs'),
-  trsDeploymentLocations: z.string().default('Nyarugenge Sector, Gasabo Sector, Kicukiro Sector, Traffic Fine Recovery Unit'),
-
-  // FOX
-  foxSecuritySituation: z.string().default('calm'),
-  foxShiftDuration: z.string().default('8-hour morning shift'),
-  foxCompany: z.string().default('Delta Company'),
-  foxBriefingBy: z.string().default('TFU Operations Officer'),
-  foxInductionTrainingLocation: z.string().default('Muhima'),
-  foxCasesReportedCount: z.number().default(0),
-  foxCasesReportedDistrict: z.string().default('Kicukiro District'),
-  foxCasesReportedDetails: z.array(z.object({ caseType: z.string(), count: z.number() })).default([]),
-  foxFootPatrols: z.string().default('Foot patrols enabled engagement and collaboration with local security agencies, including DASSO and Irondo Ry’umwuga, to detect and prevent illegal activities (community policing).'),
-  foxNightShiftsScheduled: z.string().default('Officers are scheduled for night shifts, with each company assigned specific working hours and areas of operation.'),
-
-  // General
-  challenges: z.string().default(''),
-  recommendations: z.string().default(''),
-  otherActivities: z.string().default(''),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -99,50 +68,25 @@ export default function NewDailyReport() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-      cadetsIntake: '14/2025-2026',
-      commanderName: 'Isiah KAYIRANGA',
-      gasaboSecuritySituation: 'calm',
-      gasaboActivities: "JOC presentation planning\nPolice core values\nOfficer Cadet expectations in modern policing\nProfessional social media management and appropriate use of force\nCollaboration with local governance\nProactive policing approach\nProper recording in station registers and detainees’ files\nClear understanding of Area of Responsibility (AoR)\nCommon crimes within the AoR",
-      gasaboSentryDuties: true,
-      kicukiroSecuritySituation: 'calm',
-      kicukiroOperationTime: '0600hrs to 1900hrs',
-      kicukiroOperationFocus: 'introduction to Station Duties and responsibilities of the OC Station',
-      kicukiroIntroductionBy: 'DPC Kicukiro',
-      kicukiroEmphasizedPoints: "Values of a good officer – confidence, professionalism, and seeking guidance where necessary.\nExpectations from cadets – gaining practical experience and applying training knowledge.\nMedia management – maintaining professionalism due to public and media visibility.\nCooperation with local governance – promoting safety, security, and rule of law through collaboration.",
-      nyarugengeSecuritySituation: 'calm',
-      nyarugengeNyabugogoCases: [],
-      nyarugengeInkundamahoroCases: [],
-      nyarugengeKimisagaraCases: [],
-      nyarugengeKimisagaraNotes: '',
-      sifOperationTime: '1400hrs to 2000hrs',
-      sifCompany: 'Delta Company',
-      sifAreaOfOperation: 'Giporoso, Gisimenti, Nyabugogo, Ku Iposita',
-      sifSecuritySituation: 'calm',
-      sifOperationFocus: 'introduction to SIF duties and responsibilities',
-      sifIntroductionBy: 'Operations Commander',
-      sifEmphasizedPoints: "Values of a good officer like confidence, professionalism, and seeking guidance when necessary.\nExpectations from cadets – gaining field experience and applying training knowledge.\nMedia management – maintaining professionalism due to constant public and media scrutiny.",
-      sifPatrolOperations: 'foot and vehicle',
-      sifPatrolIncidentsFree: true,
-      trsCompany: 'Echo company',
-      trsInductionTraining: 'TRS structure, core values, and expected attitude of police officers on the road',
-      trsRemarksBy: 'various Directors and the Deputy Commissioner in charge of Operations',
-      trsRemarksTime: '0700hrs to 1130hrs',
-      trsDeploymentTime: '1400hrs to 2000hrs',
-      trsDeploymentLocations: 'Nyarugenge Sector, Gasabo Sector, Kicukiro Sector, Traffic Fine Recovery Unit',
-      foxSecuritySituation: 'calm',
-      foxShiftDuration: '8-hour morning shift',
-      foxCompany: 'Delta Company',
-      foxBriefingBy: 'TFU Operations Officer',
-      foxInductionTrainingLocation: 'Muhima',
-      foxCasesReportedCount: 0,
-      foxCasesReportedDistrict: 'Kicukiro District',
-      foxCasesReportedDetails: [],
-      foxFootPatrols: 'Foot patrols enabled engagement and collaboration with local security agencies, including DASSO and Irondo Ry’umwuga, to detect and prevent illegal activities (community policing).',
-      foxNightShiftsScheduled: 'Officers are scheduled for night shifts, with each company assigned specific working hours and areas of operation.',
-      challenges: "Delayed and long Deployment.\nDelayed Shift Replacement\nFailing to get Lunch\nTransportation for embarking and disembarking to/from operations/duties is poor.",
-      recommendations: "Proper coordination mainly with Dpcs and Logistics for effective transportation.",
-      otherActivities: "25 Officer cadets went to Zigama for Bank issues and all we are returned with incidents Free.\nAll police officers received their meal except some who are supposed to be disembarked from duty but still now not yet arrived, They are 21 Oc’s from Alpha Company\nCurrently all officer cadets are well and ready to continue the operation",
+      companyName: 'ALPHA COMPANY',
+      unitName: 'TRS',
+      dayNumber: '1',
+      operationalSummary: 'continued performing Traffic regulations, control, traffic recoveries, public education and enforcing laws through punishments.',
+      securitySituation: 'calm and stable',
+      incidents: [],
+      actionTaken: '',
+      dutiesConducted: "Regulated traffic flow from different junctions\nChecked vehicle documents and equipment\nPunished law violators with fine of traffic laws and regulations\nResponded to an accident incident",
+      casualties: 'No casualties',
+      disciplinaryCases: 'No disciplinary cases',
+      challenges: "Delay in shift replacement\nWeather condition changes",
+      overallSummary: 'Day activities were conducted successfully in accordance with operational procedures.',
+      commanderName: '',
     },
+  });
+
+  const { fields: incidentFields, append: appendIncident, remove: removeIncident } = useFieldArray({
+    control: form.control,
+    name: "incidents"
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -153,23 +97,21 @@ export default function NewDailyReport() {
 
     setIsLoading(true);
     try {
-      const formattedInput = {
+      const formattedInput: SituationReportInput = {
         ...values,
-        gasaboActivities: (values.gasaboActivities || "").split('\n').filter(s => s.trim()),
-        kicukiroEmphasizedPoints: (values.kicukiroEmphasizedPoints || "").split('\n').filter(s => s.trim()),
-        sifEmphasizedPoints: (values.sifEmphasizedPoints || "").split('\n').filter(s => s.trim()),
-        sifAreaOfOperation: (values.sifAreaOfOperation || "").split(',').map(s => s.trim()).filter(Boolean),
-        trsInductionTraining: (values.trsInductionTraining || "").split(',').map(s => s.trim()).filter(Boolean),
-        trsDeploymentLocations: (values.trsDeploymentLocations || "").split(',').map(s => s.trim()).filter(Boolean),
-        challenges: (values.challenges || "").split('\n').filter(s => s.trim()),
-        recommendations: (values.recommendations || "").split('\n').filter(s => s.trim()),
-        otherActivities: (values.otherActivities || "").split('\n').filter(s => s.trim()),
+        dutiesConducted: values.dutiesConducted.split('\n').filter(s => s.trim()),
+        challenges: values.challenges.split('\n').filter(s => s.trim()),
+        forceDiscipline: {
+          casualties: values.casualties,
+          disciplinaryCases: values.disciplinaryCases
+        },
+        actionTaken: values.actionTaken || ''
       };
 
-      const content = formatDailyReport(formattedInput as any);
+      const content = formatDailyReport(formattedInput);
       setPreviewContent(content);
       setActiveTab("preview");
-      toast({ title: "Preview Generated", description: "Review the formatted report below before saving." });
+      toast({ title: "Preview Generated", description: "Review the SITUATION REPORT below." });
     } catch (error) {
       toast({ variant: "destructive", title: "Formatting Error", description: "Could not format the report data." });
     } finally {
@@ -189,10 +131,10 @@ export default function NewDailyReport() {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
-      cadetIntake: values.cadetsIntake,
-      reportTitle: `General daily report for cadets intake ${values.cadetsIntake} as of ${values.reportDate}`,
+      cadetIntake: 'N/A',
+      reportTitle: `SITUATION REPORT - ${values.companyName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
-      reportingCommanderTitle: 'Cadet Commander',
+      reportingCommanderTitle: 'Officer in Charge',
       creationDateTime: new Date().toISOString(),
       fullText: previewContent,
       status: 'SUBMITTED',
@@ -201,7 +143,7 @@ export default function NewDailyReport() {
 
     setDoc(reportRef, reportData)
       .then(() => {
-        toast({ title: "Report Saved", description: "Operation log has been archived successfully." });
+        toast({ title: "Report Saved", description: "SITUATION REPORT has been archived." });
         router.push('/reports');
       })
       .catch(error => {
@@ -236,13 +178,9 @@ export default function NewDailyReport() {
 
   const tabs = [
     { id: "header", label: "Basics" },
-    { id: "gasabo", label: "Gasabo" },
-    { id: "kicukiro", label: "Kicukiro" },
-    { id: "nyarugenge", label: "Nyarugenge" },
-    { id: "sif", label: "SIF" },
-    { id: "trs", label: "TRS" },
-    { id: "fox", label: "Fox Unit" },
-    { id: "general", label: "Misc" },
+    { id: "summary", label: "Operations" },
+    { id: "incidents", label: "Security" },
+    { id: "discipline", label: "Force Status" },
     { id: "preview", label: "Review", icon: Eye },
   ];
 
@@ -251,7 +189,7 @@ export default function NewDailyReport() {
       <header className="border-b bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <h1 className="text-xl font-extrabold text-slate-900 leading-none">Operational Report</h1>
+            <h1 className="text-xl font-extrabold text-slate-900 leading-none">Situation Report</h1>
             <span className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">Authorized Protocol</span>
           </div>
         </div>
@@ -272,7 +210,7 @@ export default function NewDailyReport() {
                 <TabsTrigger 
                   key={tab.id} 
                   value={tab.id}
-                  className="px-4 py-2 text-xs font-bold data-[state=active]:bg-primary data-[state=active]:text-white rounded-xl transition-all whitespace-nowrap"
+                  className="px-6 py-2.5 text-xs font-bold data-[state=active]:bg-primary data-[state=active]:text-white rounded-xl transition-all whitespace-nowrap"
                 >
                   {tab.icon && <tab.icon className="w-3.5 h-3.5 mr-2" />}
                   {tab.label}
@@ -297,232 +235,105 @@ export default function NewDailyReport() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <Label className="font-bold text-slate-700">Report Date</Label>
-                    <Input {...form.register('reportDate')} className="h-11 rounded-xl" placeholder="e.g. 16 FEB 26" />
+                    <Input {...form.register('reportDate')} className="h-11 rounded-xl" placeholder="e.g. 18 Feb 26" />
                   </div>
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Cadets Intake</Label>
-                    <Input {...form.register('cadetsIntake')} className="h-11 rounded-xl" placeholder="e.g. 14/2025-2026" />
+                    <Label className="font-bold text-slate-700">Day Number</Label>
+                    <Input {...form.register('dayNumber')} className="h-11 rounded-xl" placeholder="e.g. 3" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Company Name</Label>
+                    <Input {...form.register('companyName')} className="h-11 rounded-xl" placeholder="e.g. ALPHA COMPANY" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Unit Name</Label>
+                    <Input {...form.register('unitName')} className="h-11 rounded-xl" placeholder="e.g. TRS" />
                   </div>
                   <div className="col-span-1 md:col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Reporting Officer / Commander Name</Label>
-                    <Input {...form.register('commanderName')} className="h-11 rounded-xl" placeholder="Full Official Name" />
+                    <Label className="font-bold text-slate-700">Officer in Charge (Name)</Label>
+                    <Input {...form.register('commanderName')} className="h-11 rounded-xl" placeholder="e.g. CASTRO Boaz" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="gasabo" className="space-y-6 animate-in fade-in duration-300">
+              <TabsContent value="summary" className="space-y-6 animate-in fade-in duration-300">
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Security Situation</Label>
-                    <Input {...form.register('gasaboSecuritySituation')} className="h-11 rounded-xl" />
+                    <Label className="font-bold text-slate-700">Operational Summary (Starts with: "continued performing...")</Label>
+                    <Textarea {...form.register('operationalSummary')} className="min-h-[120px] rounded-xl font-mono text-sm" />
                   </div>
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Operational Activities (One per line)</Label>
-                    <Textarea {...form.register('gasaboActivities')} className="min-h-[240px] rounded-xl font-mono text-sm leading-relaxed" />
+                    <Label className="font-bold text-slate-700">Duties Conducted (One per line)</Label>
+                    <Textarea {...form.register('dutiesConducted')} className="min-h-[180px] rounded-xl font-mono text-sm" />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
-                    <Label className="font-bold text-slate-700 cursor-pointer" htmlFor="gasabo-sentry">Sentry duties were subsequently undertaken?</Label>
-                    <Switch 
-                      id="gasabo-sentry"
-                      checked={form.watch('gasaboSentryDuties')} 
-                      onCheckedChange={(val) => form.setValue('gasaboSentryDuties', val)} 
-                    />
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700">Overall Narrative Summary</Label>
+                    <Textarea {...form.register('overallSummary')} className="min-h-[120px] rounded-xl font-mono text-sm" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="kicukiro" className="space-y-6 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <TabsContent value="incidents" className="space-y-8 animate-in fade-in duration-300">
+                <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Security Status</Label>
-                    <Input {...form.register('kicukiroSecuritySituation')} className="rounded-xl h-11" />
+                    <Label className="font-bold text-slate-700">General Security Situation</Label>
+                    <Input {...form.register('securitySituation')} className="h-11 rounded-xl" placeholder="e.g. calm and stable" />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Operation Window</Label>
-                    <Input {...form.register('kicukiroOperationTime')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Primary Operation Focus</Label>
-                    <Input {...form.register('kicukiroOperationFocus')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Introduction/Briefing Conducted By</Label>
-                    <Input {...form.register('kicukiroIntroductionBy')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Emphasized Command Points (One per line)</Label>
-                    <Textarea {...form.register('kicukiroEmphasizedPoints')} className="min-h-[180px] rounded-xl font-mono text-sm leading-relaxed" />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="nyarugenge" className="space-y-8 animate-in fade-in duration-300">
-                <div className="space-y-3">
-                  <Label className="font-bold text-slate-700">Nyarugenge District Security Status</Label>
-                  <Input {...form.register('nyarugengeSecuritySituation')} className="rounded-xl h-11" />
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6">
-                  <CaseDetailList 
-                    label="Nyabugogo Post Case Log" 
-                    cases={form.watch('nyarugengeNyabugogoCases')} 
-                    onChange={(val) => form.setValue('nyarugengeNyabugogoCases', val)} 
-                  />
-                  
-                  <CaseDetailList 
-                    label="Inkundamahoro Post Case Log" 
-                    cases={form.watch('nyarugengeInkundamahoroCases')} 
-                    onChange={(val) => form.setValue('nyarugengeInkundamahoroCases', val)} 
-                  />
 
                   <div className="space-y-4">
-                    <CaseDetailList 
-                      label="Kimisagara Post Case Log" 
-                      cases={form.watch('nyarugengeKimisagaraCases')} 
-                      onChange={(val) => form.setValue('nyarugengeKimisagaraCases', val)} 
-                    />
-                    <div className="space-y-3">
-                      <Label className="font-bold text-slate-700">Recovery / Intelligence Notes (Kimisagara)</Label>
-                      <Input {...form.register('nyarugengeKimisagaraNotes')} placeholder="e.g. 101 cases of substandard drinks recovered" className="rounded-xl h-11" />
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-slate-700">Incident Log</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendIncident({ time: '', description: '' })}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Incident
+                      </Button>
                     </div>
+                    
+                    {incidentFields.map((field, index) => (
+                      <div key={field.id} className="p-4 bg-slate-50 rounded-xl border space-y-4 animate-in slide-in-from-right-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-48 space-y-1.5">
+                            <Label className="text-[10px] uppercase font-bold text-slate-400">Time (DTG)</Label>
+                            <div className="relative">
+                              <Clock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                              <Input {...form.register(`incidents.${index}.time`)} className="pl-9 h-9 text-xs" placeholder="181020B FEB 26" />
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <Label className="text-[10px] uppercase font-bold text-slate-400">Description & Location</Label>
+                            <Input {...form.register(`incidents.${index}.description`)} className="h-9 text-xs" placeholder="e.g. SANY truck collided..." />
+                          </div>
+                          <Button type="button" variant="ghost" size="icon" className="mt-6 text-destructive" onClick={() => removeIncident(index)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      Action Taken (for incidents)
+                    </Label>
+                    <Textarea {...form.register('actionTaken')} className="min-h-[100px] rounded-xl font-mono text-sm" placeholder="Describe actions taken for incidents reported above" />
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="sif" className="space-y-6 animate-in fade-in duration-300">
+              <TabsContent value="discipline" className="space-y-8 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Operation Window</Label>
-                    <Input {...form.register('sifOperationTime')} className="rounded-xl h-11" />
+                    <Label className="font-bold text-slate-700">Casualties Status</Label>
+                    <Input {...form.register('casualties')} className="h-11 rounded-xl" />
                   </div>
                   <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Deployed Company</Label>
-                    <Input {...form.register('sifCompany')} className="rounded-xl h-11" />
+                    <Label className="font-bold text-slate-700">Disciplinary Status</Label>
+                    <Input {...form.register('disciplinaryCases')} className="h-11 rounded-xl" />
                   </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Areas of Operation (Comma separated)</Label>
-                    <Input {...form.register('sifAreaOfOperation')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Security Status</Label>
-                    <Input {...form.register('sifSecuritySituation')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Operation Focus</Label>
-                    <Input {...form.register('sifOperationFocus')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Introduction By</Label>
-                    <Input {...form.register('sifIntroductionBy')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Points Emphasized (One per line)</Label>
-                    <Textarea {...form.register('sifEmphasizedPoints')} className="min-h-[160px] rounded-xl font-mono text-sm leading-relaxed" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Patrol Types</Label>
-                    <Input {...form.register('sifPatrolOperations')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border mt-7">
-                    <Label className="font-bold text-slate-700 cursor-pointer" htmlFor="sif-incident">Incident Free?</Label>
-                    <Switch 
-                      id="sif-incident"
-                      checked={form.watch('sifPatrolIncidentsFree')} 
-                      onCheckedChange={(val) => form.setValue('sifPatrolIncidentsFree', val)} 
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="trs" className="space-y-6 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Deployed Company</Label>
-                    <Input {...form.register('trsCompany')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Induction Training Core Topics (Comma separated)</Label>
-                    <Textarea {...form.register('trsInductionTraining')} className="rounded-xl" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">High-Level Remarks Delivered By</Label>
-                    <Input {...form.register('trsRemarksBy')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Training Session Time</Label>
-                    <Input {...form.register('trsRemarksTime')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Field Deployment Time</Label>
-                    <Input {...form.register('trsDeploymentTime')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Deployment Grid Locations (Comma separated)</Label>
-                    <Textarea {...form.register('trsDeploymentLocations')} className="rounded-xl" />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="fox" className="space-y-6 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Security Situation</Label>
-                    <Input {...form.register('foxSecuritySituation')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Shift Window</Label>
-                    <Input {...form.register('foxShiftDuration')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Deployed Company</Label>
-                    <Input {...form.register('foxCompany')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Briefing Officer</Label>
-                    <Input {...form.register('foxBriefingBy')} className="rounded-xl h-11" />
-                  </div>
-                  <div className="col-span-2 space-y-3">
-                    <Label className="font-bold text-slate-700">Induction Location</Label>
-                    <Input {...form.register('foxInductionTrainingLocation')} className="rounded-xl h-11" />
-                  </div>
-                </div>
-
-                <div className="space-y-6 mt-8">
-                  <CaseDetailList 
-                    label="Fox Unit Detailed Case Log" 
-                    cases={form.watch('foxCasesReportedDetails')} 
-                    onChange={(val) => form.setValue('foxCasesReportedDetails', val)} 
-                  />
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Primary District of Focus</Label>
-                    <Input {...form.register('foxCasesReportedDistrict')} className="rounded-xl h-11" />
-                  </div>
-                </div>
-
-                <div className="space-y-3 mt-8">
-                  <Label className="font-bold text-slate-700">Foot Patrol & Community Policing Narrative</Label>
-                  <Textarea {...form.register('foxFootPatrols')} className="min-h-[140px] rounded-xl font-mono text-sm" />
                 </div>
                 <div className="space-y-3">
-                  <Label className="font-bold text-slate-700">Night Shift Coordination Info</Label>
-                  <Input {...form.register('foxNightShiftsScheduled')} className="rounded-xl h-11" />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="general" className="space-y-8 animate-in fade-in duration-300">
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Command Challenges (One per line)</Label>
-                    <Textarea {...form.register('challenges')} className="min-h-[150px] rounded-xl font-mono text-sm leading-relaxed" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Command Recommendations (One per line)</Label>
-                    <Textarea {...form.register('recommendations')} className="min-h-[120px] rounded-xl font-mono text-sm leading-relaxed" />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="font-bold text-slate-700">Miscellaneous Activities (One per line)</Label>
-                    <Textarea {...form.register('otherActivities')} className="min-h-[150px] rounded-xl font-mono text-sm leading-relaxed" />
-                  </div>
+                  <Label className="font-bold text-slate-700">Challenges (One per line)</Label>
+                  <Textarea {...form.register('challenges')} className="min-h-[120px] rounded-xl font-mono text-sm" />
                 </div>
               </TabsContent>
 
