@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useEffect, useState } from 'react';
@@ -22,7 +23,8 @@ import {
   Edit3,
   Save,
   X,
-  Trash2
+  Trash2,
+  FileDown
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -71,6 +73,48 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       setIsCopied(true);
       toast({ title: "Copied", description: "Standardized report content copied to clipboard." });
       setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const handleExportWord = async () => {
+    if (!report?.fullText) return;
+    
+    setIsSaving(true);
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+      const { saveAs } = await import('file-saver');
+
+      const paragraphs = report.fullText.split('\n').map((line: string) => {
+        const isHeader = line.startsWith('*') && line.endsWith('*');
+        return new Paragraph({
+          heading: isHeader ? HeadingLevel.HEADING_3 : undefined,
+          spacing: { after: 120, before: isHeader ? 240 : 0 },
+          children: [
+            new TextRun({
+              text: isHeader ? line.replace(/\*/g, '') : line,
+              bold: isHeader,
+              size: isHeader ? 28 : 22, // docx uses half-points (28 = 14pt, 22 = 11pt)
+              font: "Calibri"
+            }),
+          ],
+        });
+      });
+
+      const docObj = new Document({
+        sections: [{
+          properties: {},
+          children: paragraphs,
+        }],
+      });
+
+      const blob = await Packer.toBlob(docObj);
+      saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
+      toast({ title: "Export Successful", description: "Word document has been generated." });
+    } catch (error) {
+      console.error("Word export failed:", error);
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -205,6 +249,10 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold bg-white h-8 md:h-10">
                 {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 sm:mr-2" />}
                 <span className="hidden sm:inline">Copy</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportWord} disabled={isSaving} className="rounded-xl font-bold bg-white h-8 md:h-10">
+                {isSaving ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : <FileDown className="h-3.5 w-3.5 sm:mr-2" />}
+                <span className="hidden sm:inline">Word</span>
               </Button>
               <Button size="sm" onClick={() => window.print()} className="rounded-xl font-bold h-8 md:h-10">
                 <Printer className="h-3.5 w-3.5 sm:mr-2" />
