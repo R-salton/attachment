@@ -29,21 +29,23 @@ const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TF
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
-  const { isLeader, isAdmin, isCommander, profile, isLoading, user } = useUserProfile();
+  const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    if (!db || !profile || !user || !profile.role) return null;
+    // Crucial: Only run the query once auth and profile are fully loaded and unit/role are available
+    if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
-    // Admin/Leader see 6 reports as a daily feed
+    
+    // Leaders and Admins see the global feed (all units)
     if (isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
-      // Trainees see 3 recent reports from their unit
-      if (!profile.unit) return null;
-      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(3));
+      // Trainees are restricted to their assigned unit
+      if (!profile.unit || profile.unit === 'N/A') return null;
+      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
-  }, [db, isLeader, profile, user?.uid]);
+  }, [db, isLeader, profile, user?.uid, isLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -86,7 +88,7 @@ export default function Home() {
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
-              ROLE: <span className="text-primary ml-1 uppercase">{isAdmin ? 'Admin' : profile?.role}</span>
+              ROLE: <span className="text-primary ml-1 uppercase">{isAdmin ? 'Admin' : profile?.role || 'User'}</span>
             </Badge>
             <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
               UNIT: <span className="text-slate-900 ml-1 uppercase">{profile?.unit || 'Station'}</span>
@@ -103,7 +105,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Admin Unit Selection Dashboard */}
       {isAdmin && (
         <section className="space-y-6">
           <div className="flex items-center gap-3">
@@ -132,13 +133,12 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
-        {/* Reports Activity Feed (6 items for Leaders/Admins) */}
         <Card className="lg:col-span-2 border-none shadow-xl md:shadow-2xl rounded-[2rem] md:rounded-[3rem] bg-white overflow-hidden flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between p-6 md:p-10 pb-2 md:pb-4">
             <div className="space-y-1">
               <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
                 <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                Daily Activity
+                {isLeader ? 'Operational Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
                 {isLeader ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
@@ -198,7 +198,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Action & Tools Panel */}
         <div className="space-y-6 md:space-y-8">
           <Card className="bg-slate-900 border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-700">
@@ -223,7 +222,7 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              {(isLeader || isAdmin) && (
+              {isLeader && (
                 <div className="pt-6 border-t border-white/5 mt-6">
                   <div className="bg-primary/20 border border-primary/30 p-5 rounded-3xl space-y-4">
                     <div className="flex items-center gap-3">
@@ -251,7 +250,7 @@ export default function Home() {
               <div className="flex gap-4">
                 <span className="text-primary font-black text-lg leading-none">01</span>
                 <p className="text-xs text-slate-500 font-bold leading-relaxed">
-                  {isAdmin ? 'Admins have visibility across all DPU units for oversight.' : `Reports are station-locked. You are currently attached to ${profile?.unit}.`}
+                  {isAdmin ? 'Admins have visibility across all DPU units for oversight.' : `Reports are station-locked. You are currently attached to ${profile?.unit || 'a Station'}.`}
                 </p>
               </div>
               <div className="flex gap-4">

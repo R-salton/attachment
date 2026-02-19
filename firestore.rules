@@ -7,7 +7,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'nezasalton@gmail.com';
+      return isSignedIn() && (
+        request.auth.token.email == 'nezasalton@gmail.com' ||
+        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1'
+      );
     }
 
     function getUserData() {
@@ -16,17 +19,11 @@ service cloud.firestore {
     }
 
     function isCommander() {
-      return isSignedIn() && (
-        isAdmin() || 
-        (getUserData().role == 'COMMANDER')
-      );
+      return isSignedIn() && (isAdmin() || getUserData().role == 'COMMANDER');
     }
 
     function isLeader() {
-      return isSignedIn() && (
-        isCommander() || 
-        (getUserData().role == 'LEADER')
-      );
+      return isSignedIn() && (isCommander() || getUserData().role == 'LEADER');
     }
 
     match /users/{userId} {
@@ -37,24 +34,28 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // Visibility: Admin, Commander, and Leaders see all. Trainees see their unit only.
-      allow read: if isSignedIn() && (
+      // Allow list if Admin/Leader or if query is filtered by the user's unit
+      allow list: if isSignedIn() && (
         isAdmin() || 
         isLeader() || 
         (getUserData().unit == resource.data.unit)
       );
       
-      // Everyone who is signed in can create reports
+      // Allow get for individual documents
+      allow get: if isSignedIn() && (
+        isAdmin() || 
+        isLeader() || 
+        (getUserData().unit == resource.data.unit)
+      );
+      
       allow create: if isSignedIn();
       
-      // Leaders and above can edit any report. Trainees can edit reports in their unit.
       allow update: if isSignedIn() && (
         isAdmin() || 
         isLeader() || 
         (getUserData().unit == resource.data.unit)
       );
       
-      // Leaders and above can delete reports
       allow delete: if isSignedIn() && isLeader();
     }
   }

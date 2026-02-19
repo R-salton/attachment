@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft, Trash2, Filter } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ export default function ReportsList() {
   const searchParams = useSearchParams();
   const db = useFirestore();
   const { toast } = useToast();
-  const { isLeader, isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isLeader, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const initialUnitFilter = searchParams.get('unit') || '';
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +45,7 @@ export default function ReportsList() {
   }, [searchParams]);
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !profile || !user || !profile.role) return null;
+    if (!db || !user?.uid || isAuthLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
@@ -57,10 +57,10 @@ export default function ReportsList() {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } else {
       // Station level viewing
-      if (!profile.unit) return null;
+      if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     }
-  }, [db, isLeader, profile, user?.uid, unitFilter]);
+  }, [db, isLeader, profile, user?.uid, unitFilter, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -98,7 +98,7 @@ export default function ReportsList() {
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {unitFilter ? `Unit: ${unitFilter}` : isLeader ? 'Global Registry' : `${profile?.unit} Registry`}
+                  {unitFilter ? `Unit: ${unitFilter}` : isLeader ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
                 </Badge>
                 {unitFilter && (
                   <Button variant="ghost" size="sm" className="h-6 text-[8px] font-black uppercase px-2 hover:bg-slate-200" onClick={() => {
@@ -128,7 +128,7 @@ export default function ReportsList() {
           </div>
         </section>
 
-        {(isLeader || isCommander || isAdmin) && !unitFilter && (
+        {isLeader && !unitFilter && (
           <div className="bg-primary/5 border border-primary/10 p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center gap-6">
               <div className="h-16 w-16 bg-primary rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30">
