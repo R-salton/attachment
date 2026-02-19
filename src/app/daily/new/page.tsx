@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   FileText, 
-  Save, 
   Loader2, 
   ChevronRight, 
   ChevronLeft, 
@@ -42,7 +41,8 @@ import {
   Clock,
   AlertTriangle,
   ArrowLeft,
-  Lightbulb
+  Lightbulb,
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -59,17 +59,17 @@ const FormSchema = z.object({
   unitName: z.string().min(1, "Unit name is required"),
   dayNumber: z.string().min(1, "Day number is required"),
   operationalSummary: z.string().min(1, "Summary is required"),
-  securitySituation: z.string().default('calm and stable'),
+  securitySituation: z.string().min(1, "Security status is required"),
   incidents: z.array(z.object({
     time: z.string(),
     description: z.string()
   })).default([]),
   actionTaken: z.string().optional(),
-  dutiesConducted: z.string().describe("New line separated list"),
+  dutiesConducted: z.string().min(1, "Duties are required"),
   casualties: z.string().default('No casualties'),
   disciplinaryCases: z.string().default('No disciplinary cases'),
-  challenges: z.string().describe("New line separated list"),
-  recommendations: z.string().describe("New line separated list"),
+  challenges: z.string().min(1, "Challenges are required"),
+  recommendations: z.string().optional(),
   overallSummary: z.string().min(1, "Overall summary is required"),
   commanderName: z.string().min(1, "Commander name is required"),
 });
@@ -90,18 +90,18 @@ export default function NewDailyReport() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-      unitName: profile?.unit || 'TRS',
-      dayNumber: '1',
-      operationalSummary: 'continued performing Traffic regulations, control, traffic recoveries, public education and enforcing laws through punishments.',
+      unitName: profile?.unit || '',
+      dayNumber: '',
+      operationalSummary: '',
       securitySituation: 'calm and stable',
       incidents: [],
       actionTaken: '',
-      dutiesConducted: "Regulated traffic flow from different junctions\nChecked vehicle documents and equipment\nPunished law violators with fine of traffic laws and regulations\nResponded to an accident incident",
+      dutiesConducted: '',
       casualties: 'No casualties',
       disciplinaryCases: 'No disciplinary cases',
-      challenges: "Delay in shift replacement\nWeather condition changes",
-      recommendations: "Provide portable umbrellas for field personnel\nImprove shift coordination",
-      overallSummary: 'Day activities were conducted successfully in accordance with operational procedures.',
+      challenges: '',
+      recommendations: '',
+      overallSummary: '',
       commanderName: profile?.displayName || '',
     },
   });
@@ -123,7 +123,7 @@ export default function NewDailyReport() {
         ...values,
         dutiesConducted: values.dutiesConducted.split('\n').filter(s => s.trim()),
         challenges: values.challenges.split('\n').filter(s => s.trim()),
-        recommendations: values.recommendations.split('\n').filter(s => s.trim()),
+        recommendations: values.recommendations?.split('\n').filter(s => s.trim()) || [],
         forceDiscipline: {
           casualties: values.casualties,
           disciplinaryCases: values.disciplinaryCases
@@ -228,16 +228,16 @@ export default function NewDailyReport() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => form.reset()} className="hidden sm:flex rounded-xl">Reset</Button>
-          <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmitPreview)} className="rounded-xl">
+          <Button size="sm" disabled={isLoading} onClick={form.handleSubmit(onSubmitPreview)} className="rounded-xl font-bold">
             {isLoading ? <Loader2 className="animate-spin mr-1 h-3.5 w-3.5" /> : <Eye className="mr-1 h-3.5 w-3.5" />}
             Preview
           </Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto mt-6 md:mt-10 px-4 md:px-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 md:space-y-8">
-          <div className="bg-white p-1 rounded-2xl border shadow-sm sticky top-[73px] z-40 overflow-x-auto">
+      <main className="max-w-4xl mx-auto mt-4 md:mt-10 px-4 md:px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-8">
+          <div className="bg-white p-1 rounded-2xl border shadow-sm sticky top-[68px] md:top-[73px] z-40 overflow-x-auto">
             <TabsList className="w-full h-auto flex justify-start gap-1 bg-transparent border-none p-0 scrollbar-hide">
               {tabs.map((tab) => (
                 <TabsTrigger 
@@ -268,7 +268,7 @@ export default function NewDailyReport() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Report Date</Label>
-                    <Input {...form.register('reportDate')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. 18 Feb 26" />
+                    <Input {...form.register('reportDate')} className="h-11 rounded-xl text-sm" placeholder="e.g. 18 FEB 26" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Unit Name</Label>
@@ -276,8 +276,8 @@ export default function NewDailyReport() {
                       defaultValue={form.getValues('unitName')} 
                       onValueChange={(val) => form.setValue('unitName', val)}
                     >
-                      <SelectTrigger className="h-10 md:h-11 rounded-xl text-sm">
-                        <SelectValue placeholder="Select Unit" />
+                      <SelectTrigger className="h-11 rounded-xl text-sm">
+                        <SelectValue placeholder="Select Deployment Unit" />
                       </SelectTrigger>
                       <SelectContent>
                         {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
@@ -285,12 +285,12 @@ export default function NewDailyReport() {
                     </Select>
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Day Number</Label>
-                    <Input {...form.register('dayNumber')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. 3" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Day Number of Attachment</Label>
+                    <Input {...form.register('dayNumber')} className="h-11 rounded-xl text-sm" placeholder="e.g. 3" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Name)</Label>
-                    <Input {...form.register('commanderName')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. CASTRO Boaz" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Full Name)</Label>
+                    <Input {...form.register('commanderName')} className="h-11 rounded-xl text-sm" placeholder="e.g. CASTRO Boaz" />
                   </div>
                 </div>
               </TabsContent>
@@ -298,16 +298,28 @@ export default function NewDailyReport() {
               <TabsContent value="summary" className="space-y-6 animate-in fade-in duration-300">
                 <div className="space-y-5 md:space-y-6">
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Operational Summary</Label>
-                    <Textarea {...form.register('operationalSummary')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Operational Narrative</Label>
+                    <Textarea 
+                      {...form.register('operationalSummary')} 
+                      className="min-h-[120px] rounded-xl font-mono text-xs md:text-sm" 
+                      placeholder="e.g. continued performing Traffic regulations, control, traffic recoveries..."
+                    />
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Duties Conducted (One per line)</Label>
-                    <Textarea {...form.register('dutiesConducted')} className="min-h-[140px] md:min-h-[180px] rounded-xl font-mono text-xs md:text-sm" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Specific Duties (One per line)</Label>
+                    <Textarea 
+                      {...form.register('dutiesConducted')} 
+                      className="min-h-[180px] rounded-xl font-mono text-xs md:text-sm" 
+                      placeholder="Regulated traffic flow&#10;Checked vehicle documents&#10;Punished law violators"
+                    />
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Overall Narrative Summary</Label>
-                    <Textarea {...form.register('overallSummary')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Overall Status Narrative</Label>
+                    <Textarea 
+                      {...form.register('overallSummary')} 
+                      className="min-h-[100px] rounded-xl font-mono text-xs md:text-sm" 
+                      placeholder="Summarize the overall success or tone of the day's activities."
+                    />
                   </div>
                 </div>
               </TabsContent>
@@ -316,38 +328,38 @@ export default function NewDailyReport() {
                 <div className="space-y-5 md:space-y-6">
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">General Security Situation</Label>
-                    <Input {...form.register('securitySituation')} className="h-10 md:h-11 rounded-xl text-sm" placeholder="e.g. calm and stable" />
+                    <Input {...form.register('securitySituation')} className="h-11 rounded-xl text-sm" placeholder="e.g. calm and stable" />
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold text-slate-700 text-xs md:text-sm">Incident Log</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={() => appendIncident({ time: '', description: '' })} className="rounded-lg h-8 text-[10px] md:text-xs">
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add
+                      <Label className="font-bold text-slate-700 text-xs md:text-sm">Incident Records</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendIncident({ time: '', description: '' })} className="rounded-lg h-8 text-[10px] md:text-xs font-bold">
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Record
                       </Button>
                     </div>
                     
                     {incidentFields.length === 0 && (
-                      <div className="text-center py-6 border border-dashed rounded-xl bg-slate-50">
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium italic">No incidents recorded for this period.</p>
+                      <div className="text-center py-8 border border-dashed rounded-2xl bg-slate-50">
+                        <p className="text-[10px] md:text-xs text-slate-400 font-medium italic">No specific incidents to log.</p>
                       </div>
                     )}
 
                     {incidentFields.map((field, index) => (
-                      <div key={field.id} className="p-4 bg-slate-50 rounded-xl border space-y-4 animate-in slide-in-from-right-2">
+                      <div key={field.id} className="p-4 bg-slate-50 rounded-2xl border space-y-4 animate-in slide-in-from-right-2">
                         <div className="flex flex-col md:flex-row md:items-start gap-4">
                           <div className="w-full md:w-48 space-y-1.5">
-                            <Label className="text-[9px] uppercase font-bold text-slate-400">Time (DTG)</Label>
+                            <Label className="text-[9px] uppercase font-black text-slate-400">Time (DTG)</Label>
                             <div className="relative">
                               <Clock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                              <Input {...form.register(`incidents.${index}.time`)} className="pl-9 h-9 text-xs" placeholder="181020B FEB 26" />
+                              <Input {...form.register(`incidents.${index}.time`)} className="pl-9 h-9 text-xs rounded-lg" placeholder="181020B FEB 26" />
                             </div>
                           </div>
                           <div className="flex-1 space-y-1.5">
-                            <Label className="text-[9px] uppercase font-bold text-slate-400">Description & Location</Label>
-                            <Input {...form.register(`incidents.${index}.description`)} className="h-9 text-xs" placeholder="e.g. SANY truck collided..." />
+                            <Label className="text-[9px] uppercase font-black text-slate-400">Description & Location</Label>
+                            <Input {...form.register(`incidents.${index}.description`)} className="h-9 text-xs rounded-lg" placeholder="e.g. Minor collision at Nyabugogo..." />
                           </div>
-                          <Button type="button" variant="ghost" size="icon" className="md:mt-6 text-destructive h-8 w-8 self-end md:self-auto" onClick={() => removeIncident(index)}>
+                          <Button type="button" variant="ghost" size="icon" className="md:mt-6 text-destructive h-9 w-9 self-end md:self-auto hover:bg-destructive/10" onClick={() => removeIncident(index)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -358,9 +370,13 @@ export default function NewDailyReport() {
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm flex items-center gap-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                      Action Taken
+                      Actions Taken
                     </Label>
-                    <Textarea {...form.register('actionTaken')} className="min-h-[80px] md:min-h-[100px] rounded-xl font-mono text-xs md:text-sm" placeholder="Actions taken for reported incidents" />
+                    <Textarea 
+                      {...form.register('actionTaken')} 
+                      className="min-h-[100px] rounded-xl font-mono text-xs md:text-sm" 
+                      placeholder="Detail the response to incidents logged above."
+                    />
                   </div>
                 </div>
               </TabsContent>
@@ -368,51 +384,59 @@ export default function NewDailyReport() {
               <TabsContent value="discipline" className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Casualties Status</Label>
-                    <Input {...form.register('casualties')} className="h-10 md:h-11 rounded-xl text-sm" />
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Casualties Report</Label>
+                    <Input {...form.register('casualties')} className="h-11 rounded-xl text-sm" placeholder="e.g. No casualties" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Disciplinary Status</Label>
-                    <Input {...form.register('disciplinaryCases')} className="h-10 md:h-11 rounded-xl text-sm" />
+                    <Input {...form.register('disciplinaryCases')} className="h-11 rounded-xl text-sm" placeholder="e.g. No disciplinary cases" />
                   </div>
                 </div>
                 <div className="space-y-2 md:space-y-3">
-                  <Label className="font-bold text-slate-700 text-xs md:text-sm">Challenges (One per line)</Label>
-                  <Textarea {...form.register('challenges')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" />
+                  <Label className="font-bold text-slate-700 text-xs md:text-sm">Challenges Encountered (One per line)</Label>
+                  <Textarea 
+                    {...form.register('challenges')} 
+                    className="min-h-[120px] rounded-xl font-mono text-xs md:text-sm" 
+                    placeholder="e.g. Delay in shift replacement&#10;Adverse weather conditions"
+                  />
                 </div>
                 <div className="space-y-2 md:space-y-3">
                   <Label className="font-bold text-slate-700 text-xs md:text-sm flex items-center gap-2">
                     <Lightbulb className="h-4 w-4 text-primary" />
                     Recommendations (One per line)
                   </Label>
-                  <Textarea {...form.register('recommendations')} className="min-h-[100px] md:min-h-[120px] rounded-xl font-mono text-xs md:text-sm" placeholder="Suggest improvements based on challenges" />
+                  <Textarea 
+                    {...form.register('recommendations')} 
+                    className="min-h-[120px] rounded-xl font-mono text-xs md:text-sm" 
+                    placeholder="Suggest specific improvements for future deployments."
+                  />
                 </div>
               </TabsContent>
 
               <TabsContent value="preview" className="space-y-6 md:space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
                   <div className="space-y-6">
-                    <div className="bg-slate-50 p-6 md:p-12 rounded-xl md:rounded-2xl font-report text-[13px] md:text-[15px] whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800 overflow-x-auto">
+                    <div className="bg-slate-50 p-6 md:p-12 rounded-2xl font-report text-[13px] md:text-[15px] whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800 overflow-x-auto">
                       {previewContent}
                     </div>
-                    <div className="flex flex-col sm:flex-row justify-end gap-3">
-                      <Button variant="outline" className="rounded-xl h-10 md:h-11 px-6 font-bold text-xs md:text-sm w-full sm:w-auto" onClick={() => {
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                      <Button variant="outline" className="rounded-xl h-12 px-6 font-bold text-xs md:text-sm w-full sm:w-auto" onClick={() => {
                         navigator.clipboard.writeText(previewContent);
                         toast({ title: "Copied", description: "Report text copied to clipboard." });
                       }}>
-                        Copy Text
+                        Copy Transcript
                       </Button>
-                      <Button className="rounded-xl h-10 md:h-11 px-8 font-bold text-xs md:text-sm w-full sm:w-auto shadow-lg shadow-primary/20" onClick={handleFinalize} disabled={isLoading}>
-                        {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+                      <Button className="rounded-xl h-12 px-10 font-bold text-xs md:text-sm w-full sm:w-auto shadow-xl shadow-primary/20" onClick={handleFinalize} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
                         Finalize & Archive
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-20 md:py-32 text-slate-400">
-                    <FileText className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-20" />
-                    <p className="text-base md:text-lg font-bold">No Preview Available</p>
-                    <p className="text-xs md:text-sm">Fill in the operational sections and click "Preview".</p>
+                  <div className="text-center py-24 md:py-36 text-slate-400">
+                    <FileText className="h-12 w-12 md:h-20 md:w-20 mx-auto mb-6 opacity-10" />
+                    <p className="text-base md:text-xl font-black text-slate-900 mb-2">Awaiting Completion</p>
+                    <p className="text-xs md:text-sm max-w-xs mx-auto text-slate-500">Please fill out all operational sections and click "Preview" to generate the final transcript.</p>
                   </div>
                 )}
               </TabsContent>
@@ -421,47 +445,52 @@ export default function NewDailyReport() {
           </Card>
         </Tabs>
 
-        <div className="mt-8 md:mt-12 flex justify-between gap-4">
+        <div className="mt-8 md:mt-12 flex justify-between items-center gap-4">
           <Button 
             type="button"
             variant="ghost" 
             disabled={activeTab === tabs[0].id}
-            className="font-bold text-slate-600 rounded-xl"
+            className="font-bold text-slate-600 rounded-xl px-4"
             onClick={() => {
               const idx = tabs.findIndex(t => t.id === activeTab);
               setActiveTab(tabs[idx-1].id);
             }}
           >
-            <ChevronLeft className="mr-1 md:mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Previous</span>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back
           </Button>
+          <div className="flex items-center gap-1.5">
+            {tabs.map((t, idx) => (
+              <div key={t.id} className={`h-1.5 rounded-full transition-all duration-300 ${activeTab === t.id ? 'w-6 bg-primary' : 'w-1.5 bg-slate-200'}`} />
+            ))}
+          </div>
           <Button 
             type="button"
             variant="outline" 
             disabled={activeTab === tabs[tabs.length-1].id}
-            className="font-bold bg-white rounded-xl shadow-sm"
+            className="font-bold bg-white rounded-xl shadow-sm px-4"
             onClick={() => {
               const idx = tabs.findIndex(t => t.id === activeTab);
               setActiveTab(tabs[idx+1].id);
             }}
           >
-            <span className="hidden sm:inline">Next Section</span>
-            <ChevronRight className="ml-1 md:ml-2 h-4 w-4" />
+            Next
+            <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </main>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-[1.5rem] md:rounded-2xl max-w-[95vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive SITUATION REPORT?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please confirm that all information in this report is accurate and reflects the official operational status. Once archived, it will be added to the permanent registry.
+            <AlertDialogTitle className="text-xl font-black">Archive SITUATION REPORT?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              By confirming, you authorize this transcript for the official registry. This document will be accessible to Command oversight and archived permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Review Again</AlertDialogCancel>
-            <AlertDialogAction onClick={saveReport} disabled={isLoading} className="bg-primary shadow-lg shadow-primary/20">
+          <AlertDialogFooter className="gap-2 sm:gap-3 mt-4">
+            <AlertDialogCancel disabled={isLoading} className="rounded-xl font-bold h-11">Review Again</AlertDialogCancel>
+            <AlertDialogAction onClick={saveReport} disabled={isLoading} className="bg-primary rounded-xl font-bold h-11 shadow-lg shadow-primary/20">
               {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Confirm Archive
             </AlertDialogAction>
