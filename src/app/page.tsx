@@ -116,7 +116,11 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             {UNITS.map((unit) => (
-              <Card key={unit} className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-2xl md:rounded-3xl overflow-hidden bg-white hover:-translate-y-1 duration-300" onClick={() => router.push(`/reports?unit=${encodeURIComponent(unit)}`)}>
+              <Card 
+                key={unit} 
+                className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-2xl md:rounded-3xl overflow-hidden bg-white hover:-translate-y-1 duration-300" 
+                onClick={() => router.push(`/reports?unit=${encodeURIComponent(unit)}`)}
+              >
                 <CardContent className="p-4 md:p-6 flex flex-col items-center text-center space-y-3">
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                     <Navigation className="h-5 w-5 md:h-6 md:w-6 text-slate-400 group-hover:text-primary transition-colors" />
