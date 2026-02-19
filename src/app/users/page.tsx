@@ -1,12 +1,11 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeApp, deleteApp, getApp, getApps } from 'firebase/app';
+import { collection, query, orderBy, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
 import { 
@@ -40,11 +39,22 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus } from 'lucide-react';
+import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UserManagementPage() {
@@ -55,6 +65,7 @@ export default function UserManagementPage() {
   
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -78,13 +89,24 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!db) return;
+    setIsDeleting(userId);
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      toast({ title: "Registry Updated", description: "User profile has been removed from the operational registry." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove user from database." });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newPassword || !newName || !db) return;
 
     setIsCreating(true);
-    
-    // We use a secondary Firebase app to create the user without signing out the admin
     const secondaryAppName = `Secondary-${Date.now()}`;
     let secondaryApp;
     
@@ -269,22 +291,48 @@ export default function UserManagementPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {u.email === 'nezasalton@gmail.com' ? (
-                          <span className="text-xs text-slate-400 italic">System Admin</span>
-                        ) : (
-                          <Select 
-                            defaultValue={u.role} 
-                            onValueChange={(val) => handleRoleChange(u.uid, val)}
-                          >
-                            <SelectTrigger className="w-[140px] ml-auto h-9">
-                              <SelectValue placeholder="Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="TRAINEE">Trainee</SelectItem>
-                              <SelectItem value="LEADER">Leader</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {u.email === 'nezasalton@gmail.com' ? (
+                            <span className="text-xs text-slate-400 italic px-4">System Admin</span>
+                          ) : (
+                            <>
+                              <Select 
+                                defaultValue={u.role} 
+                                onValueChange={(val) => handleRoleChange(u.uid, val)}
+                              >
+                                <SelectTrigger className="w-[140px] h-9">
+                                  <SelectValue placeholder="Role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="TRAINEE">Trainee</SelectItem>
+                                  <SelectItem value="LEADER">Leader</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 w-9">
+                                    {isDeleting === u.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Revoke Personnel Access?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently remove <strong>{u.displayName}</strong> from the operational registry. Note: You must also manually delete the authentication record in the Firebase Console to prevent re-login.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                      Confirm Deletion
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
