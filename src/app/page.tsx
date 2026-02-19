@@ -20,6 +20,7 @@ import {
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const db = useFirestore();
@@ -27,7 +28,8 @@ export default function Home() {
   const { isLeader, isAdmin, isCommander, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    if (!db || !profile) return null;
+    // Defensive guard: Ensure db, profile, and user are present before creating query
+    if (!db || !profile || !user) return null;
     
     const baseQuery = collection(db, 'reports');
     if (isCommander) {
@@ -35,7 +37,7 @@ export default function Home() {
     } else {
       return query(baseQuery, where('unit', '==', profile.unit || 'TRS'), orderBy('createdAt', 'desc'), limit(3));
     }
-  }, [db, isCommander, profile?.unit]);
+  }, [db, isCommander, profile, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -74,7 +76,7 @@ export default function Home() {
             <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-emerald-600">Secure Access Granted</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900">
-            Welcome, {profile?.displayName?.split(' ')[0]}
+            Welcome, {profile?.displayName?.split(' ')[0] || 'Officer'}
           </h1>
           <div className="flex items-center gap-3">
             <p className="text-slate-500 text-sm md:text-lg">Clearance: <span className="font-bold text-primary uppercase">{isAdmin ? 'Admin' : profile?.role}</span></p>

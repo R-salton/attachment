@@ -15,7 +15,20 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
-  const isAdmin = user?.email === 'nezasalton@gmail.com';
+  // Immediate guard: If there is no user, return unauthenticated state instantly
+  if (!user) {
+    return { 
+      profile: null, 
+      isLoading: isAuthLoading, 
+      isAdmin: false, 
+      isCommander: false,
+      isLeader: false, 
+      isTrainee: false,
+      user: null 
+    };
+  }
+
+  const isAdmin = user.email === 'nezasalton@gmail.com';
   const isCommander = profile?.role === 'COMMANDER' || isAdmin;
   const isLeader = profile?.role === 'LEADER' || isCommander;
   const isTrainee = profile?.role === 'TRAINEE' && !isCommander && !isLeader;

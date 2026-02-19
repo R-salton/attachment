@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, ChevronLeft, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft, LayoutGrid, List } from 'lucide-react';
+import { FileText, Calendar, User, ArrowRight, Loader2, Search, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -16,12 +17,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
-  const { isCommander, profile, isLoading: isAuthLoading } = useUserProfile();
+  const { isCommander, profile, isLoading: isAuthLoading, user, isLeader } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !profile) return null;
+    // Defensive guard: Ensure db, profile, and user are present before creating query
+    if (!db || !profile || !user) return null;
     
     const baseQuery = collection(db, 'reports');
     // Commander and Admin see all reports. Others see their unit only.
@@ -30,7 +32,7 @@ export default function ReportsList() {
     } else {
       return query(baseQuery, where('unit', '==', profile.unit || 'TRS'), orderBy('createdAt', 'desc'));
     }
-  }, [db, isCommander, profile?.unit]);
+  }, [db, isCommander, profile, user?.uid]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -53,7 +55,7 @@ export default function ReportsList() {
             <div className="space-y-0.5 md:space-y-1">
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900">Archive</h1>
               <p className="text-xs md:text-sm text-slate-500 font-medium">
-                {isCommander ? 'Global Command Registry' : `${profile?.unit} Unit Registry`}
+                {isCommander ? 'Global Command Registry' : `${profile?.unit || 'Unit'} Registry`}
               </p>
             </div>
           </div>
@@ -146,7 +148,7 @@ export default function ReportsList() {
               <h3 className="text-xl md:text-2xl font-bold text-slate-900">No Records Found</h3>
               <p className="text-xs md:text-sm text-slate-500 max-w-sm mx-auto">The archive is empty or no reports match your search criteria.</p>
             </div>
-            {profile?.role === 'LEADER' && (
+            {isLeader && (
               <Button size="sm" asChild className="rounded-xl px-6">
                 <Link href="/daily/new">File New Report</Link>
               </Button>

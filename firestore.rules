@@ -16,11 +16,17 @@ service cloud.firestore {
     }
 
     function isCommander() {
-      return isSignedIn() && (isAdmin() || getUserData().role == 'COMMANDER');
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'COMMANDER')
+      );
     }
 
     function isLeader() {
-      return isSignedIn() && (isCommander() || getUserData().role == 'LEADER');
+      return isSignedIn() && (
+        isCommander() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'LEADER')
+      );
     }
 
     match /users/{userId} {
@@ -40,10 +46,8 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && resource.data.unit == getUserData().unit)
       );
       
-      // Creation: Any signed in user can create (though UI usually restricts to Leader+)
-      allow create: if isSignedIn();
+      allow create: if isLeader();
       
-      // Update: per request "each user must be able to edit any report" (within visibility scope)
       allow update: if isSignedIn() && (
         isAdmin() || 
         isCommander() || 
