@@ -26,10 +26,15 @@ service cloud.firestore {
       // Allow users to read their own profile or admins to read all
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       
-      // Allow profile creation. Special case for the admin email to be LEADER immediately.
-      allow create: if isSignedIn() && request.auth.uid == userId && (
-        (request.auth.token.email == 'nezasalton@gmail.com' && request.resource.data.role == 'LEADER') ||
-        (request.resource.data.role == 'TRAINEE')
+      // Allow profile creation. 
+      // 1. Users can create their own profile (self-sync)
+      // 2. Admins can create profiles for others (manual addition)
+      allow create: if isSignedIn() && (
+        (request.auth.uid == userId && (
+          (request.auth.token.email == 'nezasalton@gmail.com' && request.resource.data.role == 'LEADER') ||
+          (request.resource.data.role == 'TRAINEE')
+        )) || 
+        isAdmin()
       );
       
       // Allow admins to update roles, or users to update their own data (excluding role changes)
@@ -40,7 +45,7 @@ service cloud.firestore {
 
     // Reports collection
     match /reports/{reportId} {
-      // All signed-in users can read/list reports
+      // All signed-in users can read/list reports (As requested: remove ownership requirement for read)
       allow read: if isSignedIn();
       
       // Only Leaders/Admins can create/update/delete
