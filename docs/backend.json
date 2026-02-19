@@ -27,7 +27,7 @@
         "uid": { "type": "string" },
         "email": { "type": "string" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["TRAINEE", "LEADER", "COMMANDER"] },
+        "role": { "type": "string", "enum": ["ADMIN", "TRAINEE", "LEADER", "COMMANDER"] },
         "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },

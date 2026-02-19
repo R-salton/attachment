@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -58,6 +59,7 @@ import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, Arro
 import { useToast } from '@/hooks/use-toast';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE"];
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -263,9 +265,7 @@ export default function UserManagementPage() {
                         <SelectValue placeholder="Select Role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="TRAINEE">Trainee</SelectItem>
-                        <SelectItem value="LEADER">Leader</SelectItem>
-                        <SelectItem value="COMMANDER">Caded Commander</SelectItem>
+                        {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -314,77 +314,82 @@ export default function UserManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.map((u) => (
-                    <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
-                      <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
-                        <div className="flex flex-col">
-                          <span>{u.displayName}</span>
-                          <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 md:py-4">
-                        <div className="flex items-center gap-2">
+                  {users?.map((u) => {
+                    const isSystemAdmin = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+                    return (
+                      <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
+                          <div className="flex flex-col">
+                            <span>{u.displayName}</span>
+                            <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 md:py-4">
+                          <div className="flex items-center gap-2">
+                            <Select 
+                              disabled={isSystemAdmin}
+                              defaultValue={u.role} 
+                              onValueChange={(val) => handleRoleChange(u.uid, val)}
+                            >
+                              <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
+                                <SelectValue placeholder="Role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ROLES.map(role => (
+                                  <SelectItem key={role} value={role} className="text-[10px] md:text-xs">
+                                    {role}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 md:py-4">
                           <Select 
-                            disabled={u.email === 'nezasalton@gmail.com'}
-                            defaultValue={u.role} 
-                            onValueChange={(val) => handleRoleChange(u.uid, val)}
+                            disabled={isSystemAdmin}
+                            defaultValue={u.unit || 'TRS'} 
+                            onValueChange={(val) => handleUnitChange(u.uid, val)}
                           >
                             <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
-                              <SelectValue placeholder="Role" />
+                              <SelectValue placeholder="Unit" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="TRAINEE" className="text-[10px] md:text-xs">Trainee</SelectItem>
-                              <SelectItem value="LEADER" className="text-[10px] md:text-xs">Leader</SelectItem>
-                              <SelectItem value="COMMANDER" className="text-[10px] md:text-xs">Commander</SelectItem>
+                              {UNITS.map(unit => <SelectItem key={unit} value={unit} className="text-[10px] md:text-xs">{unit}</SelectItem>)}
                             </SelectContent>
                           </Select>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 md:py-4">
-                        <Select 
-                          disabled={u.email === 'nezasalton@gmail.com'}
-                          defaultValue={u.unit || 'TRS'} 
-                          onValueChange={(val) => handleUnitChange(u.uid, val)}
-                        >
-                          <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
-                            <SelectValue placeholder="Unit" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {UNITS.map(unit => <SelectItem key={unit} value={unit} className="text-[10px] md:text-xs">{unit}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right py-3 md:py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {u.email === 'nezasalton@gmail.com' ? (
-                            <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Admin</span>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
-                                  {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
-                                  <AlertDialogDescription className="text-xs md:text-sm">
-                                    This will permanently remove <strong>{u.displayName}</strong>.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="gap-2">
-                                  <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
-                                    Confirm Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="text-right py-3 md:py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {isSystemAdmin ? (
+                              <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Master</span>
+                            ) : (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
+                                    {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
+                                    <AlertDialogDescription className="text-xs md:text-sm">
+                                      This will permanently remove <strong>{u.displayName}</strong>.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
+                                      Confirm Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
@@ -40,14 +41,16 @@ export function useUserProfile() {
     };
   }
 
-  const isAdmin = user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+  // Static check for the super-admin account
+  const isSuperAdmin = user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
   
   // Default roles if profile isn't fully initialized yet but user exists
-  const role = profile?.role || (isAdmin ? 'COMMANDER' : 'TRAINEE');
+  const role = profile?.role || (isSuperAdmin ? 'ADMIN' : 'TRAINEE');
   
+  const isAdmin = role === 'ADMIN' || isSuperAdmin;
   const isCommander = role === 'COMMANDER' || isAdmin;
   const isLeader = role === 'LEADER' || isCommander;
-  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader;
+  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !isAdmin;
 
   return { 
     profile, 

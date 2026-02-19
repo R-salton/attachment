@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -21,7 +22,7 @@ export function AuthProfileSync() {
 
         if (!userSnap.exists()) {
           // nezasalton@gmail.com is the primary Admin/Commander.
-          const initialRole = (user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1') ? 'COMMANDER' : 'TRAINEE';
+          const initialRole = (user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1') ? 'ADMIN' : 'TRAINEE';
           
           await setDoc(userRef, {
             uid: user.uid,
