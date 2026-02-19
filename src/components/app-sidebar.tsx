@@ -13,7 +13,9 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarGroupContent
+  SidebarGroupContent,
+  SidebarRail,
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
@@ -23,7 +25,8 @@ import {
   LogOut, 
   UserCircle,
   ShieldCheck,
-  Settings
+  Settings,
+  PanelLeft
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -40,13 +43,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl">
-      <SidebarHeader className="p-4 bg-transparent border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg shadow-lg shadow-primary/20">
+      <SidebarHeader className="p-4 bg-transparent border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="bg-primary p-2 rounded-lg shadow-lg shadow-primary/20 shrink-0">
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
-          <span className="font-black text-lg tracking-tighter text-slate-900 dark:text-white group-data-[collapsible=icon]:hidden">Report Master</span>
+          <span className="font-black text-lg tracking-tighter text-slate-900 dark:text-white group-data-[collapsible=icon]:hidden truncate">Report Master</span>
         </div>
+        <SidebarTrigger className="hidden md:flex" />
       </SidebarHeader>
 
       <SidebarContent className="bg-transparent px-2">
@@ -135,6 +139,7 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

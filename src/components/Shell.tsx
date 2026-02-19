@@ -5,7 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { LogIn, ShieldCheck, Menu } from 'lucide-react';
 
 /**
  * Shell component that manages the global layout based on authentication state.
@@ -49,12 +49,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-[#f8fafc]">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="md:hidden border-b bg-white/90 backdrop-blur-sm p-4 flex items-center gap-4 sticky top-0 z-40">
-            <SidebarTrigger />
-            <span className="font-bold text-slate-900">Report Master</span>
+            <SidebarTrigger>
+              <Menu className="h-5 w-5" />
+            </SidebarTrigger>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <span className="font-bold text-slate-900">Report Master</span>
+            </div>
           </header>
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
             {children}
           </main>
         </div>

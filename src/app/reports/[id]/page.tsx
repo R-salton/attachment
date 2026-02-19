@@ -26,7 +26,8 @@ import {
   Trash2,
   FileDown,
   Clock,
-  ExternalLink
+  ExternalLink,
+  MoreVertical
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -39,6 +40,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
@@ -204,7 +211,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 md:gap-4">
+        
+        <div className="flex items-center gap-2">
           {isEditing ? (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-10 font-bold px-4">
@@ -230,9 +238,31 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                   Word
                 </Button>
               </div>
-              <Button size="sm" onClick={() => window.print()} className="rounded-xl font-black h-11 px-6 shadow-lg shadow-primary/20">
-                <Printer className="h-4 w-4 md:mr-2" />
-                <span className="hidden sm:inline">Print Transcript</span>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="lg:hidden">
+                  <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl p-2">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="rounded-lg font-bold">
+                    <Edit3 className="h-4 w-4 mr-2" /> Edit Log
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopy} className="rounded-lg font-bold">
+                    <Copy className="h-4 w-4 mr-2" /> Copy Text
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportWord} className="rounded-lg font-bold">
+                    <FileDown className="h-4 w-4 mr-2" /> Export Word
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.print()} className="rounded-lg font-bold">
+                    <Printer className="h-4 w-4 mr-2" /> Print PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-11 px-6 shadow-lg shadow-primary/20">
+                <Printer className="h-4 w-4 mr-2" /> Print Transcript
               </Button>
             </div>
           )}
@@ -255,21 +285,21 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
-              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm min-w-[140px]">
                 <BadgeCheck className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Station</span>
                   <span className="text-sm font-black text-slate-900 uppercase">{report.unit}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm min-w-[140px]">
                 <User className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">In Charge</span>
                   <span className="text-sm font-black text-slate-900 uppercase">{report.reportingCommanderName}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm min-w-[140px]">
                 <Clock className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Registry Time</span>
@@ -286,11 +316,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        <Card className="shadow-3xl document-shadow border-none rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
+        <Card className="shadow-3xl document-shadow border-none rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
           <div className="h-3 bg-slate-900" />
-          <CardContent className="p-10 md:p-24 relative overflow-hidden">
+          <CardContent className="p-8 md:p-24 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none">
-              <ShieldCheck className="h-[400px] w-[400px] md:h-[600px] md:w-[600px]" />
+              <ShieldCheck className="h-[300px] w-[300px] md:h-[600px] md:w-[600px]" />
             </div>
 
             {isEditing ? (
@@ -302,20 +332,20 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[700px] font-report text-[15px] md:text-lg leading-relaxed rounded-3xl bg-slate-50 border-slate-200 focus:ring-primary/20 shadow-inner p-8"
+                  className="min-h-[500px] md:min-h-[700px] font-report text-[14px] md:text-lg leading-relaxed rounded-2xl md:rounded-3xl bg-slate-50 border-slate-200 focus:ring-primary/20 shadow-inner p-4 md:p-8"
                 />
               </div>
             ) : (
-              <div className="font-report text-base md:text-lg leading-relaxed text-slate-800 tracking-tight document-content relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-[14px] md:text-lg leading-relaxed text-slate-800 tracking-tight document-content relative z-10 max-w-3xl mx-auto">
                 {formatContent(report.fullText)}
               </div>
             )}
             
-            <div className="mt-20 md:mt-32 pt-12 md:pt-16 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-10 max-w-3xl mx-auto">
+            <div className="mt-16 md:mt-32 pt-12 md:pt-16 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-10 max-w-3xl mx-auto">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Signature Authority</p>
-                  <p className="font-report font-black text-slate-900 text-xl md:text-2xl">{report.reportingCommanderName}</p>
+                  <p className="font-report font-black text-slate-900 text-lg md:text-2xl">{report.reportingCommanderName}</p>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">OC {report.unit}</span>
@@ -324,16 +354,16 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </div>
               <div className="text-left sm:text-right space-y-2">
                 <p className="text-9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
-                <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2">
-                  <p className="text-[10px] font-mono text-slate-400 break-all leading-none">{report.id}</p>
-                  <ExternalLink className="h-3 w-3 text-slate-300" />
+                <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2 max-w-[200px] md:max-w-none">
+                  <p className="text-[10px] font-mono text-slate-400 truncate leading-none">{report.id}</p>
+                  <ExternalLink className="h-3 w-3 text-slate-300 shrink-0" />
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col items-center gap-8 pt-16 pb-20 print:hidden animate-in fade-in duration-1000">
+        <div className="flex flex-col items-center gap-8 pt-8 md:pt-16 pb-20 print:hidden animate-in fade-in duration-1000">
           {isLeader && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -342,16 +372,16 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                   Purge from Command Registry
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-[2.5rem] border-none shadow-3xl">
+              <AlertDialogContent className="rounded-2xl md:rounded-[2.5rem] border-none shadow-3xl max-w-[95vw] sm:max-w-lg">
                 <AlertDialogHeader className="p-4">
-                  <AlertDialogTitle className="text-2xl font-black">Archive Deletion Protocol</AlertDialogTitle>
+                  <AlertDialogTitle className="text-xl md:text-2xl font-black">Archive Deletion Protocol</AlertDialogTitle>
                   <AlertDialogDescription className="text-sm font-bold text-slate-500 leading-relaxed">
                     This will permanently expunge this transcript from the Command Registry. This action is irreversible and will be logged.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="p-4 gap-4">
-                  <AlertDialogCancel className="rounded-2xl font-black h-14">Abort Operation</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-14 shadow-xl shadow-destructive/20" disabled={isDeleting}>
+                <AlertDialogFooter className="p-4 gap-4 flex-col sm:flex-row">
+                  <AlertDialogCancel className="rounded-xl md:rounded-2xl font-black h-12 md:h-14">Abort Operation</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90 rounded-xl md:rounded-2xl font-black h-12 md:h-14 shadow-xl shadow-destructive/20" disabled={isDeleting}>
                     {isDeleting ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <Trash2 className="h-5 w-5 mr-2" />}
                     Confirm Purge
                   </AlertDialogAction>
