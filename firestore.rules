@@ -9,24 +9,33 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1'
+        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
       );
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
       // 1. GLOBAL COMMAND ACCESS
       // Administrators have absolute visibility and control over the entire archive.
-      allow read, write: if isAdmin();
+      // Explicitly allowing list and get to avoid broad query permission errors.
+      allow list, get, create, update, delete: if isAdmin();
 
       // 2. OPERATIONAL READ ACCESS
       // Allow authenticated personnel to list and read reports. 
       // Filtering is enforced at the application level to maintain unit focus.
-      allow list, get: if isSignedIn();
+      allow list: if isSignedIn() && (
+        isAdmin() || 
+        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
+      );
+
+      allow get: if isSignedIn() && (
+        isAdmin() || 
+        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
+      );
       
       // 3. CREATION & MODIFICATION
       allow create: if isSignedIn();

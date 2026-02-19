@@ -319,9 +319,9 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        <Card className="shadow-3xl document-shadow border-none rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
+        <Card className="shadow-3xl document-shadow border-none rounded-[1.5rem] md:rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
           <div className="h-3 bg-slate-900" />
-          <CardContent className="p-8 md:p-24 relative overflow-hidden">
+          <CardContent className="p-6 md:p-24 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none">
               <ShieldCheck className="h-[300px] w-[300px] md:h-[600px] md:w-[600px]" />
             </div>
@@ -356,7 +356,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
               <div className="text-left sm:text-right space-y-2">
-                <p className="text-[9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
+                <p className="text-9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
                 <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2 max-w-[200px] md:max-w-none">
                   <p className="text-[10px] font-mono text-slate-400 truncate leading-none">{report.id}</p>
                   <ExternalLink className="h-3 w-3 text-slate-300 shrink-0" />
