@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -58,7 +57,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+// Official Command Units including N/A for Command Staff
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"];
 const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE"];
 
 export default function UserManagementPage() {
@@ -315,19 +315,22 @@ export default function UserManagementPage() {
                 </TableHeader>
                 <TableBody>
                   {users?.map((u) => {
-                    const isSystemAdmin = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+                    const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
                     return (
                       <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
                         <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
                           <div className="flex flex-col">
-                            <span>{u.displayName}</span>
+                            <span className="flex items-center gap-2">
+                              {u.displayName}
+                              {isSystemMaster && <Badge variant="secondary" className="h-4 text-[7px] uppercase tracking-tighter bg-primary/10 text-primary">Master</Badge>}
+                            </span>
                             <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
                           </div>
                         </TableCell>
                         <TableCell className="py-3 md:py-4">
                           <div className="flex items-center gap-2">
                             <Select 
-                              disabled={isSystemAdmin}
+                              disabled={isSystemMaster}
                               defaultValue={u.role} 
                               onValueChange={(val) => handleRoleChange(u.uid, val)}
                             >
@@ -346,8 +349,8 @@ export default function UserManagementPage() {
                         </TableCell>
                         <TableCell className="py-3 md:py-4">
                           <Select 
-                            disabled={isSystemAdmin}
-                            defaultValue={u.unit || 'TRS'} 
+                            disabled={isSystemMaster}
+                            defaultValue={u.unit || 'N/A'} 
                             onValueChange={(val) => handleUnitChange(u.uid, val)}
                           >
                             <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
@@ -360,7 +363,7 @@ export default function UserManagementPage() {
                         </TableCell>
                         <TableCell className="text-right py-3 md:py-4">
                           <div className="flex items-center justify-end gap-2">
-                            {isSystemAdmin ? (
+                            {isSystemMaster ? (
                               <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Master</span>
                             ) : (
                               <AlertDialog>

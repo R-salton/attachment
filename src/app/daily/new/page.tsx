@@ -52,7 +52,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"];
 
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
@@ -111,7 +111,7 @@ export default function NewDailyReport() {
     if (profile) {
       form.reset({
         ...form.getValues(),
-        unitName: profile.unit || '',
+        unitName: profile.unit || 'N/A',
         commanderName: profile.displayName || '',
       });
     }
