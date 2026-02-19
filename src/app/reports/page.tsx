@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldCheck, ShieldAlert, Navigation } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,25 +28,26 @@ export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
   const { toast } = useToast();
-  const { isLeader, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isLeader, isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isAuthLoading || !profile || profile.uid !== user.uid) return null;
+    if (!db || !user?.uid || isAuthLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins and Leaders see a global feed. Trainees see their unit's logs.
-    if (isAdmin || isLeader) {
+    // Admins and High Command see a global feed.
+    if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
+    // Trainees see only their unit's logs
     if (!profile.unit || profile.unit === 'N/A') return null;
     return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     
-  }, [db, isAdmin, isLeader, profile, user?.uid, isAuthLoading]);
+  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -81,10 +82,10 @@ export default function ReportsList() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">Command Archive</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">Command Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isLeader) ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
+                  {(isAdmin || isCommander || isLeader) ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
                 </Badge>
               </div>
             </div>
@@ -124,7 +125,7 @@ export default function ReportsList() {
                       <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.15em] border-slate-200 text-slate-500 group-hover:border-primary/20 group-hover:text-primary transition-colors">
                         {report.unit}
                       </Badge>
-                      {(isAdmin || isLeader) && (
+                      {isAdmin && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 

@@ -11,36 +11,33 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // High command check (Admin, Commander, Leader)
-    function isHighCommand() {
-      let role = getUserData().role;
-      return request.auth.token.email == 'nezasalton@gmail.com' ||
-             request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-             role == 'ADMIN' || 
-             role == 'COMMANDER' || 
-             role == 'LEADER';
+    // Unrestricted ADMIN check - Absolute bypass for command oversight
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'nezasalton@gmail.com' ||
+        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+        getUserData().role == 'ADMIN'
+      );
     }
 
-    // Strict Admin check for sensitive modifications
-    function isAdmin() {
+    // High command check (Commander, Leader)
+    function isHighCommand() {
       let role = getUserData().role;
-      return request.auth.token.email == 'nezasalton@gmail.com' ||
-             request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-             role == 'ADMIN';
+      return role == 'COMMANDER' || role == 'LEADER';
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isHighCommand());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
-      // 1. COMMAND OVERWATCH
-      // Allow unrestricted list and get for all Command Staff (Admin, Commander, Leader)
-      allow list, get: if isSignedIn() && isHighCommand();
+      // 1. COMMAND OVERWATCH (Admin/Commander/Leader)
+      // Admins and High Command have unrestricted access to all reports (list and get)
+      allow list, get: if isAdmin() || isHighCommand();
 
       // 2. UNIT-SPECIFIC ACCESS (Trainees)
-      // Allow list if the query is filtered by the user's unit
+      // Allow list only if the query is filtered by the user's unit
       allow list: if isSignedIn() && resource.data.unit == getUserData().unit;
       // Allow get if the document belongs to the user's unit
       allow get: if isSignedIn() && resource.data.unit == getUserData().unit;

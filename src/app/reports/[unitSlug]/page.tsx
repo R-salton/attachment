@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Navigation } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Search, ArrowLeft, Trash2, ShieldAlert } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,7 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
   const { unitSlug } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isLeader, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -80,8 +80,9 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
   if (!unitName && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
         <h2 className="text-2xl font-black text-slate-900 uppercase">Invalid Station Code</h2>
-        <Button onClick={() => router.push('/reports')} className="mt-4 rounded-xl font-bold">Return to Registry</Button>
+        <Button onClick={() => router.push('/')} className="mt-4 rounded-xl font-bold">Return to Dashboard</Button>
       </div>
     );
   }
@@ -134,7 +135,7 @@ export default function UnitReportsList({ params }: { params: Promise<{ unitSlug
                     <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-slate-400 group-hover:shadow-lg group-hover:shadow-primary/20">
                       <FileText className="h-6 w-6" />
                     </div>
-                    {(isAdmin || isLeader) && (
+                    {isAdmin && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button 

@@ -14,11 +14,11 @@ import {
   Lock,
   UserCog,
   Building2,
-  LayoutDashboard,
-  ShieldHalf,
   Navigation,
   ExternalLink,
-  ChevronRight
+  ShieldAlert,
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -37,20 +37,22 @@ const UNITS = [
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
-  const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
+  const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isLoading || !profile || profile.uid !== user.uid) return null;
+    if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    if (isAdmin || isLeader) {
+    // Admins and High Command see the first 6 reports of the day (global)
+    if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
+      // Trainees see only their unit's logs
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
-  }, [db, isAdmin, isLeader, profile, user?.uid, isLoading]);
+  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -88,15 +90,15 @@ export default function Home() {
             <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
             <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-emerald-600">Secure Protocol Active</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">
             {isAdmin ? 'Command Center' : `Welcome, ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
           </h1>
           <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
-              ROLE: <span className="text-primary ml-1 uppercase">{isAdmin ? 'Admin' : profile?.role || 'User'}</span>
+            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm uppercase">
+              ROLE: <span className="text-primary ml-1">{isAdmin ? 'Admin' : profile?.role || 'User'}</span>
             </Badge>
-            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
-              UNIT: <span className="text-slate-900 ml-1 uppercase">{profile?.unit || 'Station'}</span>
+            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm uppercase">
+              UNIT: <span className="text-slate-900 ml-1">{profile?.unit || 'Station'}</span>
             </Badge>
           </div>
         </div>
@@ -130,7 +132,7 @@ export default function Home() {
                     <Navigation className="h-5 w-5 md:h-6 md:w-6 text-slate-400 group-hover:text-primary transition-colors" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{unit.name.split(' ')[1] || ''}</p>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{unit.name.split(' ').slice(1).join(' ')}</p>
                     <p className="text-sm md:text-base font-black text-slate-900 leading-none">{unit.name.split(' ')[0]}</p>
                   </div>
                   <ExternalLink className="h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -147,10 +149,10 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
                 <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                {isAdmin || isLeader ? 'Operational Feed' : 'My Unit Activity'}
+                {(isAdmin || isCommander || isLeader) ? 'Daily Operational Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
-                {isAdmin || isLeader ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
+                {(isAdmin || isCommander || isLeader) ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -194,11 +196,11 @@ export default function Home() {
               ) : (
                 <div className="col-span-full text-center py-24 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
                   <div className="bg-white h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <ShieldHalf className="h-8 w-8 text-slate-200" />
+                    <ShieldAlert className="h-8 w-8 text-slate-200" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 mb-2">Registry Empty</h3>
+                  <h3 className="text-xl font-black text-slate-900 mb-2 uppercase">Registry Empty</h3>
                   <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">
-                    No operational logs have been recorded for {isAdmin || isLeader ? 'the command' : profile?.unit} for this period.
+                    No operational logs have been recorded for {(isAdmin || isCommander || isLeader) ? 'the command' : profile?.unit} for this period.
                   </p>
                   <Button asChild className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
@@ -233,11 +235,11 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              {(isAdmin || isLeader) && (
+              {(isAdmin || isCommander || isLeader) && (
                 <div className="pt-6 border-t border-white/5 mt-6">
                   <div className="bg-primary/20 border border-primary/30 p-5 rounded-3xl space-y-4">
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
+                      <Shield className="h-5 w-5 text-primary" />
                       <span className="text-[10px] font-black uppercase text-white tracking-widest">Executive AI Tool</span>
                     </div>
                     <p className="text-xs text-slate-300 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly summary with Gemini AI.</p>

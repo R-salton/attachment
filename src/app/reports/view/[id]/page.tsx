@@ -54,7 +54,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const { id } = use(params);
   const { user } = useUser();
-  const { isAdmin, isLeader } = useUserProfile();
+  const { isAdmin, isCommander, isLeader } = useUserProfile();
   const { toast } = useToast();
   const db = useFirestore();
   const [isCopied, setIsCopied] = useState(false);
@@ -191,6 +191,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
+  const canEdit = isAdmin || isCommander || isLeader || report.ownerId === user?.uid;
+
   return (
     <div className="min-h-screen bg-[#f4f7fa] pb-24 selection:bg-primary/20">
       <header className="border-b bg-white/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
@@ -225,7 +227,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           ) : (
             <div className="flex items-center gap-2">
               <div className="hidden lg:flex items-center gap-2">
-                {(isAdmin || isLeader || report.ownerId === user?.uid) && (
+                {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold bg-white h-11 border-slate-200">
                     <Edit3 className="h-4 w-4 mr-2" /> Edit
                   </Button>
@@ -247,7 +249,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 rounded-xl p-2">
-                  {(isAdmin || isLeader || report.ownerId === user?.uid) && (
+                  {canEdit && (
                     <DropdownMenuItem onClick={() => setIsEditing(true)} className="rounded-lg font-bold">
                       <Edit3 className="h-4 w-4 mr-2" /> Edit Log
                     </DropdownMenuItem>
@@ -367,7 +369,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         </Card>
 
         <div className="flex flex-col items-center gap-8 pt-8 md:pt-16 pb-20 print:hidden animate-in fade-in duration-1000">
-          {(isAdmin || isLeader) && (
+          {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" className="text-destructive font-black uppercase tracking-widest text-[10px] hover:bg-destructive/5 rounded-2xl px-8 h-12">
