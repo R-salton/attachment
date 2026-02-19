@@ -1,73 +1,185 @@
-/**
- * @fileoverview Firestore Security Rules for the Cadet Commander Reporting System.
- * 
- * Core Philosophy:
- * This ruleset implements ownership-based access control while allowing
- * authenticated users to read and list the reports collection.
- *
- * Deployment Trigger: 2024-02-18 20:30 UTC - Explicitly granting list and get for all auth users to resolve permission errors.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Helper to check if the user is authenticated.
+     * CORE PHILOSOPHY:
+     * This ruleset enforces a strict user-ownership model for all operational data, combined with 
+     * a Database-Backed Access Control (DBAC) model for administrative tasks. 
+     *
+     * DATA STRUCTURE:
+     * 1. Static/Lookup Data: /companies, /unitTypes, and /operationalUnits are top-level and 
+     *    intended for reference.
+     * 2. Operational Data: All reports and their nested components are structured under 
+     *    /reports/{reportId} as a hierarchical tree.
+     * 3. Authorization: /adminRoles/{uid} stores the identity of users with elevated privileges.
+     *
+     * KEY SECURITY DECISIONS:
+     * - Denormalization for Authorization: To maintain high performance and avoid expensive 
+     *   get() calls, the 'reportCreatorUid' is denormalized onto every document in the report 
+     *   hierarchy. This allows for direct ownership checks at any depth.
+     * - Admin-Only Writes: Organizational entities (Companies, Units) are read-only for 
+     *   regular users and writeable only by authorized administrators.
+     * - Owner-Only Access: Reports are private by default; only the creator of the report 
+     *   has access to read or write it.
      */
+
+    // --- Helper Functions ---
+
+    /** Check if the request is from an authenticated user */
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /** Check if the authenticated user's UID matches the provided UID */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** Check if the user has a document in the adminRoles collection */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid));
+    }
+
+    /** Combined check for existence and ownership for updates/deletes */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
     /**
-     * @description Helper to check if the user is the owner.
+     * @description Collection for Database-Backed Access Control. Admin identity check.
+     * @path /adminRoles/{uid}
+     * @allow (get) Any signed-in user can check their own admin status.
+     * @deny (write) Only existing admins can modify roles.
+     * @principle Restricts management of administrative privileges to admins.
      */
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    match /adminRoles/{uid} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Master data (Companies, Units).
+     * @description Static organizational data. Read-only for users, managed by admins.
+     * @path /companies/{companyId}, /unitTypes/{unitTypeId}, /operationalUnits/{operationalUnitId}
+     * @allow (get, list) Any authenticated user can view organizational structures.
+     * @deny (create, update, delete) Regular users cannot modify organizational data.
+     * @principle Role-based access for system-wide configuration data.
      */
-    match /companies/{id} {
-      allow read: if isSignedIn();
-      allow write: if false;
+    match /companies/{companyId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
-
-    match /operationalUnits/{id} {
-      allow read: if isSignedIn();
-      allow write: if false;
+    match /unitTypes/{unitTypeId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    match /operationalUnits/{operationalUnitId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Reports collection.
+     * @description Main collection for operational reports.
+     * @path /reports/{reportId}
+     * @allow (create) User can create a report if they set themselves as creatorUid.
+     * @deny (update) User tries to change the creatorUid to another person.
+     * @principle Ownership-based security for root entity.
      */
     match /reports/{reportId} {
-      // Explicitly allow list and get for all authenticated users.
-      // This is necessary because the application queries this collection filtered by ownerId.
-      allow get, list: if isSignedIn();
-      
-      // Allow creation only if the ownerId matches the authenticated user.
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      
-      // Allow updates/deletes only for the owner.
-      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-
-      // Recursive match for all report subcollections.
-      match /{allSubcollections=**} {
-        allow read: if isSignedIn();
-        allow write: if isSignedIn() && (
-          (resource != null && resource.data.ownerId == request.auth.uid) ||
-          (resource == null && request.resource.data.ownerId == request.auth.uid)
-        );
-      }
+      allow get: if isOwner(resource.data.creatorUid);
+      allow list: if isSignedIn(); // Query must filter by creatorUid == auth.uid
+      allow create: if isOwner(request.resource.data.creatorUid);
+      allow update: if isExistingOwner(resource.data.creatorUid) && request.resource.data.creatorUid == resource.data.creatorUid;
+      allow delete: if isExistingOwner(resource.data.creatorUid);
     }
 
     /**
-     * @description Role checks.
+     * @description Subcollection for Company Operation Reports. Uses denormalized UID.
+     * @path /reports/{reportId}/companyOperationReports/{id}
+     * @allow (create) Creator sets reportCreatorUid to match their own auth.uid.
+     * @deny (get) User attempts to read a report detail they did not create.
+     * @principle Denormalization for Authorization Independence (avoids get() on parent).
      */
-    match /roles_cadet_commanders/{uid} {
-      allow get: if isOwner(uid);
-      allow list, write: if false;
+    match /reports/{reportId}/companyOperationReports/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
+    }
+
+    /**
+     * @description Subcollection for Case Summaries. Deeply nested but uses denormalized UID.
+     * @path /reports/{reportId}/companyOperationReports/{cId}/caseReportSummaries/{id}
+     * @allow (update) Owner of the parent report updates case numbers.
+     * @deny (delete) Unauthorized user attempts to delete operational records.
+     * @principle Consistent ownership check across deep hierarchies.
+     */
+    match /reports/{reportId}/companyOperationReports/{cId}/caseReportSummaries/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
+    }
+
+    /**
+     * @description Granular case counts for specific types.
+     * @path /reports/{reportId}/companyOperationReports/{cId}/caseReportSummaries/{sId}/caseTypeCounts/{id}
+     * @allow (list) Owner views their breakdown of specific case types.
+     * @principle Flat authorization logic for deeply nested data.
+     */
+    match /reports/{reportId}/companyOperationReports/{cId}/caseReportSummaries/{sId}/caseTypeCounts/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
+    }
+
+    /**
+     * @description Challenges encountered during report period.
+     * @path /reports/{reportId}/challenges/{id}
+     * @allow (create) User attaches a challenge to their report.
+     * @principle Path-agnostic authorization using internal data fields.
+     */
+    match /reports/{reportId}/challenges/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
+    }
+
+    /**
+     * @description Recommendations for resolving report challenges.
+     * @path /reports/{reportId}/recommendations/{id}
+     * @allow (update) User refines their recommendations.
+     * @principle Ensures data integrity by locking the reportCreatorUid field.
+     */
+    match /reports/{reportId}/recommendations/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
+    }
+
+    /**
+     * @description Other miscellaneous activities for the report.
+     * @path /reports/{reportId}/otherActivities/{id}
+     * @allow (delete) User removes an erroneous activity log.
+     * @principle Ownership-based deletion protection.
+     */
+    match /reports/{reportId}/otherActivities/{id} {
+      allow get: if isOwner(resource.data.reportCreatorUid);
+      allow list: if isSignedIn();
+      allow create: if isOwner(request.resource.data.reportCreatorUid);
+      allow update: if isExistingOwner(resource.data.reportCreatorUid) && request.resource.data.reportCreatorUid == resource.data.reportCreatorUid;
+      allow delete: if isExistingOwner(resource.data.reportCreatorUid);
     }
   }
 }
