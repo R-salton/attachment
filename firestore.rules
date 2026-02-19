@@ -18,16 +18,6 @@ service cloud.firestore {
       return exists(path) ? get(path).data : {};
     }
 
-    function isCommander() {
-      let data = getUserData();
-      return isAdmin() || data.role == 'COMMANDER';
-    }
-
-    function isLeader() {
-      let data = getUserData();
-      return isCommander() || data.role == 'LEADER';
-    }
-
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -36,14 +26,20 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // Static admin/leader check first to avoid resource.data evaluation issues for broad queries
+      // 1. Privileged roles (Admin, Commander, Leader) can list ALL reports.
+      // This allows broad queries without filters.
       allow list: if isAdmin() || (isSignedIn() && (
-        let userData = getUserData();
-        userData.role == 'COMMANDER' || 
-        userData.role == 'LEADER' || 
-        (resource.data.unit == userData.unit)
+        let role = getUserData().role;
+        role == 'COMMANDER' || role == 'LEADER'
       ));
+
+      // 2. Trainees can only list reports if they filter by their own unit.
+      // This rule requires a matching filter in the query.
+      allow list: if isSignedIn() && (
+        resource.data.unit == getUserData().unit
+      );
       
+      // Get operation is simpler: allow if role permits or unit matches
       allow get: if isAdmin() || (isSignedIn() && (
         let userData = getUserData();
         userData.role == 'COMMANDER' || 

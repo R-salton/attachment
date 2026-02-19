@@ -32,13 +32,16 @@ export default function Home() {
   const { isLeader, isAdmin, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isLoading || !profile) return null;
+    // CRITICAL: Prevent query until auth and profile are fully synchronized
+    if (!db || !user?.uid || isLoading || !profile || profile.uid !== user.uid) return null;
     
     const baseQuery = collection(db, 'reports');
     
+    // Admins and Leaders see a global feed (latest 6 across all units)
     if (isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
+      // Trainees see only their unit's logs
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(6));
     }
