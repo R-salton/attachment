@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useEffect, useState } from 'react';
@@ -24,7 +23,9 @@ import {
   Save,
   X,
   Trash2,
-  FileDown
+  FileDown,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -93,7 +95,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             new TextRun({
               text: isHeader ? line.replace(/\*/g, '') : line,
               bold: isHeader,
-              size: isHeader ? 28 : 22, // docx uses half-points (28 = 14pt, 22 = 11pt)
+              size: isHeader ? 28 : 22,
               font: "Calibri"
             }),
           ],
@@ -111,7 +113,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
       toast({ title: "Export Successful", description: "Word document has been generated." });
     } catch (error) {
-      console.error("Word export failed:", error);
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
     } finally {
       setIsSaving(false);
@@ -150,24 +151,21 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-base md:text-lg font-black text-slate-900 mt-6 md:mt-8 mb-3 md:mb-4 border-b-2 border-slate-100 pb-2 uppercase tracking-tight">
+          <h3 key={i} className="text-base md:text-xl font-black text-slate-900 mt-8 md:mt-12 mb-4 md:mb-6 border-b-2 border-slate-100 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
       }
-      return <p key={i} className="mb-2 md:mb-3 text-sm md:text-[15px]">{line}</p>;
+      return <p key={i} className="mb-3 md:mb-4 text-sm md:text-base text-slate-700 leading-relaxed">{line}</p>;
     });
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 md:gap-6">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-primary animate-spin" />
-            <FileCheck className="h-6 w-6 md:h-8 md:w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-slate-500 font-bold tracking-widest uppercase text-[10px] md:text-xs animate-pulse">Authenticating Records...</p>
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="h-16 w-16 text-primary animate-spin" />
+          <p className="text-slate-400 font-black tracking-widest uppercase text-xs animate-pulse">Decrypting Registry...</p>
         </div>
       </div>
     );
@@ -176,170 +174,197 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   if (!report) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
-        <div className="p-6 md:p-8 bg-white rounded-full shadow-lg mb-6 md:mb-8 border border-slate-100">
-          <ShieldAlert className="h-12 w-12 md:h-20 md:w-20 text-destructive/80" />
-        </div>
-        <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3 md:mb-4 tracking-tight">Record Unreachable</h2>
-        <p className="text-slate-500 mb-8 md:mb-10 max-w-md text-sm md:text-lg leading-relaxed">This operational log is restricted or does not exist in the current unit vault.</p>
-        <Button onClick={() => router.push('/reports')} size="lg" className="px-8 md:px-10 font-bold rounded-2xl shadow-xl shadow-primary/20">
-          Return to Archive
+        <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
+        <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Transcript Unreachable</h2>
+        <p className="text-slate-500 mb-10 max-w-md text-sm md:text-lg font-bold">This operational log is restricted or does not exist in the current command vault.</p>
+        <Button onClick={() => router.push('/reports')} size="lg" className="h-14 px-12 font-black rounded-2xl shadow-xl shadow-primary/20">
+          Return to Registry
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fa] pb-16 md:pb-24 selection:bg-primary/20">
-      <header className="border-b bg-white/80 backdrop-blur-md px-4 md:px-8 py-3 md:py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
-        <div className="flex items-center gap-2 md:gap-6">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/reports')} className="hover:bg-slate-100 text-slate-600 rounded-xl px-2 md:px-4">
-            <ChevronLeft className="h-5 w-5 md:mr-2" />
-            <span className="hidden sm:inline">Archive</span>
+    <div className="min-h-screen bg-[#f4f7fa] pb-24 selection:bg-primary/20">
+      <header className="border-b bg-white/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
+        <div className="flex items-center gap-2 md:gap-8">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/reports')} className="hover:bg-slate-50 text-slate-600 rounded-xl px-2 md:px-4 font-bold">
+            <ChevronLeft className="h-6 w-6 md:mr-2" />
+            <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Archives</span>
           </Button>
-          <div className="h-6 md:h-8 w-px bg-slate-200 hidden sm:block" />
+          <div className="h-8 w-px bg-slate-200 hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-xs md:text-sm font-black text-slate-900 truncate max-w-[120px] md:max-w-md leading-none mb-0.5 md:mb-1">
+            <h1 className="text-sm md:text-base font-black text-slate-900 truncate max-w-[140px] md:max-w-xl leading-none mb-1">
               {report.reportTitle}
             </h1>
-            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{report.unit} Unit</span>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest h-4 px-1 border-primary/20 text-primary">{report.unit}</Badge>
+              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{report.status}</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           {isEditing ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-8 md:h-10">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-10 font-bold px-4">
                 <X className="h-4 w-4 mr-2" /> Cancel
               </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-bold h-8 md:h-10">
+              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-black h-10 px-6 shadow-lg shadow-primary/20">
                 {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                 Save
               </Button>
-            </>
+            </div>
           ) : (
-            <>
-              {isLeader && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="rounded-xl font-bold text-destructive hover:bg-destructive/10 h-8 md:h-10">
-                      <Trash2 className="h-3.5 w-3.5 sm:mr-2" />
-                      <span className="hidden sm:inline">Delete</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-2xl">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Purge Report Record?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this operational transcript from the Command Registry.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl" disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                        Confirm Deletion
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold bg-white h-8 md:h-10">
-                <Edit3 className="h-3.5 w-3.5 sm:mr-2" />
-                <span className="hidden sm:inline">Edit</span>
+            <div className="flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold bg-white h-11 border-slate-200">
+                  <Edit3 className="h-4 w-4 mr-2" /> Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold bg-white h-11 border-slate-200">
+                  {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 mr-2" />}
+                  Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportWord} disabled={isSaving} className="rounded-xl font-bold bg-white h-11 border-slate-200">
+                  {isSaving ? <Loader2 className="animate-spin h-4 w-4" /> : <FileDown className="h-4 w-4 mr-2" />}
+                  Word
+                </Button>
+              </div>
+              <Button size="sm" onClick={() => window.print()} className="rounded-xl font-black h-11 px-6 shadow-lg shadow-primary/20">
+                <Printer className="h-4 w-4 md:mr-2" />
+                <span className="hidden sm:inline">Print Transcript</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold bg-white h-8 md:h-10">
-                {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 sm:mr-2" />}
-                <span className="hidden sm:inline">Copy</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportWord} disabled={isSaving} className="rounded-xl font-bold bg-white h-8 md:h-10">
-                {isSaving ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : <FileDown className="h-3.5 w-3.5 sm:mr-2" />}
-                <span className="hidden sm:inline">Word</span>
-              </Button>
-              <Button size="sm" onClick={() => window.print()} className="rounded-xl font-bold h-8 md:h-10">
-                <Printer className="h-3.5 w-3.5 sm:mr-2" />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
-            </>
+            </div>
           )}
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto mt-6 md:mt-12 px-4 md:px-8 space-y-8 md:space-y-10 print:mt-0 print:px-0">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
-          <div className="space-y-3 md:space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary/10 p-1.5 md:p-2 rounded-lg">
-                <Building2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+      <main className="max-w-5xl mx-auto mt-6 md:mt-16 px-4 md:px-10 space-y-10 md:space-y-16 print:mt-0 print:px-0">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="space-y-6 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-900 p-2 md:p-3 rounded-2xl shadow-xl shadow-slate-900/10">
+                <Building2 className="h-5 w-5 md:h-7 md:w-7 text-white" />
               </div>
-              <span className="text-[9px] md:text-[11px] font-black text-primary uppercase tracking-[0.2em] md:tracking-[0.4em]">Official Command Report</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] md:text-xs font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
+                <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest leading-none">Security Protocol 04-A</span>
+              </div>
             </div>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">
+            <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 leading-[0.9]">
               {report.reportDate}
             </h2>
-            <div className="flex flex-wrap items-center gap-x-4 md:gap-x-8 gap-y-2 md:gap-y-3 text-[11px] md:text-[13px] font-bold text-slate-500 mt-4 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm">
-              <span className="flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 md:h-5 md:w-5 text-primary/60" />
-                Unit: <span className="text-slate-900">{report.unit}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                <User className="h-4 w-4 md:h-5 md:w-5 text-primary/60" />
-                OC: <span className="text-slate-900">{report.reportingCommanderName}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary/60" />
-                Filed: <span className="text-slate-900">{new Date(report.creationDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-              </span>
+            <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-6">
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+                <BadgeCheck className="h-5 w-5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Station</span>
+                  <span className="text-sm font-black text-slate-900 uppercase">{report.unit}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+                <User className="h-5 w-5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">In Charge</span>
+                  <span className="text-sm font-black text-slate-900 uppercase">{report.reportingCommanderName}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+                <Clock className="h-5 w-5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Registry Time</span>
+                  <span className="text-sm font-black text-slate-900 uppercase">{new Date(report.creationDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 md:gap-3 bg-emerald-50 text-emerald-700 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border border-emerald-100 self-start md:self-end shadow-sm">
-            <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.2em]">{report.status}</span>
+          <div className="flex flex-col items-end gap-4 self-start md:self-end">
+            <div className="bg-emerald-50 text-emerald-700 px-6 py-3 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-3">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">{report.status}</span>
+            </div>
           </div>
         </div>
 
-        <Card className="shadow-2xl document-shadow border-none rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
-          <div className="h-2 md:h-3 bg-primary" />
-          <CardContent className="p-8 md:p-20 relative">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none overflow-hidden">
-              <Building2 className="h-[300px] w-[300px] md:h-[400px] md:w-[400px]" />
+        <Card className="shadow-3xl document-shadow border-none rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
+          <div className="h-3 bg-slate-900" />
+          <CardContent className="p-10 md:p-24 relative overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none">
+              <ShieldCheck className="h-[400px] w-[400px] md:h-[600px] md:w-[600px]" />
             </div>
 
             {isEditing ? (
-              <div className="relative z-10 space-y-4">
-                <Label className="text-xs font-black uppercase tracking-widest text-primary">Modify Transcript</Label>
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Operational Log Revision</Label>
+                  <Badge variant="outline" className="text-[8px] font-black">EDIT MODE</Badge>
+                </div>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-report text-[14px] md:text-[15px] leading-relaxed rounded-xl bg-slate-50 border-slate-200 focus:ring-primary/20"
+                  className="min-h-[700px] font-report text-[15px] md:text-lg leading-relaxed rounded-3xl bg-slate-50 border-slate-200 focus:ring-primary/20 shadow-inner p-8"
                 />
               </div>
             ) : (
-              <div className="font-report text-[14px] md:text-[15px] leading-relaxed text-slate-800 tracking-normal document-content relative z-10 overflow-x-auto">
+              <div className="font-report text-base md:text-lg leading-relaxed text-slate-800 tracking-tight document-content relative z-10 max-w-3xl mx-auto">
                 {formatContent(report.fullText)}
               </div>
             )}
             
-            <div className="mt-12 md:mt-20 pt-8 md:pt-10 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-              <div className="space-y-1">
-                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">Electronic Signature</p>
-                <p className="font-report font-bold text-slate-900 text-sm md:text-base">{report.reportingCommanderName}</p>
-                <p className="text-[10px] md:text-xs text-slate-500 font-medium">Cadet Commander</p>
+            <div className="mt-20 md:mt-32 pt-12 md:pt-16 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-10 max-w-3xl mx-auto">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Signature Authority</p>
+                  <p className="font-report font-black text-slate-900 text-xl md:text-2xl">{report.reportingCommanderName}</p>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">OC {report.unit}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Official Operational Signature</span>
+                </div>
               </div>
-              <div className="text-left sm:text-right">
-                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">Ref ID</p>
-                <p className="text-[8px] md:text-[10px] font-mono text-slate-300 break-all">{report.id}</p>
+              <div className="text-left sm:text-right space-y-2">
+                <p className="text-[9px] font-black uppercase text-slate-300 tracking-widest">Registry Reference ID</p>
+                <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2">
+                  <p className="text-[10px] font-mono text-slate-400 break-all leading-none">{report.id}</p>
+                  <ExternalLink className="h-3 w-3 text-slate-300" />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col items-center gap-4 md:gap-6 pt-10 md:pt-16 pb-12 print:hidden">
-          <div className="flex items-center gap-3 w-full">
+        <div className="flex flex-col items-center gap-8 pt-16 pb-20 print:hidden animate-in fade-in duration-1000">
+          {isLeader && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="text-destructive font-black uppercase tracking-widest text-[10px] hover:bg-destructive/5 rounded-2xl px-8 h-12">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Purge from Command Registry
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-[2.5rem] border-none shadow-3xl">
+                <AlertDialogHeader className="p-4">
+                  <AlertDialogTitle className="text-2xl font-black">Archive Deletion Protocol</AlertDialogTitle>
+                  <AlertDialogDescription className="text-sm font-bold text-slate-500 leading-relaxed">
+                    This will permanently expunge this transcript from the Command Registry. This action is irreversible and will be logged.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="p-4 gap-4">
+                  <AlertDialogCancel className="rounded-2xl font-black h-14">Abort Operation</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-14 shadow-xl shadow-destructive/20" disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                    Confirm Purge
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <div className="flex items-center gap-6 w-full max-w-xl">
             <div className="h-px bg-slate-200 flex-1" />
-            <p className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] md:tracking-[0.5em]">End of Transcript</p>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.6em]">End of Archive</p>
             <div className="h-px bg-slate-200 flex-1" />
           </div>
-          <Button variant="ghost" onClick={() => router.push('/reports')} className="text-slate-500 font-bold hover:text-primary transition-colors text-xs md:text-sm">
-            Return to Operational Archives
+          <Button variant="ghost" onClick={() => router.push('/reports')} className="text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-primary hover:bg-transparent transition-all">
+            Return to Operational Logbook
           </Button>
         </div>
       </main>

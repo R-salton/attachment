@@ -14,12 +14,17 @@ import {
   Lock,
   UserCog,
   Building2,
-  LayoutDashboard
+  LayoutDashboard,
+  ShieldHalf,
+  Navigation,
+  ExternalLink
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
+
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
 
 export default function Home() {
   const db = useFirestore();
@@ -27,15 +32,14 @@ export default function Home() {
   const { isLeader, isAdmin, isCommander, profile, isLoading, user } = useUserProfile();
 
   const recentReportsQuery = useMemoFirebase(() => {
-    // Defensive guard: Ensure db, profile, and user are present before creating query
     if (!db || !profile || !user || !profile.role) return null;
     
     const baseQuery = collection(db, 'reports');
-    // Leaders and above have a dashboard view of all units
+    // Admin/Leader see 6 reports as a daily feed
     if (isLeader) {
-      return query(baseQuery, orderBy('createdAt', 'desc'), limit(3));
+      return query(baseQuery, orderBy('createdAt', 'desc'), limit(6));
     } else {
-      // Trainees only query their unit
+      // Trainees see 3 recent reports from their unit
       if (!profile.unit) return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(3));
     }
@@ -70,103 +74,123 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 bg-[#f8fafc] p-4 md:p-10 space-y-6 md:space-y-10">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-        <div className="space-y-2">
+    <div className="flex-1 bg-[#f8fafc] p-4 md:p-8 lg:p-12 space-y-8 md:space-y-12">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-emerald-600">Secure Access Granted</span>
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-emerald-600">Secure Protocol Active</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900">
-            Welcome, {profile?.displayName?.split(' ')[0] || 'Officer'}
+            {isAdmin ? 'Command Center' : `Welcome, ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
           </h1>
-          <div className="flex items-center gap-3">
-            <p className="text-slate-500 text-sm md:text-lg">Clearance: <span className="font-bold text-primary uppercase">{isAdmin ? 'Admin' : profile?.role}</span></p>
-            <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-            <p className="text-slate-500 text-sm md:text-lg">Station: <span className="font-bold text-slate-900 uppercase">{profile?.unit || 'N/A'}</span></p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
+              ROLE: <span className="text-primary ml-1 uppercase">{isAdmin ? 'Admin' : profile?.role}</span>
+            </Badge>
+            <Badge variant="secondary" className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1 text-xs rounded-lg shadow-sm">
+              UNIT: <span className="text-slate-900 ml-1 uppercase">{profile?.unit || 'Station'}</span>
+            </Badge>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button asChild className="h-12 md:h-14 rounded-2xl font-black shadow-xl shadow-primary/20 px-6 md:px-8">
+            <Link href="/daily/new">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              FILE NEW REPORT
+            </Link>
+          </Button>
         </div>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-        <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
-          <Link href="/daily/new" className="block p-6 md:p-8">
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
-              <PlusCircle className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+      {/* Admin Unit Selection Dashboard */}
+      {isAdmin && (
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-900 rounded-lg">
+              <Building2 className="h-4 w-4 text-white" />
             </div>
-            <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Create Report</h3>
-            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Document active deployments and unit operational status.</p>
-          </Link>
-        </Card>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Unit Repositories</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            {UNITS.map((unit) => (
+              <Card key={unit} className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-2xl md:rounded-3xl overflow-hidden bg-white hover:-translate-y-1 duration-300" onClick={() => router.push(`/reports?unit=${encodeURIComponent(unit)}`)}>
+                <CardContent className="p-4 md:p-6 flex flex-col items-center text-center space-y-3">
+                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                    <Navigation className="h-5 w-5 md:h-6 md:w-6 text-slate-400 group-hover:text-primary transition-colors" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{unit.split(' ')[1] || ''}</p>
+                    <p className="text-sm md:text-base font-black text-slate-900 leading-none">{unit.split(' ')[0]}</p>
+                  </div>
+                  <ExternalLink className="h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
-        <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
-          <Link href="/reports" className="block p-6 md:p-8">
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-slate-100 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
-              <History className="h-6 w-6 md:h-7 md:w-7 text-slate-700" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
+        {/* Reports Activity Feed (6 items for Leaders/Admins) */}
+        <Card className="lg:col-span-2 border-none shadow-xl md:shadow-2xl rounded-[2rem] md:rounded-[3rem] bg-white overflow-hidden flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between p-6 md:p-10 pb-2 md:pb-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl md:text-3xl font-black text-slate-900 flex items-center gap-3">
+                <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                Daily Activity
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm font-bold text-slate-400">
+                {isLeader ? 'Latest cross-unit filings across the command.' : `Recent filings for ${profile?.unit}.`}
+              </CardDescription>
             </div>
-            <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Archive</h3>
-            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Access the operational logbook for {isLeader ? 'all units' : profile?.unit}.</p>
-          </Link>
-        </Card>
-
-        {isAdmin && (
-          <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
-            <Link href="/users" className="block p-6 md:p-8">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
-                <UserCog className="h-6 w-6 md:h-7 md:w-7 text-white" />
-              </div>
-              <h3 className="text-xl md:text-2xl font-black text-white mb-1 md:mb-2">Personnel</h3>
-              <p className="text-xs md:text-sm text-slate-400 font-medium leading-relaxed">Manage user roles, units and system access.</p>
-            </Link>
-          </Card>
-        )}
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        <Card className="border-none shadow-xl rounded-[2rem] md:rounded-[2.5rem] bg-white overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between p-6 md:p-8">
-            <div>
-              <CardTitle className="text-xl md:text-2xl font-black">Recent Logs</CardTitle>
-              <CardDescription className="text-xs md:text-sm">{isLeader ? 'Latest cross-unit filings.' : `Latest ${profile?.unit} filings.`}</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" asChild className="font-bold text-primary">
-              <Link href="/reports" className="flex items-center gap-1 text-xs md:text-sm">View All <ArrowRight className="h-3 w-3 md:h-4 md:w-4" /></Link>
+            <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
+              <Link href="/reports" className="flex items-center gap-1.5 text-xs md:text-sm">
+                View All <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </CardHeader>
-          <CardContent className="px-6 md:px-8 pb-6 md:pb-8">
-            <div className="space-y-3 md:space-y-4">
+          <CardContent className="px-6 md:px-10 pb-8 md:pb-12 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {isReportsLoading ? (
-                <div className="py-10 text-center text-slate-400 flex flex-col items-center gap-2">
-                  <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
-                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Retrieving Logbook...</span>
+                <div className="col-span-full py-20 flex flex-col items-center gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Records...</span>
                 </div>
               ) : reports && reports.length > 0 ? (
                 reports.map((report) => (
-                  <Link key={report.id} href={`/reports/${report.id}`} className="flex items-center justify-between p-4 md:p-5 rounded-2xl md:rounded-3xl bg-slate-50 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
-                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                      <div className="p-2 md:p-3 bg-white rounded-xl shadow-sm flex-shrink-0">
-                        <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                      </div>
-                      <div className="overflow-hidden">
-                        <p className="font-bold text-slate-900 text-sm md:text-base truncate">{report.reportTitle}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">{report.reportDate}</p>
-                          {isLeader && (
-                            <Badge variant="outline" className="text-[7px] py-0 px-1 font-black h-3.5 border-primary/20 text-primary">
-                              {report.unit}
-                            </Badge>
-                          )}
-                        </div>
+                  <Link key={report.id} href={`/reports/${report.id}`} className="group relative flex flex-col p-5 rounded-3xl bg-slate-50 hover:bg-white transition-all border border-transparent hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <Badge variant="outline" className="text-[8px] md:text-[9px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-white">
+                        {report.unit}
+                      </Badge>
+                      <div className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                        {report.reportDate}
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                    <h4 className="font-black text-slate-900 text-sm md:text-base line-clamp-2 leading-tight mb-4 group-hover:text-primary transition-colors">
+                      {report.reportTitle}
+                    </h4>
+                    <div className="mt-auto flex items-center justify-between pt-2 border-t border-slate-100/50">
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-5 rounded-full bg-slate-200 border border-white flex items-center justify-center text-[8px] font-black">
+                          {report.reportingCommanderName?.charAt(0)}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-500 truncate max-w-[100px]">{report.reportingCommanderName}</span>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors group-hover:translate-x-1 duration-300" />
+                    </div>
                   </Link>
                 ))
               ) : (
-                <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
-                  <p className="text-xs md:text-sm font-medium text-slate-500 mb-4">No records found for your station.</p>
-                  <Button size="sm" asChild>
-                    <Link href="/daily/new">Start First Log</Link>
+                <div className="col-span-full text-center py-24 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
+                  <div className="bg-white h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <ShieldHalf className="h-8 w-8 text-slate-200" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Registry Empty</h3>
+                  <p className="text-xs md:text-sm text-slate-400 max-w-[240px] mx-auto mb-8 font-medium">No operational logs have been recorded for this period.</p>
+                  <Button asChild className="rounded-xl font-bold">
+                    <Link href="/daily/new">File First Report</Link>
                   </Button>
                 </div>
               )}
@@ -174,33 +198,72 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 text-white overflow-hidden relative border-none shadow-2xl rounded-[2rem] md:rounded-[2.5rem]">
-          <div className="absolute top-0 right-0 p-6 md:p-8 opacity-20 pointer-events-none">
-            <Building2 className="h-24 w-24 md:h-32 md:w-32" />
-          </div>
-          <CardHeader className="p-8 md:p-10 relative z-10">
-            <CardTitle className="text-2xl md:text-3xl font-black">Command Info</CardTitle>
-            <CardDescription className="text-slate-400 font-medium text-xs md:text-sm">Station specific operational logic.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 md:p-10 pt-0 relative z-10 space-y-6 md:space-y-8">
-            <div className="space-y-4 md:space-y-6">
-              <div className="flex gap-4 md:gap-5">
-                <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-black">01</div>
-                <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                  {isLeader ? 'As a Leader, you have oversight across all station registries for centralized management.' : `Reports are partitioned by Unit. You can only view and edit logs filed within ${profile?.unit || 'your assigned unit'}.`}
+        {/* Action & Tools Panel */}
+        <div className="space-y-6 md:space-y-8">
+          <Card className="bg-slate-900 border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+              <ShieldCheck className="h-32 w-32 text-white" />
+            </div>
+            <CardHeader className="p-8 md:p-10 relative z-10">
+              <CardTitle className="text-2xl font-black text-white">Action Center</CardTitle>
+              <CardDescription className="text-slate-400 font-bold text-xs">Mission critical system tools.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 md:p-10 pt-0 relative z-10 space-y-4">
+              <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 text-white font-black transition-all group/btn">
+                <Link href="/reports">
+                  <History className="mr-2 h-5 w-5 group-hover/btn:rotate-12 transition-transform" />
+                  ACCESS ARCHIVES
+                </Link>
+              </Button>
+              {isAdmin && (
+                <Button asChild variant="outline" className="w-full h-14 rounded-2xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 text-white font-black transition-all group/btn">
+                  <Link href="/users">
+                    <UserCog className="mr-2 h-5 w-5 group-hover/btn:rotate-12 transition-transform" />
+                    MANAGE PERSONNEL
+                  </Link>
+                </Button>
+              )}
+              {(isLeader || isAdmin) && (
+                <div className="pt-6 border-t border-white/5 mt-6">
+                  <div className="bg-primary/20 border border-primary/30 p-5 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                      <span className="text-[10px] font-black uppercase text-white tracking-widest">Executive AI Tool</span>
+                    </div>
+                    <p className="text-xs text-slate-300 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly summary with Gemini AI.</p>
+                    <Button asChild size="sm" className="w-full rounded-xl font-black shadow-lg shadow-primary/20">
+                      <Link href="/weekly/new">LAUNCH AI CONSOLIDATION</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl rounded-[2rem] bg-white p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
+                <LayoutDashboard className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Operational Info</h3>
+            </div>
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <span className="text-primary font-black text-lg leading-none">01</span>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  {isAdmin ? 'Admins have visibility across all DPU units for oversight.' : `Reports are station-locked. You are currently attached to ${profile?.unit}.`}
                 </p>
               </div>
-              <div className="flex gap-4 md:gap-5">
-                <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-black">02</div>
-                <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                  Personnel with <strong>Commander</strong> or <strong>Leader</strong> clearance have access to AI-powered summary generation tools.
+              <div className="flex gap-4">
+                <span className="text-primary font-black text-lg leading-none">02</span>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  Standardized SITREP protocol must be followed for all operational submissions.
                 </p>
               </div>
             </div>
-          </CardContent>
-          <div className="absolute -bottom-20 -left-20 w-60 h-60 md:w-80 md:h-80 bg-primary/30 rounded-full blur-[80px] md:blur-[100px] pointer-events-none"></div>
-        </Card>
-      </section>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
