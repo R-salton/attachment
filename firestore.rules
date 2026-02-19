@@ -19,7 +19,8 @@ service cloud.firestore {
     function isHighCommand() {
       return isSignedIn() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER' ||
+        isAdmin()
       );
     }
 
@@ -30,11 +31,9 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       // 1. GLOBAL COMMAND ACCESS
-      // Admins can perform unfiltered list/get and full mutations.
-      allow list, get, create, update, delete: if isAdmin();
-
-      // Commanders and Leaders can view all registries for oversight.
+      // Admins, Commanders, and Leaders can perform unfiltered list/get.
       allow list, get: if isHighCommand();
+      allow create, update, delete: if isAdmin();
 
       // 2. UNIT-SPECIFIC ACCESS (Trainees / Regular Personnel)
       allow list, get: if isSignedIn() && (
