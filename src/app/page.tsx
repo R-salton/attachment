@@ -13,9 +13,6 @@ import {
   ArrowRight,
   Lock,
   UserCog,
-  Building2,
-  Navigation,
-  ExternalLink,
   ShieldAlert,
   Shield,
   Eye,
@@ -26,21 +23,12 @@ import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
 
-const UNITS = [
-  { name: "Gasabo DPU", slug: "gasabodpu" },
-  { name: "Kicukiro DPU", slug: "kicukirodpu" },
-  { name: "Nyarugenge DPU", slug: "nyarugengedpu" },
-  { name: "TRS", slug: "trs" },
-  { name: "SIF", slug: "sif" },
-  { name: "TFU", slug: "tfu" }
-];
-
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
   const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
 
-  const displayLimit = isAdmin ? 12 : 6;
+  const displayLimit = isAdmin ? 20 : 10;
 
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
@@ -113,37 +101,6 @@ export default function Home() {
         </div>
       </header>
 
-      {(isAdmin || isCommander) && (
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-foreground rounded-lg">
-              <Building2 className="h-4 w-4 text-background" />
-            </div>
-            <h2 className="text-xl font-black text-foreground uppercase tracking-tight">Unit Repositories</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            {UNITS.map((unit) => (
-              <Card 
-                key={unit.slug} 
-                className="group hover:shadow-xl transition-all cursor-pointer border-none shadow-sm rounded-3xl overflow-hidden bg-card hover:-translate-y-1 duration-300" 
-                onClick={() => router.push(`/reports/unit/${unit.slug}`)}
-              >
-                <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                  <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    <Navigation className="h-6 w-6 text-primary/50 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{unit.name.split(' ').slice(1).join(' ')}</p>
-                    <p className="text-base font-black text-foreground leading-none">{unit.name.split(' ')[0]}</p>
-                  </div>
-                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <Card className="lg:col-span-2 border-none shadow-2xl rounded-[3rem] bg-card overflow-hidden flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between p-10 pb-4">
@@ -153,7 +110,7 @@ export default function Home() {
                 {(isAdmin || isCommander || isLeader) ? 'Global Command Feed' : 'My Unit Activity'}
               </CardTitle>
               <CardDescription className="text-sm font-bold text-muted-foreground">
-                {(isAdmin || isCommander || isLeader) ? `Displaying latest ${displayLimit} filings across all units.` : `Recent filings for ${profile?.unit}.`}
+                {(isAdmin || isCommander || isLeader) ? `Displaying latest ${displayLimit} filings across the registry.` : `Recent filings for ${profile?.unit}.`}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -205,7 +162,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-xl font-black text-foreground mb-2 uppercase">Registry Empty</h3>
                   <p className="text-sm text-muted-foreground max-w-[240px] mx-auto mb-8 font-medium">
-                    No operational logs recorded for {(isAdmin || isCommander || isLeader) ? 'the command' : profile?.unit}.
+                    No operational logs recorded in the command registry.
                   </p>
                   <Button asChild className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>

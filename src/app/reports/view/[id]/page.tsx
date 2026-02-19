@@ -19,8 +19,7 @@ import {
   Building2,
   BadgeCheck,
   Edit3,
-  Save,
-  Clock
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
