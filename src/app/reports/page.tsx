@@ -32,32 +32,38 @@ export default function ReportsList() {
   const { toast } = useToast();
   const { isLeader, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
-  const initialUnitFilter = searchParams.get('unit') || '';
   const [searchTerm, setSearchTerm] = useState('');
-  const [unitFilter, setUnitFilter] = useState(initialUnitFilter);
+  const [unitFilter, setUnitFilter] = useState(searchParams.get('unit') || '');
   const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Sync state with URL if changed externally
   useEffect(() => {
-    if (searchParams.get('unit')) {
-      setUnitFilter(searchParams.get('unit') || '');
+    const urlUnit = searchParams.get('unit');
+    if (urlUnit !== null) {
+      setUnitFilter(urlUnit);
     }
   }, [searchParams]);
 
   const reportsQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid || isAuthLoading || !profile) return null;
+    // CRITICAL: Ensure we have both user auth AND the firestore profile
+    // before attempting any protected query to avoid permission race conditions.
+    if (!db || !user?.uid || isAuthLoading || !profile || profile.uid !== user.uid) return null;
     
     const baseQuery = collection(db, 'reports');
     
+    // Admins and Leaders can see everything, or filter by unit
     if (isLeader) {
       if (unitFilter) {
         return query(baseQuery, where('unit', '==', unitFilter), orderBy('createdAt', 'desc'));
       }
       return query(baseQuery, orderBy('createdAt', 'desc'));
-    } else {
-      if (!profile.unit || profile.unit === 'N/A') return null;
-      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
-    }
+    } 
+    
+    // Regular users (Trainees) are locked to their profile unit
+    if (!profile.unit || profile.unit === 'N/A') return null;
+    return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
+    
   }, [db, isLeader, profile, user?.uid, unitFilter, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
@@ -98,7 +104,7 @@ export default function ReportsList() {
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
                   {unitFilter ? `Unit: ${unitFilter}` : isLeader ? 'Global Registry' : `${profile?.unit || 'Station'} Registry`}
                 </Badge>
-                {unitFilter && (
+                {unitFilter && isLeader && (
                   <Button variant="ghost" size="sm" className="h-6 text-[8px] font-black uppercase px-2 hover:bg-slate-200" onClick={() => {
                     setUnitFilter('');
                     router.replace('/reports');

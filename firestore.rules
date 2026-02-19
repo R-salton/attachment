@@ -19,44 +19,52 @@ service cloud.firestore {
     }
 
     function isCommander() {
-      return isSignedIn() && (isAdmin() || getUserData().role == 'COMMANDER');
+      let data = getUserData();
+      return isAdmin() || data.role == 'COMMANDER';
     }
 
     function isLeader() {
-      return isSignedIn() && (isCommander() || getUserData().role == 'LEADER');
+      let data = getUserData();
+      return isCommander() || data.role == 'LEADER';
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email'])));
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       allow delete: if isAdmin();
     }
 
     match /reports/{reportId} {
-      // Allow list if Admin/Leader or if query is filtered by the user's unit
-      allow list: if isSignedIn() && (
-        isAdmin() || 
-        isLeader() || 
-        (getUserData().unit == resource.data.unit)
-      );
+      // Static admin/leader check first to avoid resource.data evaluation issues for broad queries
+      allow list: if isAdmin() || (isSignedIn() && (
+        let userData = getUserData();
+        userData.role == 'COMMANDER' || 
+        userData.role == 'LEADER' || 
+        (resource.data.unit == userData.unit)
+      ));
       
-      // Allow get for individual documents
-      allow get: if isSignedIn() && (
-        isAdmin() || 
-        isLeader() || 
-        (getUserData().unit == resource.data.unit)
-      );
+      allow get: if isAdmin() || (isSignedIn() && (
+        let userData = getUserData();
+        userData.role == 'COMMANDER' || 
+        userData.role == 'LEADER' || 
+        (resource.data.unit == userData.unit)
+      ));
       
       allow create: if isSignedIn();
       
-      allow update: if isSignedIn() && (
-        isAdmin() || 
-        isLeader() || 
-        (getUserData().unit == resource.data.unit)
-      );
+      allow update: if isAdmin() || (isSignedIn() && (
+        let userData = getUserData();
+        userData.role == 'COMMANDER' || 
+        userData.role == 'LEADER' || 
+        (resource.data.unit == userData.unit)
+      ));
       
-      allow delete: if isSignedIn() && isLeader();
+      allow delete: if isAdmin() || (isSignedIn() && (
+        let userData = getUserData();
+        userData.role == 'COMMANDER' || 
+        userData.role == 'LEADER'
+      ));
     }
   }
 }
