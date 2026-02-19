@@ -5,7 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogIn, ShieldCheck, Menu } from 'lucide-react';
+import { LogIn, ShieldCheck, Menu, Loader2 } from 'lucide-react';
 
 /**
  * Shell component that manages the global layout based on authentication state.
@@ -14,9 +14,14 @@ import { LogIn, ShieldCheck, Menu } from 'lucide-react';
 export function Shell({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
 
-  // Show a blank loading state while checking auth to prevent layout shift
+  // Show a robust loading state while checking auth to prevent layout shift or blank pages
   if (isUserLoading) {
-    return <div className="min-h-screen bg-[#f8fafc]" />;
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Initializing Terminal...</p>
+      </div>
+    );
   }
 
   // Guest Layout: No sidebar, shows a simple sign-in header

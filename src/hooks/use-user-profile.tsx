@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
@@ -15,14 +14,19 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
-  // If we're still loading the user or profile, report as loading
-  if (isAuthLoading || (user && isProfileLoading)) {
+  const isSuperAdmin = user?.email === 'nezasalton@gmail.com' || user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+
+  // Explicitly determine loading state. 
+  // We are loading if auth is initializing OR if user exists but profile doc is still being fetched.
+  const isLoading = isAuthLoading || (!!user && isProfileLoading);
+
+  if (isLoading) {
     return { 
       profile: null, 
       isLoading: true, 
-      isAdmin: false, 
-      isCommander: false,
-      isLeader: false, 
+      isAdmin: isSuperAdmin, 
+      isCommander: isSuperAdmin,
+      isLeader: isSuperAdmin, 
       isTrainee: false,
       user: user || null 
     };
@@ -40,9 +44,6 @@ export function useUserProfile() {
       user: null 
     };
   }
-
-  // Static check for the super-admin account
-  const isSuperAdmin = user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
   
   // Default roles if profile isn't fully initialized yet but user exists
   const role = profile?.role || (isSuperAdmin ? 'ADMIN' : 'TRAINEE');
