@@ -48,8 +48,10 @@ service cloud.firestore {
         (hasProfile() && resource.data.unit == getUserData().unit)
       );
       
-      allow create: if isLeader();
+      // Everyone who is signed in can now create reports
+      allow create: if isSignedIn();
       
+      // Everyone in the unit can edit any report in that unit
       allow update: if isSignedIn() && (
         isAdmin() || 
         isCommander() || 

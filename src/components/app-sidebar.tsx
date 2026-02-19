@@ -31,7 +31,7 @@ import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAdmin, isLeader, profile, isLoading } = useUserProfile();
+  const { isAdmin, profile, user, isLoading } = useUserProfile();
   const auth = useAuth();
 
   const handleSignOut = () => signOut(auth);
@@ -63,7 +63,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {isLeader && (
+              {user && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname === '/daily/new'}>

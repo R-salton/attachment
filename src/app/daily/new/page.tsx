@@ -80,7 +80,7 @@ export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { user, profile, isLeader, isLoading: isAuthLoading } = useUserProfile();
+  const { user, profile, isLoading: isAuthLoading } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -112,8 +112,8 @@ export default function NewDailyReport() {
   });
 
   const onSubmitPreview = async (values: FormValues) => {
-    if (!user || !isLeader) {
-      toast({ variant: "destructive", title: "Clearance Required", description: "Only Leaders can generate reports." });
+    if (!user) {
+      toast({ variant: "destructive", title: "Authentication Required", description: "You must be signed in to generate reports." });
       return;
     }
 
@@ -195,13 +195,13 @@ export default function NewDailyReport() {
     );
   }
 
-  if (!isLeader) {
+  if (!user) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
         <ShieldAlert className="h-12 w-12 md:h-16 md:w-16 text-destructive mb-4" />
-        <h2 className="text-xl md:text-2xl font-bold">Clearance Level Low</h2>
-        <p className="text-slate-500 max-w-md mt-2 text-sm md:text-base">Only officers with <strong>Leader</strong> status can access report creation protocols.</p>
-        <Button onClick={() => router.push('/')} className="mt-6">Return to Dashboard</Button>
+        <h2 className="text-xl md:text-2xl font-bold">Authentication Required</h2>
+        <p className="text-slate-500 max-w-md mt-2 text-sm md:text-base">Please sign in to access the report creation terminal.</p>
+        <Button onClick={() => router.push('/login')} className="mt-6">Sign In</Button>
       </div>
     );
   }

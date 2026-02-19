@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
-  const { isCommander, profile, isLoading: isAuthLoading, user, isLeader } = useUserProfile();
+  const { isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewType, setViewType] = useState<'daily' | 'weekly'>('daily');
 
@@ -149,11 +149,9 @@ export default function ReportsList() {
               <h3 className="text-xl md:text-2xl font-bold text-slate-900">No Records Found</h3>
               <p className="text-xs md:text-sm text-slate-500 max-w-sm mx-auto">The archive is empty or no reports match your search criteria.</p>
             </div>
-            {isLeader && (
-              <Button size="sm" asChild className="rounded-xl px-6">
-                <Link href="/daily/new">File New Report</Link>
-              </Button>
-            )}
+            <Button size="sm" asChild className="rounded-xl px-6">
+              <Link href="/daily/new">File New Report</Link>
+            </Button>
           </div>
         )}
       </div>

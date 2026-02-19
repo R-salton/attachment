@@ -87,35 +87,16 @@ export default function Home() {
         </div>
       </header>
 
-      {profile?.role === 'TRAINEE' && !isAdmin && (
-        <Card className="bg-amber-50 border-amber-200 border-2 rounded-[1.5rem] md:rounded-[2rem] shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-amber-800 text-xl md:text-2xl">
-              <AlertTriangle className="h-5 w-5 md:h-6 md:w-6" />
-              Limited Access Mode
-            </CardTitle>
-            <CardDescription className="text-amber-700/80 font-medium">
-              You are currently registered as a <strong>Trainee</strong>.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-amber-800/70 text-xs md:text-sm leading-relaxed">
-            While you can view reports within the <strong>{profile?.unit}</strong> unit, operational creation and cross-unit archives are restricted.
-          </CardContent>
-        </Card>
-      )}
-
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-        {isLeader && (
-          <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
-            <Link href="/daily/new" className="block p-6 md:p-8">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
-                <PlusCircle className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-              </div>
-              <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Create Report</h3>
-              <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Document active deployments and unit operational status.</p>
-            </Link>
-          </Card>
-        )}
+        <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
+          <Link href="/daily/new" className="block p-6 md:p-8">
+            <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+              <PlusCircle className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+            </div>
+            <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2">Create Report</h3>
+            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Document active deployments and unit operational status.</p>
+          </Link>
+        </Card>
 
         <Card className="hover:shadow-2xl transition-all border-none shadow-sm group bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden">
           <Link href="/reports" className="block p-6 md:p-8">
@@ -183,11 +164,9 @@ export default function Home() {
               ) : (
                 <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
                   <p className="text-xs md:text-sm font-medium text-slate-500 mb-4">No records found for your station.</p>
-                  {isLeader && (
-                    <Button size="sm" asChild>
-                      <Link href="/daily/new">Start First Log</Link>
-                    </Button>
-                  )}
+                  <Button size="sm" asChild>
+                    <Link href="/daily/new">Start First Log</Link>
+                  </Button>
                 </div>
               )}
             </div>
