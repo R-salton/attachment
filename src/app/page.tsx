@@ -37,7 +37,7 @@ const UNITS = [
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
-  const { isAdmin, isLeader, isCommander, profile, isLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, profile, isLoading, user } = useUserProfile();
 
   const displayLimit = isAdmin ? 50 : 20;
 
@@ -46,13 +46,13 @@ export default function Home() {
     
     const baseQuery = collection(db, 'reports');
     
-    if (isAdmin || isCommander || isLeader) {
+    if (isAdmin || isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
       if (!profile.unit || profile.unit === 'N/A') return null;
       return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
+  }, [db, isAdmin, isCommander, profile, user?.uid, isLoading, displayLimit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -112,8 +112,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Unit Command Grid - Exclusive for Admins/Commanders */}
-      {(isAdmin || isCommander) && (
+      {isAdmin && (
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-2">
             <Navigation className="h-4 w-4 text-primary" />
@@ -164,10 +163,10 @@ export default function Home() {
                 </div>
               ) : reports && reports.length > 0 ? (
                 reports.map((report) => (
-                  <Link 
+                  <div 
                     key={report.id} 
-                    href={`/reports/view/${report.id}`}
-                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/30 hover:bg-accent/50 transition-all border border-transparent hover:border-border hover:shadow-xl"
+                    onClick={() => router.push(`/reports/view/${report.id}`)}
+                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/30 hover:bg-accent/50 transition-all border border-transparent hover:border-border hover:shadow-xl cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <Badge variant="outline" className="text-[8px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-background">
@@ -189,7 +188,7 @@ export default function Home() {
                       </div>
                       <Eye className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                  </Link>
+                  </div>
                 ))
               ) : (
                 <div className="col-span-full text-center py-20 bg-accent/20 rounded-[2rem] border border-dashed border-border">
@@ -233,7 +232,7 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              {(isAdmin || isCommander || isLeader) && (
+              {(isAdmin || isCommander) && (
                 <div className="pt-4 border-t border-white/5 mt-4">
                   <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl space-y-3">
                     <div className="flex items-center gap-2">

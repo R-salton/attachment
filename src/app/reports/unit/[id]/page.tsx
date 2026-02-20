@@ -39,7 +39,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isAdmin, isCommander, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -127,9 +127,9 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredReports.map((report) => (
-              <Link 
+              <div 
                 key={report.id} 
-                href={`/reports/view/${report.id}`}
+                onClick={() => router.push(`/reports/view/${report.id}`)}
                 className="hover:shadow-3xl transition-all cursor-pointer group border border-border shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
               >
                 <CardHeader className="p-8 pb-4">
@@ -138,36 +138,37 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                       <FileText className="h-6 w-6" />
                     </div>
                     {isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl" onClick={(e) => e.stopPropagation()}>
-                          <AlertDialogHeader className="p-4">
-                            <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                              This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} registry.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="p-4 gap-3">
-                            <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={(e) => handleDelete(e, report.id)} 
-                              className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
-                              {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
-                              Confirm Purge
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl">
+                            <AlertDialogHeader className="p-4">
+                              <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
+                                This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} registry.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="p-4 gap-3">
+                              <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => handleDelete(e, report.id)} 
+                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
+                              >
+                                {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                                Confirm Purge
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
                   <CardTitle className="text-lg font-black line-clamp-2 leading-[1.1] text-foreground group-hover:text-primary transition-colors duration-500">
@@ -196,7 +197,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                     </Button>
                   </div>
                 </CardContent>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (

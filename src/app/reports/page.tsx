@@ -29,7 +29,7 @@ export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
   const { toast } = useToast();
-  const { isLeader, isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -39,16 +39,16 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins, Commanders, and Leaders can view the global feed
-    if (isAdmin || isCommander || isLeader) {
+    // Admins and Commanders see everything
+    if (isAdmin || isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
-    // Regular personnel are limited to their unit's logs
+    // Leaders and regular personnel are limited to their unit's logs
     if (!profile.unit || profile.unit === 'N/A') return null;
     return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
     
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
+  }, [db, isAdmin, isCommander, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -87,7 +87,7 @@ export default function ReportsList() {
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Archive Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander || isLeader) ? 'Global Command Logs' : `${profile?.unit || 'Station'} Logs`}
+                  {(isAdmin || isCommander) ? 'Global Command Logs' : `${profile?.unit || 'Station'} Logs`}
                 </Badge>
               </div>
             </div>
@@ -113,9 +113,9 @@ export default function ReportsList() {
         ) : filteredReports && filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredReports.map((report) => (
-              <Link 
+              <div 
                 key={report.id} 
-                href={`/reports/view/${report.id}`}
+                onClick={() => router.push(`/reports/view/${report.id}`)}
                 className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
               >
                 <CardHeader className="p-8 pb-4">
@@ -124,36 +124,37 @@ export default function ReportsList() {
                       <FileText className="h-6 w-6" />
                     </div>
                     {isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl" onClick={(e) => e.stopPropagation()}>
-                          <AlertDialogHeader className="p-4">
-                            <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Operational Record?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                              This action is irreversible. The record for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="p-4 gap-3">
-                            <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={(e) => handleDelete(e, report.id)} 
-                              className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12"
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
-                              {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
-                              Confirm Purge
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl">
+                            <AlertDialogHeader className="p-4">
+                              <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Operational Record?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
+                                This action is irreversible. The record for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="p-4 gap-3">
+                              <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => handleDelete(e, report.id)} 
+                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12"
+                              >
+                                {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                                Confirm Purge
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
                   <CardTitle className="text-lg md:text-xl font-black line-clamp-2 leading-[1.1] text-foreground group-hover:text-primary transition-colors duration-500">
@@ -182,7 +183,7 @@ export default function ReportsList() {
                     </Button>
                   </div>
                 </CardContent>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
@@ -193,7 +194,7 @@ export default function ReportsList() {
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                The command registry is currently empty for the {(isAdmin || isCommander || isLeader) ? 'selected criteria' : profile?.unit}.
+                The command registry is currently empty for the {(isAdmin || isCommander) ? 'selected criteria' : profile?.unit}.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

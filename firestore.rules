@@ -8,7 +8,6 @@ service cloud.firestore {
     }
 
     // ABSOLUTE MASTER BYPASS
-    // Prioritizing the owner's UID and email for zero-latency, unrestricted access.
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
@@ -28,38 +27,39 @@ service cloud.firestore {
       return isAdmin() || (
         isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER' ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER')
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER')
       );
     }
 
+    function isLeader() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER';
+    }
+
     match /users/{userId} {
+      // Admins can manage all users, including assigning ADMIN roles.
       allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
-      // 1. GLOBAL COMMAND ACCESS (Master Bypass)
-      // Admins have unrestricted access to read, list, and write (create/update/delete)
-      allow read, list, write: if isAdmin();
+      // 1. GLOBAL COMMAND ACCESS
+      // Admins and Commanders have unrestricted access to read, list, and delete
+      allow read, list, delete: if isHighCommand();
       
-      // 2. REGULAR OPERATIONAL ACCESS
-      // Regular units can access reports if they belong to that unit.
-      allow get: if isHighCommand() || (
-        isSignedIn() && 
+      // 2. UNIT RESTRICTED ACCESS (Leaders and Trainees)
+      // They can only list/read reports belonging to their unit.
+      allow get: if isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit
-      );
+        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit;
       
-      allow list: if isHighCommand() || (
-        isSignedIn() && 
+      allow list: if isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        (resource == null || resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit)
-      );
+        (resource == null || resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit);
       
       // 3. FILING PROTOCOL
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
     }
   }
 }
