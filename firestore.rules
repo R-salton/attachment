@@ -42,16 +42,14 @@ service cloud.firestore {
       // High Command can list and read everything
       allow read, list, delete: if isHighCommand();
       
-      // 2. UNIT RESTRICTED ACCESS (Leaders and Trainees)
-      // They can only list/read reports belonging to their unit.
+      // 2. OWNER RESTRICTED ACCESS (Leaders and Trainees)
+      // They can only list/read reports they created.
       allow get: if isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit;
+        (resource.data.ownerId == request.auth.uid || isHighCommand());
       
       allow list: if isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         (request.query.limit <= 100) &&
-        (resource == null || resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit);
+        (request.auth.uid == request.query.filters.ownerId || isHighCommand());
       
       // 3. FILING PROTOCOL
       allow create: if isSignedIn();

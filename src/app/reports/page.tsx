@@ -44,22 +44,23 @@ export default function ReportsList() {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
-    // Leaders and regular personnel are limited to their unit's logs
-    if (!profile.unit || profile.unit === 'N/A') return null;
-    return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'));
+    // Leaders and regular personnel are strictly limited to reports they created
+    return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
     
   }, [db, isAdmin, isCommander, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
   const handleDelete = async (e: React.MouseEvent, reportId: string) => {
+    // CRITICAL: Stop propagation to prevent navigation to detail page
     e.preventDefault();
     e.stopPropagation();
+    
     if (!db) return;
     setDeletingId(reportId);
     try {
       await deleteDoc(doc(db, 'reports', reportId));
-      toast({ title: "Record Deleted", description: "The operational log has been removed." });
+      toast({ title: "Record Deleted", description: "The operational log has been removed from the registry." });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not delete report." });
     } finally {
@@ -80,14 +81,14 @@ export default function ReportsList() {
       <div className="max-w-6xl mx-auto space-y-10">
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border md:hidden">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Archive Registry</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Registry Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander) ? 'Global Command Logs' : `${profile?.unit || 'Station'} Logs`}
+                  {(isAdmin || isCommander) ? 'Global Command Logs' : 'Personal Filings Registry'}
                 </Badge>
               </div>
             </div>
@@ -96,7 +97,7 @@ export default function ReportsList() {
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search command logs..." 
+                placeholder="Search archive..." 
                 className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -123,14 +124,17 @@ export default function ReportsList() {
                     <div className="p-3 bg-accent rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-primary">
                       <FileText className="h-6 w-6" />
                     </div>
-                    {isAdmin && (
+                    {(isAdmin || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Dialog opens
+                              }}
                               className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -138,13 +142,13 @@ export default function ReportsList() {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl">
                             <AlertDialogHeader className="p-4">
-                              <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Operational Record?</AlertDialogTitle>
+                              <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                                This action is irreversible. The record for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
+                                This action is irreversible. The situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-2xl font-black h-12" onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
                                 className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12"
@@ -188,14 +192,14 @@ export default function ReportsList() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-48 bg-card rounded-[3rem] border border-dashed border-border flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
+          <div className="text-center py-48 bg-card rounded-[3rem] border border-dashed border-border flex flex-col items-center gap-6 px-10 shadow-sm">
             <div className="h-20 w-20 bg-accent rounded-[2rem] flex items-center justify-center">
               <ShieldAlert className="h-10 w-10 text-primary/50" />
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                The command registry is currently empty for the {(isAdmin || isCommander) ? 'selected criteria' : profile?.unit}.
+                No situational logs recorded in your archive.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

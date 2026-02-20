@@ -38,13 +38,23 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isAuthLoading || !unitName) return null;
     
-    // Non-admins can only see their own unit
-    if (!isAdmin && !isCommander && profile?.unit !== unitName) return null;
-
     const baseQuery = collection(db, 'reports');
-    return query(baseQuery, where('unit', '==', decodeURIComponent(unitName)), orderBy('createdAt', 'desc'));
+    const decodedUnit = decodeURIComponent(unitName);
+
+    // Admins and Commanders see all reports for this unit
+    if (isAdmin || isCommander) {
+      return query(baseQuery, where('unit', '==', decodedUnit), orderBy('createdAt', 'desc'));
+    } 
     
-  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander, profile?.unit]);
+    // Non-admins see ONLY their own reports, even if filtered by unit
+    return query(
+      baseQuery, 
+      where('unit', '==', decodedUnit), 
+      where('ownerId', '==', user.uid), 
+      orderBy('createdAt', 'desc')
+    );
+    
+  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -55,7 +65,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
     setDeletingId(reportId);
     try {
       await deleteDoc(doc(db, 'reports', reportId));
-      toast({ title: "Record Deleted", description: "The operational log has been removed." });
+      toast({ title: "Record Deleted", description: "The operational log has been removed from the registry." });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not delete report." });
     } finally {
@@ -82,7 +92,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{decodeURIComponent(unitName)} Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  Station Operational Archive
+                  {(isAdmin || isCommander) ? 'Station Archive' : 'My Filings for Unit'}
                 </Badge>
               </div>
             </div>
@@ -91,7 +101,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder={`Search logs...`} 
+                placeholder={`Search ${decodeURIComponent(unitName)} archive...`} 
                 className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -118,7 +128,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                     <div className="p-3 bg-accent rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-primary group-hover:shadow-lg group-hover:shadow-primary/20">
                       <FileText className="h-6 w-6" />
                     </div>
-                    {isAdmin && (
+                    {(isAdmin || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -135,11 +145,11 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                             <AlertDialogHeader className="p-4">
                               <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                                This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the registry.
+                                This will permanently expunge the situational log for <span className="text-foreground">{report.reportDate}</span> from the registry.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground">Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground" onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
                                 className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
@@ -183,14 +193,14 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             ))}
           </div>
         ) : (
-          <div className="text-center py-40 bg-card rounded-[3rem] border border-dashed border-border flex flex-col items-center gap-6 px-10 shadow-sm animate-in zoom-in-95 duration-500">
+          <div className="text-center py-40 bg-card rounded-[3rem] border border-dashed border-border flex flex-col items-center gap-6 px-10 shadow-sm">
             <div className="h-20 w-20 bg-accent rounded-[2rem] flex items-center justify-center">
               <ShieldAlert className="h-10 w-10 text-primary/50" />
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                No situational logs found in the command registry for this unit.
+                No situational logs found in your personal archive for this unit.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

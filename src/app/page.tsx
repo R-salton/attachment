@@ -47,10 +47,11 @@ export default function Home() {
     const baseQuery = collection(db, 'reports');
     
     if (isAdmin || isCommander) {
+      // Admins and Commanders see everything globally
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
-      if (!profile.unit || profile.unit === 'N/A') return null;
-      return query(baseQuery, where('unit', '==', profile.unit), orderBy('createdAt', 'desc'), limit(displayLimit));
+      // Leaders and Trainees only see their own reports
+      return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
   }, [db, isAdmin, isCommander, profile, user?.uid, isLoading, displayLimit]);
 
@@ -91,7 +92,7 @@ export default function Home() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Secure Protocol Active</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none">
-            {isAdmin ? 'Command Registry' : `Dashboard: ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
+            {isAdmin ? 'Command Registry' : `Operational Feed: ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="bg-card border-border text-muted-foreground font-bold px-3 py-1 text-[10px] rounded-lg shadow-sm uppercase">
@@ -142,10 +143,10 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black text-foreground flex items-center gap-2">
                 <Activity className="h-6 w-6 text-primary" />
-                {isAdmin ? 'Global Operational Registry' : 'Unit Activity Feed'}
+                {isAdmin ? 'Global Command Registry' : 'My Operational Logs'}
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Displaying latest filings across the command structure.
+                Displaying latest {(isAdmin || isCommander) ? 'filings across command structure' : 'personal filings'}.
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -195,9 +196,9 @@ export default function Home() {
                   <div className="bg-card h-12 w-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm">
                     <ShieldAlert className="h-6 w-6 text-primary/20" />
                   </div>
-                  <h3 className="text-lg font-black text-foreground mb-1 uppercase">Registry Empty</h3>
+                  <h3 className="text-lg font-black text-foreground mb-1 uppercase">No Logs</h3>
                   <p className="text-[10px] text-muted-foreground max-w-[200px] mx-auto mb-6 font-medium">
-                    No operational logs recorded in the command registry.
+                    No operational records found in the registry.
                   </p>
                   <Button asChild variant="outline" size="sm" className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>

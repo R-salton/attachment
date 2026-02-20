@@ -84,7 +84,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         );
       }
       return (
-        <p key={i} className="mb-4 text-base md:text-lg text-slate-800 dark:text-slate-100 leading-relaxed font-semibold">
+        <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">
           {line}
         </p>
       );
@@ -115,7 +115,21 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
-  const canEdit = isAdmin || isCommander || isLeader || report.ownerId === user?.uid;
+  // Final check: Only owner or High Command can view details
+  const canView = isAdmin || isCommander || report.ownerId === user?.uid;
+  
+  if (!canView) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
+        <h2 className="text-3xl font-black text-foreground mb-4">Access Denied</h2>
+        <p className="text-muted-foreground mb-10 max-w-md text-sm font-bold uppercase">This record belongs to another officer and is classified.</p>
+        <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">Return to Dashboard</Button>
+      </div>
+    );
+  }
+
+  const canEdit = isAdmin || isCommander || report.ownerId === user?.uid;
 
   return (
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
@@ -208,7 +222,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-800 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
                    <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-white" />
                 </div>
