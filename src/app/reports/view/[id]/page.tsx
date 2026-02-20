@@ -17,12 +17,14 @@ import {
   ArrowLeft,
   Shield,
   Printer,
-  Copy
+  Copy,
+  FileDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { exportReportToDocx } from '@/lib/export-docx';
 
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const [isEditing, setIsEditing] = useState(false);
   const [editableText, setEditableText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const reportRef = useMemoFirebase(() => {
     if (!db || !id || !user) return null;
@@ -58,6 +61,25 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
+  const handleExport = async () => {
+    if (!report) return;
+    setIsExporting(true);
+    try {
+      await exportReportToDocx({
+        reportTitle: report.reportTitle,
+        reportDate: report.reportDate,
+        unit: report.unit,
+        fullText: report.fullText,
+        reportingCommanderName: report.reportingCommanderName
+      });
+      toast({ title: "Export Complete", description: "Word document has been generated." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!reportRef) return;
     setIsSaving(true);
@@ -75,14 +97,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const formatContent = (text: string) => {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
-      // Separator
       if (line.trim() === '--- Operational Details Below ---') {
         return <div key={i} className="my-12 border-t-2 border-dashed border-slate-200 dark:border-slate-800" />;
       }
-      // Bold Headers
       if (line.startsWith('*') && line.endsWith('*')) {
         const content = line.replace(/\*/g, '');
-        // Special highlighting for Overall Report header
         if (content.startsWith('OVERALL REPORT')) {
           return (
             <h3 key={i} className="text-2xl md:text-3xl font-black text-primary mt-4 mb-8 border-l-4 border-primary pl-4 uppercase tracking-tighter leading-none">
@@ -96,7 +115,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </h3>
         );
       }
-      // Section Labels / Subtitles (Orderly Officer Sections often have these)
       if (line.toUpperCase() === line && line.length > 5 && !line.includes('.') && !line.includes(':')) {
         return (
           <h4 key={i} className="text-lg font-black text-primary mt-8 mb-4 uppercase tracking-wider">
@@ -104,7 +122,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </h4>
         );
       }
-      // Bullet points
       if (line.startsWith('.')) {
         return (
           <div key={i} className="flex gap-3 mb-3 ml-2">
@@ -115,15 +132,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </div>
         );
       }
-      // Underlined effect (using markdown style for simulation)
-      if (line.startsWith('_') && line.endsWith('_')) {
-        return (
-          <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold underline decoration-primary/40 underline-offset-4">
-            {line.replace(/_/g, '')}
-          </p>
-        );
-      }
-      // Standard text
       return (
         <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">
           {line}
@@ -156,9 +164,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
-  // Access check: Admins, Commanders, and Leaders can view reports. Trainees only view their own.
   const canView = isAdmin || isCommander || isLeader || report.ownerId === user?.uid;
-  
   if (!canView) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
@@ -170,7 +176,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
-  // Edit Protocol: Only the owner or an Admin can modify a record.
   const canEdit = isAdmin || report.ownerId === user?.uid;
 
   return (
@@ -216,9 +221,13 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                   {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 mr-2" />}
                   Copy
                 </Button>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-10 border-border text-foreground">
+                  {isExporting ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-2" /> : <FileDown className="h-3.5 w-3.5 mr-2" />}
+                  Word
+                </Button>
               </div>
               <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-10 px-6 shadow-xl shadow-primary/20">
-                <Printer className="h-3.5 w-3.5 mr-2" /> Print PDF
+                <Printer className="h-3.5 w-3.5 mr-2" /> Print
               </Button>
             </div>
           )}

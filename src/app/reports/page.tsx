@@ -182,17 +182,17 @@ export default function ReportsList() {
             <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Accessing Vault Registry...</p>
           </div>
         ) : filteredReports && filteredReports.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredReports.map((report) => (
               <div 
                 key={report.id} 
                 onClick={() => router.push(`/reports/view/${report.id}`)}
-                className="hover:shadow-3xl transition-all cursor-pointer group border-none shadow-sm flex flex-col h-full bg-card rounded-[2rem] overflow-hidden hover:-translate-y-2 duration-500"
+                className="hover:shadow-2xl transition-all cursor-pointer group border border-border shadow-sm flex flex-col h-full bg-card rounded-2xl overflow-hidden hover:-translate-y-1 duration-300"
               >
-                <CardHeader className="p-8 pb-4">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-accent rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-primary">
-                      <FileText className="h-6 w-6" />
+                <div className="p-4 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary group-hover:text-white transition-all text-primary">
+                      <FileText className="h-4 w-4" />
                     </div>
                     {(isAdmin || isCommander || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
@@ -201,28 +201,25 @@ export default function ReportsList() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                              className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl">
+                          <AlertDialogContent className="rounded-2xl border-none shadow-3xl">
                             <AlertDialogHeader className="p-4">
-                              <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
+                              <AlertDialogTitle className="text-xl font-black">Purge Record?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-muted-foreground">
                                 This situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground" onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-xl font-black h-10">Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
-                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
+                                className="bg-destructive text-white rounded-xl font-black h-10 shadow-lg shadow-destructive/20"
                               >
-                                {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                                {deletingId === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
                                 Confirm Purge
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -231,35 +228,30 @@ export default function ReportsList() {
                       </div>
                     )}
                   </div>
-                  <CardTitle className="text-lg md:text-xl font-black line-clamp-2 leading-[1.1] text-foreground group-hover:text-primary transition-colors duration-500">
-                    {report.reportTitle}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-8 space-y-6 pt-0 flex-1 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      {report.reportDate}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-black text-primary">
-                        {report.reportingCommanderName?.charAt(0)}
+                  
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                      {report.reportTitle}
+                    </h4>
+                    
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        <Calendar className="h-3 w-3 text-primary" />
+                        {report.reportDate}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">Officer in Charge</span>
-                        <span className="text-xs font-bold text-foreground truncate max-w-[140px] leading-none">{report.reportingCommanderName}</span>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        <Building2 className="h-3 w-3 text-primary" />
+                        {report.unit}
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-50 mt-1">
+                        <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center text-[8px] font-black text-primary">
+                          {report.reportingCommanderName?.charAt(0)}
+                        </div>
+                        <span className="text-[10px] font-bold text-foreground truncate">{report.reportingCommanderName}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-border mt-auto flex justify-between items-center">
-                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary uppercase bg-background">
-                      {report.unit}
-                    </Badge>
-                    <Button variant="ghost" size="sm" className="font-black text-primary hover:bg-transparent group-hover:translate-x-2 transition-transform h-auto p-0 text-xs">
-                      View Transcript <Eye className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
+                </div>
               </div>
             ))}
           </div>

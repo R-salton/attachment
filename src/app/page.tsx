@@ -18,7 +18,8 @@ import {
   Activity,
   Building2,
   Navigation,
-  FileText
+  FileText,
+  Calendar
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -47,11 +48,9 @@ export default function Home() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins, Commanders, and Leaders see the global feed
     if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
-      // Trainees only see their own reports
       return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
   }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
@@ -147,7 +146,7 @@ export default function Home() {
                 {(isAdmin || isCommander || isLeader) ? 'Operational Feed' : 'My Filings'}
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Displaying latest {(isAdmin || isCommander || isLeader) ? 'global logs' : 'personal entries'} across the registry.
+                Displaying latest {(isAdmin || isCommander || isLeader) ? 'global logs' : 'personal entries'}.
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -168,20 +167,21 @@ export default function Home() {
                   <div 
                     key={report.id} 
                     onClick={() => router.push(`/reports/view/${report.id}`)}
-                    className="group relative flex flex-col p-6 rounded-3xl bg-accent/30 hover:bg-accent/50 transition-all border border-transparent hover:border-border hover:shadow-xl cursor-pointer"
+                    className="group relative flex flex-col p-4 rounded-2xl bg-accent/30 hover:bg-accent/50 transition-all border border-transparent hover:border-border hover:shadow-xl cursor-pointer"
                   >
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3">
                       <Badge variant="outline" className="text-[8px] font-black px-2 py-0.5 border-primary/20 text-primary uppercase tracking-widest bg-background">
                         {report.unit}
                       </Badge>
-                      <div className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter">
+                      <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-tighter">
+                        <Calendar className="h-3 w-3" />
                         {report.reportDate}
                       </div>
                     </div>
-                    <h4 className="font-black text-foreground text-sm line-clamp-2 leading-tight mb-4 group-hover:text-primary transition-colors">
+                    <h4 className="font-black text-foreground text-sm line-clamp-1 mb-3 group-hover:text-primary transition-colors">
                       {report.reportTitle}
                     </h4>
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
+                    <div className="mt-auto flex items-center justify-between pt-3 border-t border-border/50">
                       <div className="flex items-center gap-2">
                         <div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[8px] font-black">
                           {report.reportingCommanderName?.charAt(0)}
@@ -198,9 +198,6 @@ export default function Home() {
                     <ShieldAlert className="h-6 w-6 text-primary/20" />
                   </div>
                   <h3 className="text-lg font-black text-foreground mb-1 uppercase">No Records</h3>
-                  <p className="text-[10px] text-muted-foreground max-w-[200px] mx-auto mb-6 font-medium">
-                    No {(isAdmin || isCommander || isLeader) ? 'operational' : 'personal'} filings found in the registry.
-                  </p>
                   <Button asChild variant="outline" size="sm" className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
                   </Button>
@@ -212,42 +209,16 @@ export default function Home() {
 
         <div className="space-y-6 lg:col-span-1">
           <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] overflow-hidden relative group">
-            <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-              <ShieldCheck className="h-32 w-32" />
-            </div>
-            <CardHeader className="p-8 relative z-10">
+            <CardHeader className="p-8">
               <CardTitle className="text-xl font-black">Action Center</CardTitle>
-              <CardDescription className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Mission critical tools</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 pt-0 relative z-10 space-y-3">
-              <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black transition-all text-xs">
+            <CardContent className="p-8 pt-0 space-y-3">
+              <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black text-xs">
                 <Link href="/reports">
                   <History className="mr-2 h-4 w-4" />
                   ACCESS ARCHIVES
                 </Link>
               </Button>
-              {isAdmin && (
-                <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black transition-all text-xs">
-                  <Link href="/users">
-                    <UserCog className="mr-2 h-4 w-4" />
-                    PERSONNEL REGISTRY
-                  </Link>
-                </Button>
-              )}
-              {(isAdmin || isCommander || isLeader) && (
-                <div className="pt-4 border-t border-white/5 mt-4">
-                  <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-primary" />
-                      <span className="text-[9px] font-black uppercase text-white tracking-widest">Executive AI</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Consolidate multiple logs into a strategic weekly briefing.</p>
-                    <Button asChild size="sm" className="w-full rounded-xl font-black shadow-lg shadow-primary/20 h-10">
-                      <Link href="/weekly/new">LAUNCH ANALYSIS</Link>
-                    </Button>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
