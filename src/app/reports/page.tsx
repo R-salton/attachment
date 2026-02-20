@@ -90,109 +90,112 @@ export default function ReportsList() {
 
   return (
     <div className="flex-1 bg-background pb-20 p-4 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-8 md:space-y-10">
-        <section className="flex flex-col gap-6">
+      <div className="max-w-7xl mx-auto space-y-10">
+        <section className="flex flex-col gap-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border text-foreground">
-                <ArrowLeft className="h-5 w-5" />
+            <div className="flex items-center gap-6">
+              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-14 w-14 rounded-2xl bg-white shadow-md border border-slate-100 text-slate-900 hover:bg-slate-50 transition-all">
+                <ArrowLeft className="h-6 w-6" />
               </Button>
               <div className="space-y-1">
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Registry Archive</h1>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                    {(isAdmin || isCommander || isLeader) ? 'Operational Command Registry' : 'Personal Registry Archive'}
-                  </Badge>
+                  <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Operational Database</span>
                 </div>
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 leading-none uppercase">Registry Archive</h1>
               </div>
             </div>
-            <Button asChild className="rounded-2xl h-12 px-6 font-black shadow-lg shadow-primary/20">
-              <Link href="/daily/new">FILE NEW REPORT</Link>
+            <Button asChild className="rounded-2xl h-14 px-8 font-black shadow-xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700">
+              <Link href="/daily/new">FILE NEW SITREP</Link>
             </Button>
           </div>
 
-          <div className="bg-card p-6 md:p-8 rounded-[2rem] border border-border shadow-sm space-y-6">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-primary" />
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Search Filters</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Title Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search logs..." 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+          <Card className="border-none shadow-2xl rounded-[2.5rem] bg-slate-900 text-white overflow-hidden">
+            <CardHeader className="p-8 pb-4">
+              <div className="flex items-center gap-3">
+                <Filter className="h-5 w-5 text-blue-400" />
+                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Tactical Search Filters</h2>
               </div>
+            </CardHeader>
+            <CardContent className="p-8 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Title Search</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <Input 
+                      placeholder="Search logs..." 
+                      className="pl-10 h-12 rounded-xl bg-slate-800 border-slate-700 text-sm font-bold text-white placeholder:text-slate-600"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Deployment Unit</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground z-10" />
-                  <Select value={unitFilter} onValueChange={setUnitFilter}>
-                    <SelectTrigger className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground">
-                      <SelectValue placeholder="All Units" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All Units</SelectItem>
-                      {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Deployment Unit</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 z-10" />
+                    <Select value={unitFilter} onValueChange={setUnitFilter}>
+                      <SelectTrigger className="pl-10 h-12 rounded-xl bg-slate-800 border-slate-700 text-sm font-bold text-white">
+                        <SelectValue placeholder="All Units" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                        <SelectItem value="ALL">All Units</SelectItem>
+                        {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Log Date</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input 
-                    placeholder="e.g. 18 FEB 26" 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                  />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Log Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <Input 
+                      placeholder="e.g. 18 FEB 26" 
+                      className="pl-10 h-12 rounded-xl bg-slate-800 border-slate-700 text-sm font-bold text-white placeholder:text-slate-600"
+                      value={dateFilter}
+                      onChange={(e) => setDateFilter(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Officer in Charge</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search by name..." 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
-                    value={submitterFilter}
-                    onChange={(e) => setSubmitterFilter(e.target.value)}
-                  />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Officer in Charge</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <Input 
+                      placeholder="Search by name..." 
+                      className="pl-10 h-12 rounded-xl bg-slate-800 border-slate-700 text-sm font-bold text-white placeholder:text-slate-600"
+                      value={submitterFilter}
+                      onChange={(e) => setSubmitterFilter(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </section>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-6">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Accessing Vault Registry...</p>
+            <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
+            <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">Accessing Encrypted Vault...</p>
           </div>
         ) : filteredReports && filteredReports.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredReports.map((report) => (
               <div 
                 key={report.id} 
                 onClick={() => router.push(`/reports/view/${report.id}`)}
-                className="hover:shadow-2xl transition-all cursor-pointer group border border-border shadow-sm flex flex-col h-full bg-card rounded-2xl overflow-hidden hover:-translate-y-1 duration-300"
+                className="hover:shadow-3xl transition-all cursor-pointer group border border-slate-100 shadow-xl flex flex-col h-full bg-white rounded-3xl overflow-hidden hover:-translate-y-2 duration-500"
               >
-                <div className="p-4 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary group-hover:text-white transition-all text-primary">
-                      <FileText className="h-4 w-4" />
+                <div className="h-2 w-full bg-blue-600" />
+                <div className="p-6 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-5">
+                    <div className="p-3 bg-slate-900 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all text-blue-400 shadow-lg shadow-slate-900/10">
+                      <FileText className="h-5 w-5" />
                     </div>
                     {(isAdmin || isCommander || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
@@ -201,25 +204,25 @@ export default function ReportsList() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg"
+                              className="h-10 w-10 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-2xl border-none shadow-3xl">
-                            <AlertDialogHeader className="p-4">
-                              <AlertDialogTitle className="text-xl font-black">Purge Record?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm font-bold text-muted-foreground">
-                                This situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
+                          <AlertDialogContent className="rounded-[2.5rem] border-none shadow-3xl p-8">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Purge Record?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-slate-500 leading-relaxed">
+                                This situational log for <span className="text-slate-900">{report.reportDate}</span> will be permanently expunged from the official command registry. This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-xl font-black h-10">Cancel</AlertDialogCancel>
+                            <AlertDialogFooter className="gap-4 mt-6">
+                              <AlertDialogCancel className="rounded-2xl font-black h-12 bg-slate-50 border-none hover:bg-slate-100">Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
-                                className="bg-destructive text-white rounded-xl font-black h-10 shadow-lg shadow-destructive/20"
+                                className="bg-red-500 text-white rounded-2xl font-black h-12 shadow-xl shadow-red-500/20 hover:bg-red-600"
                               >
-                                {deletingId === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
                                 Confirm Purge
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -229,25 +232,28 @@ export default function ReportsList() {
                     )}
                   </div>
                   
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-black text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight">
                       {report.reportTitle}
                     </h4>
                     
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        <Calendar className="h-3 w-3 text-primary" />
+                    <div className="flex flex-col gap-3 pt-4 border-t border-slate-50">
+                      <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <Calendar className="h-4 w-4 text-blue-600" />
                         {report.reportDate}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        <Building2 className="h-3 w-3 text-primary" />
+                      <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <Building2 className="h-4 w-4 text-blue-600" />
                         {report.unit}
                       </div>
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-50 mt-1">
-                        <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center text-[8px] font-black text-primary">
+                      <div className="flex items-center gap-3 pt-4 mt-2">
+                        <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center text-[10px] font-black text-blue-400 border border-slate-800 shadow-lg shadow-slate-900/10">
                           {report.reportingCommanderName?.charAt(0)}
                         </div>
-                        <span className="text-[10px] font-bold text-foreground truncate">{report.reportingCommanderName}</span>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-[10px] font-black text-slate-900 truncate uppercase tracking-tight">{report.reportingCommanderName}</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Officer in Charge</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -256,17 +262,17 @@ export default function ReportsList() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-48 bg-card rounded-[3rem] border border-dashed border-border flex flex-col items-center gap-6 px-10 shadow-sm">
-            <div className="h-20 w-20 bg-accent rounded-[2rem] flex items-center justify-center">
-              <ShieldAlert className="h-10 w-10 text-primary/50" />
+          <div className="text-center py-48 bg-white rounded-[4rem] border border-dashed border-slate-200 flex flex-col items-center gap-8 px-10 shadow-sm">
+            <div className="h-24 w-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center shadow-inner">
+              <ShieldAlert className="h-12 w-12 text-slate-200" />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">No Matching Records</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                Adjust your filters or file a new SITUATION REPORT.
+            <div className="space-y-3">
+              <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">No Matching Records</h3>
+              <p className="text-sm text-slate-400 max-w-sm mx-auto font-bold uppercase tracking-wide">
+                Adjust your filters or initiate a new SITUATION REPORT for the unit.
               </p>
             </div>
-            <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">
+            <Button size="lg" asChild className="rounded-2xl px-12 font-black h-14 shadow-2xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700">
               <Link href="/daily/new">File First Report</Link>
             </Button>
           </div>
