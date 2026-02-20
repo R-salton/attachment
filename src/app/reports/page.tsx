@@ -130,6 +130,7 @@ export default function ReportsList() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
+                              onClick={(e) => e.stopPropagation()}
                               className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
                               <Trash2 className="h-5 w-5" />

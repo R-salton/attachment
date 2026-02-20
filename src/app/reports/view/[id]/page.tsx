@@ -78,7 +78,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     return text.split('\n').map((line, i) => {
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
-          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-50 mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
+          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
             {line.replace(/\*/g, '')}
           </h3>
         );
@@ -181,7 +181,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-slate-50 leading-[0.9] uppercase">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] uppercase">
               {report.reportDate}
             </h2>
             <div className="flex flex-wrap items-center gap-3 pt-4">
@@ -204,13 +204,13 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-slate-900 dark:text-slate-50"
+                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-slate-900 dark:text-white"
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-800 dark:text-slate-100 tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-lg leading-relaxed text-slate-800 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
-                   <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-slate-50" />
+                   <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-white" />
                 </div>
                 {formatContent(report.fullText)}
               </div>

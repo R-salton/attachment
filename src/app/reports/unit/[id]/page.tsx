@@ -25,34 +25,26 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
-const SLUG_TO_UNIT: Record<string, string> = {
-  'gasabodpu': 'Gasabo DPU',
-  'kicukirodpu': 'Kicukiro DPU',
-  'nyarugengedpu': 'Nyarugenge DPU',
-  'trs': 'TRS',
-  'sif': 'SIF',
-  'tfu': 'TFU',
-};
-
 export default function UnitReportsArchive({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { id } = use(params);
+  const { id: unitName } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const unitName = SLUG_TO_UNIT[id?.toLowerCase()] || null;
-
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isAuthLoading || !unitName) return null;
     
+    // Non-admins can only see their own unit
+    if (!isAdmin && !isCommander && profile?.unit !== unitName) return null;
+
     const baseQuery = collection(db, 'reports');
-    return query(baseQuery, where('unit', '==', unitName), orderBy('createdAt', 'desc'));
+    return query(baseQuery, where('unit', '==', decodeURIComponent(unitName)), orderBy('createdAt', 'desc'));
     
-  }, [db, unitName, user?.uid, isAuthLoading]);
+  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander, profile?.unit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -78,17 +70,6 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
 
   const isLoading = isAuthLoading || isReportsLoading;
 
-  if (!unitName && !isLoading) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-background">
-        <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Registry Entry Not Found</h2>
-        <p className="text-sm text-muted-foreground mb-8 max-w-sm">The unit code "{id}" is not recognized in the command structure.</p>
-        <Button onClick={() => router.push('/')} className="rounded-xl font-bold px-8 h-12 shadow-xl shadow-primary/10">Return to Dashboard</Button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 bg-background pb-24 p-4 md:p-10">
       <div className="max-w-6xl mx-auto space-y-10">
@@ -98,7 +79,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <ArrowLeft className="h-5 w-5 text-foreground" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{unitName} Registry</h1>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{decodeURIComponent(unitName)} Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
                   Station Operational Archive
@@ -110,7 +91,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder={`Search ${unitName} logs...`} 
+                placeholder={`Search logs...`} 
                 className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -144,6 +125,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                             <Button 
                               variant="ghost" 
                               size="icon" 
+                              onClick={(e) => e.stopPropagation()}
                               className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -153,7 +135,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                             <AlertDialogHeader className="p-4">
                               <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                                This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} registry.
+                                This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the registry.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
@@ -208,7 +190,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                No situational logs found in the command registry for the {unitName} unit.
+                No situational logs found in the command registry for this unit.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

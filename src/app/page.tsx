@@ -26,12 +26,12 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
 
 const UNITS = [
-  { id: "gasabodpu", name: "Gasabo DPU", color: "bg-blue-500" },
-  { id: "kicukirodpu", name: "Kicukiro DPU", color: "bg-indigo-500" },
-  { id: "nyarugengedpu", name: "Nyarugenge DPU", color: "bg-violet-500" },
-  { id: "trs", name: "TRS", color: "bg-slate-700" },
-  { id: "sif", name: "SIF", color: "bg-emerald-600" },
-  { id: "tfu", name: "TFU", color: "bg-amber-600" },
+  { id: "Gasabo DPU", name: "Gasabo DPU", color: "bg-blue-500" },
+  { id: "Kicukiro DPU", name: "Kicukiro DPU", color: "bg-indigo-500" },
+  { id: "Nyarugenge DPU", name: "Nyarugenge DPU", color: "bg-violet-500" },
+  { id: "TRS", name: "TRS", color: "bg-slate-700" },
+  { id: "SIF", name: "SIF", color: "bg-emerald-600" },
+  { id: "TFU", name: "TFU", color: "bg-amber-600" },
 ];
 
 export default function Home() {
@@ -127,7 +127,7 @@ export default function Home() {
                     <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                       <Building2 className="h-4 w-4" />
                     </div>
-                    <CardTitle className="text-xs font-black uppercase tracking-tight truncate">{unit.name}</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-tight truncate">{unit.name}</CardTitle>
                   </CardHeader>
                 </Card>
               </Link>

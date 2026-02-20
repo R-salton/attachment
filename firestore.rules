@@ -11,7 +11,9 @@ service cloud.firestore {
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
-        request.auth.token.email == 'nezasalton@gmail.com'
+        request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
+        request.auth.token.email == 'nezasalton@gmail.com' ||
+        request.auth.token.email == 'cboazi100@gmail.com'
       );
     }
 
@@ -31,20 +33,13 @@ service cloud.firestore {
       );
     }
 
-    function isLeader() {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER';
-    }
-
     match /users/{userId} {
-      // Admins can manage all users, including assigning ADMIN roles.
       allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
       // 1. GLOBAL COMMAND ACCESS
-      // Admins and Commanders have unrestricted access to read, list, and delete
+      // High Command can list and read everything
       allow read, list, delete: if isHighCommand();
       
       // 2. UNIT RESTRICTED ACCESS (Leaders and Trainees)
@@ -55,6 +50,7 @@ service cloud.firestore {
       
       allow list: if isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (request.query.limit <= 100) &&
         (resource == null || resource.data.unit == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.unit);
       
       // 3. FILING PROTOCOL
