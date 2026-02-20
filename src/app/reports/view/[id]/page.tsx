@@ -20,7 +20,8 @@ import {
   Printer,
   Copy,
   FileDown,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -56,7 +57,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const handleCopy = () => {
     if (report?.fullText) {
-      // Create a temporary div to extract text from HTML if it is HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = report.fullText;
       const text = tempDiv.innerText;
@@ -103,8 +103,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const renderContent = (content: string) => {
     if (!content) return null;
-
-    // Check if the content looks like HTML
     const isHtml = content.trim().startsWith('<') || content.includes('class=') || content.includes('<p>');
 
     if (isHtml) {
@@ -116,7 +114,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       );
     }
 
-    // Legacy fallback for plain text reports
     return content.split('\n').map((line, i) => {
       if (line.trim() === '--- Operational Details Below ---') {
         return <div key={i} className="my-12 border-t-2 border-dashed border-slate-200 dark:border-slate-800" />;
@@ -180,51 +177,50 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   return (
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
       <header className="border-b bg-background/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-2 md:px-4 font-bold">
-            <ArrowLeft className="h-6 w-6 md:mr-2 text-foreground" />
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-1 md:px-4 font-bold h-9 md:h-10">
+            <ArrowLeft className="h-5 w-5 md:mr-2 text-foreground" />
             <span className="hidden sm:inline uppercase tracking-widest text-[10px] text-foreground">Back</span>
           </Button>
-          <div className="h-8 w-px bg-border hidden sm:block" />
+          <div className="h-6 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-xs md:text-sm font-black text-foreground truncate max-w-[140px] md:max-w-xl leading-none mb-1 uppercase tracking-tighter">
+            <h1 className="text-[10px] md:text-sm font-black text-foreground truncate max-w-[100px] sm:max-w-xl leading-none mb-0.5 uppercase tracking-tighter">
               {report.reportTitle}
             </h1>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest h-4 px-1 border-primary/20 text-primary">{report.unit}</Badge>
-              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{report.reportDate}</span>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[7px] md:text-[8px] font-black uppercase tracking-widest h-3 px-1 border-primary/20 text-primary">{report.unit}</Badge>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           {isEditing ? (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-10 font-bold px-4 text-foreground">
-                Cancel
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-9 md:h-10 font-bold px-2 md:px-4 text-foreground text-xs">
+                <span className="hidden sm:inline">Cancel</span>
+                <X className="sm:hidden h-4 w-4" />
               </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-black h-10 px-6">
-                {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Save
+              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-black h-9 md:h-10 px-3 md:px-6 shadow-md shadow-primary/10 text-xs">
+                {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-0 md:mr-2" /> : <Save className="h-4 w-4 mr-0 md:mr-2" />}
+                <span className="hidden sm:inline">Save</span>
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <div className="hidden lg:flex items-center gap-2">
-                {canEdit && (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold h-10 border-border text-foreground">
-                    <Edit3 className="h-3.5 w-3.5 mr-2" /> Edit
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold h-10 border-border text-foreground">
-                  {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 mr-2" />}
-                  Copy
+            <div className="flex items-center gap-1.5">
+              {canEdit && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+                  <Edit3 className="h-4 w-4 md:mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-10 border-border text-foreground">
-                  {isExporting ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-2" /> : <FileDown className="h-3.5 w-3.5 mr-2" />}
-                  Word
-                </Button>
-              </div>
+              )}
+              <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+                {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 md:mr-2" />}
+                <span className="hidden sm:inline">Copy</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+                {isExporting ? <Loader2 className="animate-spin h-4 w-4 md:mr-2" /> : <FileDown className="h-4 w-4 md:mr-2" />}
+                <span className="hidden sm:inline">Word</span>
+              </Button>
               <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-10 px-6 shadow-xl shadow-primary/20">
                 <Printer className="h-3.5 w-3.5 mr-2" /> Print
               </Button>
@@ -233,48 +229,48 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto mt-12 px-4 md:px-10 space-y-10 print:mt-0 print:px-0">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4 flex-1">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary p-2.5 rounded-xl shadow-lg shadow-primary/10">
-                <Building2 className="h-6 w-6 text-primary-foreground" />
+      <main className="max-w-4xl mx-auto mt-6 md:mt-12 px-4 md:px-10 space-y-6 md:space-y-10 print:mt-0 print:px-0">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
+          <div className="space-y-3 md:space-y-4 flex-1">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/10">
+                <Building2 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Command Registry</span>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Command Registry</span>
+                <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.9] uppercase">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[1] md:leading-[0.9] uppercase">
               {report.reportDate}
             </h2>
-            <div className="flex flex-wrap items-center gap-3 pt-4">
-              <Badge className="bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900 h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-2 md:pt-4">
+              <Badge className="bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900 h-7 md:h-8 px-2 md:px-4 font-black rounded-lg text-[9px] md:text-[10px] uppercase tracking-widest border-none">
                 UNIT: {report.unit}
               </Badge>
-              <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50">
-                COMMANDER: {report.reportingCommanderName}
+              <Badge variant="outline" className="h-7 md:h-8 px-2 md:px-4 font-black rounded-lg border-2 text-[9px] md:text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50">
+                OIC: {report.reportingCommanderName}
               </Badge>
             </div>
           </div>
         </div>
 
-        <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
-          <div className="h-2 bg-primary" />
-          <CardContent className="p-8 md:p-16 relative bg-card">
+        <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
+          <div className="h-1.5 md:h-2 bg-primary" />
+          <CardContent className="p-6 md:p-16 relative bg-card">
             {isEditing ? (
               <div className="relative z-10 space-y-4">
-                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML Source)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML Source)</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-mono text-sm leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8"
+                  className="min-h-[400px] md:min-h-[600px] font-mono text-xs md:text-sm leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4 md:p-8"
                 />
               </div>
             ) : (
-              <div className="font-report text-lg leading-relaxed text-slate-900 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
+              <div className="font-report text-base md:text-lg leading-relaxed text-slate-900 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
-                   <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-white" />
+                   <Shield className="h-[200px] w-[200px] md:h-[400px] md:w-[400px] text-slate-900 dark:text-white" />
                 </div>
                 {renderContent(report.fullText)}
               </div>
