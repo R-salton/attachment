@@ -29,7 +29,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
   const { id: unitName } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isAdmin, isCommander, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -40,12 +40,12 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
     const baseQuery = collection(db, 'reports');
     const decodedUnit = decodeURIComponent(unitName);
 
-    // Admins, Commanders, and Leaders can see all reports for this unit
-    if (isAdmin || isCommander || isLeader) {
+    // Admins and Commanders see all reports for this unit
+    if (isAdmin || isCommander) {
       return query(baseQuery, where('unit', '==', decodedUnit), orderBy('createdAt', 'desc'));
     } 
     
-    // Others see only their own for this unit
+    // Others (Leaders, Trainees) see only their own for this unit
     return query(
       baseQuery, 
       where('unit', '==', decodedUnit), 
@@ -53,7 +53,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
       orderBy('createdAt', 'desc')
     );
     
-  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander, isLeader]);
+  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -91,7 +91,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{decodeURIComponent(unitName)} Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  Archive Repository
+                  {(isAdmin || isCommander) ? 'Global Command Repository' : 'My Personal Records'}
                 </Badge>
               </div>
             </div>
@@ -100,7 +100,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder={`Search ${decodeURIComponent(unitName)} archive...`} 
+                placeholder={`Search archive...`} 
                 className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -199,7 +199,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                No situational logs found in this unit's archive.
+                No logs found in this unit's archive for your account.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

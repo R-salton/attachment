@@ -28,7 +28,7 @@ export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
   const { toast } = useToast();
-  const { isCommander, isAdmin, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -38,20 +38,20 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins, Commanders, and Leaders can see all reports in the archive
-    if (isAdmin || isCommander || isLeader) {
+    // Admins and Commanders see all reports in the global archive
+    if (isAdmin || isCommander) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
-    // Trainees are restricted to reports they created
+    // Leaders and Trainees are strictly restricted to their own filings
     return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
     
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
+  }, [db, isAdmin, isCommander, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
   const handleDelete = async (e: React.MouseEvent, reportId: string) => {
-    // Isolated deletion trigger
+    // Isolated deletion trigger with event stopping
     e.preventDefault();
     e.stopPropagation();
     
@@ -87,7 +87,7 @@ export default function ReportsList() {
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Registry Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander || isLeader) ? 'Global Command Logs' : 'My Personal Registry'}
+                  {(isAdmin || isCommander) ? 'Global Command Logs' : 'Personal Registry Archive'}
                 </Badge>
               </div>
             </div>
