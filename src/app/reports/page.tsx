@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { 
   Select, 
   SelectContent, 
@@ -50,7 +51,7 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins, Commanders, and Leaders see all reports
+    // Admins, Commanders, and Leaders see all reports (Global Command Visibility)
     if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
@@ -95,7 +96,7 @@ export default function ReportsList() {
         <section className="flex flex-col gap-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border">
+              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border text-foreground">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="space-y-1">
@@ -125,7 +126,7 @@ export default function ReportsList() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input 
                     placeholder="Search logs..." 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold"
+                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -137,7 +138,7 @@ export default function ReportsList() {
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground z-10" />
                   <Select value={unitFilter} onValueChange={setUnitFilter}>
-                    <SelectTrigger className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold">
+                    <SelectTrigger className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground">
                       <SelectValue placeholder="All Units" />
                     </SelectTrigger>
                     <SelectContent>
@@ -154,7 +155,7 @@ export default function ReportsList() {
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input 
                     placeholder="e.g. 18 FEB 26" 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold"
+                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
                     value={dateFilter}
                     onChange={(e) => setDateFilter(e.target.value)}
                   />
@@ -167,7 +168,7 @@ export default function ReportsList() {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input 
                     placeholder="Search by name..." 
-                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold"
+                    className="pl-9 h-11 rounded-xl bg-background border-border text-sm font-bold text-foreground"
                     value={submitterFilter}
                     onChange={(e) => setSubmitterFilter(e.target.value)}
                   />
@@ -212,16 +213,16 @@ export default function ReportsList() {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl">
                             <AlertDialogHeader className="p-4">
-                              <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
+                              <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
                                 This situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
-                              <AlertDialogCancel className="rounded-2xl font-black h-12" onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground" onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={(e) => handleDelete(e, report.id)} 
-                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12"
+                                className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
                               >
                                 {deletingId === report.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5 mr-2" />}
                                 Confirm Purge
@@ -253,7 +254,7 @@ export default function ReportsList() {
                     </div>
                   </div>
                   <div className="pt-6 border-t border-border mt-auto flex justify-between items-center">
-                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary uppercase">
+                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary uppercase bg-background">
                       {report.unit}
                     </Badge>
                     <Button variant="ghost" size="sm" className="font-black text-primary hover:bg-transparent group-hover:translate-x-2 transition-transform h-auto p-0 text-xs">
