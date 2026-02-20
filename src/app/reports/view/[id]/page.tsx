@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useEffect, useState } from 'react';
@@ -107,7 +106,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
         <h2 className="text-3xl md:text-5xl font-black text-foreground mb-4">Transcript Restricted</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">Access to this registry entry is prohibited or the record does not exist.</p>
+        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">Access Prohibited.</p>
         <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">
           Return to Dashboard
         </Button>
@@ -115,16 +114,16 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
-  // Final check: Only owner or High Command can view details
-  const canView = isAdmin || isCommander || report.ownerId === user?.uid;
+  // Access check: Admins, Commanders, and Leaders can view reports. Trainees only view their own.
+  const canView = isAdmin || isCommander || isLeader || report.ownerId === user?.uid;
   
   if (!canView) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
         <h2 className="text-3xl font-black text-foreground mb-4">Access Denied</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm font-bold uppercase">This record belongs to another officer and is classified.</p>
-        <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">Return to Dashboard</Button>
+        <p className="text-muted-foreground mb-10 max-w-md text-sm font-bold uppercase">Classified Record.</p>
+        <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">Return Dashboard</Button>
       </div>
     );
   }

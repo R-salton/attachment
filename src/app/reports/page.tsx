@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -29,7 +28,7 @@ export default function ReportsList() {
   const router = useRouter();
   const db = useFirestore();
   const { toast } = useToast();
-  const { isCommander, isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isCommander, isAdmin, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -39,20 +38,20 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins and Commanders see everything
-    if (isAdmin || isCommander) {
+    // Admins, Commanders, and Leaders can see all reports in the archive
+    if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
-    // Leaders and regular personnel are strictly limited to reports they created
+    // Trainees are restricted to reports they created
     return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
     
-  }, [db, isAdmin, isCommander, profile, user?.uid, isAuthLoading]);
+  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
   const handleDelete = async (e: React.MouseEvent, reportId: string) => {
-    // CRITICAL: Stop propagation to prevent navigation to detail page
+    // Isolated deletion trigger
     e.preventDefault();
     e.stopPropagation();
     
@@ -88,7 +87,7 @@ export default function ReportsList() {
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">Registry Archive</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander) ? 'Global Command Logs' : 'Personal Filings Registry'}
+                  {(isAdmin || isCommander || isLeader) ? 'Global Command Logs' : 'My Personal Registry'}
                 </Badge>
               </div>
             </div>
@@ -124,7 +123,7 @@ export default function ReportsList() {
                     <div className="p-3 bg-accent rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-primary">
                       <FileText className="h-6 w-6" />
                     </div>
-                    {(isAdmin || report.ownerId === user?.uid) && (
+                    {(isAdmin || isCommander || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -133,7 +132,6 @@ export default function ReportsList() {
                               size="icon" 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Dialog opens
                               }}
                               className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
                             >
@@ -144,7 +142,7 @@ export default function ReportsList() {
                             <AlertDialogHeader className="p-4">
                               <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                                This action is irreversible. The situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
+                                This situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">

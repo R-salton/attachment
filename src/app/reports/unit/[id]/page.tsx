@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useState } from 'react';
@@ -30,7 +29,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
   const { id: unitName } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isAdmin, isCommander, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -41,12 +40,12 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
     const baseQuery = collection(db, 'reports');
     const decodedUnit = decodeURIComponent(unitName);
 
-    // Admins and Commanders see all reports for this unit
-    if (isAdmin || isCommander) {
+    // Admins, Commanders, and Leaders can see all reports for this unit
+    if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, where('unit', '==', decodedUnit), orderBy('createdAt', 'desc'));
     } 
     
-    // Non-admins see ONLY their own reports, even if filtered by unit
+    // Others see only their own for this unit
     return query(
       baseQuery, 
       where('unit', '==', decodedUnit), 
@@ -54,7 +53,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
       orderBy('createdAt', 'desc')
     );
     
-  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander]);
+  }, [db, unitName, user?.uid, isAuthLoading, isAdmin, isCommander, isLeader]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(reportsQuery);
 
@@ -92,7 +91,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{decodeURIComponent(unitName)} Registry</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary">
-                  {(isAdmin || isCommander) ? 'Station Archive' : 'My Filings for Unit'}
+                  Archive Repository
                 </Badge>
               </div>
             </div>
@@ -128,7 +127,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                     <div className="p-3 bg-accent rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 text-primary group-hover:shadow-lg group-hover:shadow-primary/20">
                       <FileText className="h-6 w-6" />
                     </div>
-                    {(isAdmin || report.ownerId === user?.uid) && (
+                    {(isAdmin || isCommander || report.ownerId === user?.uid) && (
                       <div onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -145,7 +144,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                             <AlertDialogHeader className="p-4">
                               <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
                               <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
-                                This will permanently expunge the situational log for <span className="text-foreground">{report.reportDate}</span> from the registry.
+                                This situational log for <span className="text-foreground">{report.reportDate}</span> will be permanently expunged.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="p-4 gap-3">
@@ -200,7 +199,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Registry Empty</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto font-bold uppercase">
-                No situational logs found in your personal archive for this unit.
+                No situational logs found in this unit's archive.
               </p>
             </div>
             <Button size="lg" asChild className="rounded-2xl px-10 font-black h-14 shadow-xl shadow-primary/10">

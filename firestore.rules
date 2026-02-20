@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -25,11 +24,19 @@ service cloud.firestore {
       );
     }
 
-    function isHighCommand() {
+    function isCommander() {
       return isAdmin() || (
         isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER')
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER'
+      );
+    }
+
+    function isLeader() {
+      return isCommander() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'
       );
     }
 
@@ -39,21 +46,13 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       // 1. GLOBAL COMMAND ACCESS
-      // High Command can list and read everything
-      allow read, list, delete: if isHighCommand();
+      // Admins, Commanders, and Leaders can list and read everything in the registry
+      allow read, list: if isLeader();
       
-      // 2. OWNER RESTRICTED ACCESS (Leaders and Trainees)
-      // They can only list/read reports they created.
-      allow get: if isSignedIn() && 
-        (resource.data.ownerId == request.auth.uid || isHighCommand());
-      
-      allow list: if isSignedIn() && 
-        (request.query.limit <= 100) &&
-        (request.auth.uid == request.query.filters.ownerId || isHighCommand());
-      
-      // 3. FILING PROTOCOL
+      // 2. FILING PROTOCOL
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() || isCommander();
     }
   }
 }
