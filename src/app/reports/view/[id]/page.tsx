@@ -75,6 +75,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const formatContent = (text: string) => {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
+      // Bold Headers
       if (line.startsWith('*') && line.endsWith('*')) {
         return (
           <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
@@ -82,6 +83,26 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </h3>
         );
       }
+      // Section Labels / Subtitles (Orderly Officer Sections often have these)
+      if (line.toUpperCase() === line && line.length > 5 && !line.includes('.')) {
+        return (
+          <h4 key={i} className="text-lg font-black text-primary mt-8 mb-4 uppercase tracking-wider">
+            {line}
+          </h4>
+        );
+      }
+      // Bullet points
+      if (line.startsWith('.')) {
+        return (
+          <div key={i} className="flex gap-3 mb-3 ml-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2.5 shrink-0" />
+            <p className="text-base md:text-lg text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+              {line.substring(1).trim()}
+            </p>
+          </div>
+        );
+      }
+      // Standard text
       return (
         <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">
           {line}

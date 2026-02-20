@@ -24,6 +24,7 @@ export interface SituationReportInput {
   recommendations: string[];
   overallSummary: string;
   commanderName: string;
+  orderlyOfficerReport?: string;
 }
 
 export function formatDailyReport(input: SituationReportInput): string {
@@ -41,6 +42,7 @@ export function formatDailyReport(input: SituationReportInput): string {
     recommendations,
     overallSummary,
     commanderName,
+    orderlyOfficerReport,
   } = input;
 
   let report = `Good evening Sir\n\n`;
@@ -85,6 +87,12 @@ export function formatDailyReport(input: SituationReportInput): string {
 
   report += `*Overall*\n\n`;
   report += `. ${overallSummary}\n\n`;
+
+  if (orderlyOfficerReport) {
+    report += `*OVERALL REPORT FROM ORDERLY OFFICER*\n\n`;
+    report += `${orderlyOfficerReport}\n\n`;
+  }
+
   report += `. Cadets continued to improve operational skills and professionalism. The security situation remains stable.\n\n`;
 
   report += `OC ${unitName}: OC ${commanderName}\n\n`;

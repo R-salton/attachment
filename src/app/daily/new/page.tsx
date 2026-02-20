@@ -42,7 +42,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   Lightbulb,
-  Save
+  Save,
+  UserCheck,
+  Type
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -72,6 +74,7 @@ const FormSchema = z.object({
   recommendations: z.string().optional().default(''),
   overallSummary: z.string().optional().default(''),
   commanderName: z.string().min(1, "Commander name is required"),
+  orderlyOfficerReport: z.string().optional().default(''),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -80,7 +83,7 @@ export default function NewDailyReport() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { user, profile, isLoading: isAuthLoading } = useUserProfile();
+  const { user, profile, isAdmin, isLoading: isAuthLoading } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -103,6 +106,7 @@ export default function NewDailyReport() {
       recommendations: '',
       overallSummary: '',
       commanderName: '',
+      orderlyOfficerReport: '',
     },
   });
 
@@ -140,7 +144,8 @@ export default function NewDailyReport() {
           casualties: values.casualties || 'No casualties',
           disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
-        actionTaken: values.actionTaken || ''
+        actionTaken: values.actionTaken || '',
+        orderlyOfficerReport: isAdmin ? values.orderlyOfficerReport : undefined
       };
 
       const content = formatDailyReport(formattedInput);
@@ -223,8 +228,13 @@ export default function NewDailyReport() {
     { id: "summary", label: "Operations" },
     { id: "incidents", label: "Security" },
     { id: "discipline", label: "Force" },
-    { id: "preview", label: "Review", icon: Eye },
   ];
+
+  if (isAdmin) {
+    tabs.push({ id: "orderly", label: "Orderly Officer" });
+  }
+
+  tabs.push({ id: "preview", label: "Review", icon: Eye });
 
   return (
     <div className="flex-1 bg-[#f8fafc] pb-24">
@@ -424,6 +434,52 @@ export default function NewDailyReport() {
                   />
                 </div>
               </TabsContent>
+
+              {isAdmin && (
+                <TabsContent value="orderly" className="space-y-6 animate-in fade-in duration-300">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-l-4 border-l-primary space-y-4">
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="h-5 w-5 text-primary" />
+                      <h3 className="font-black text-slate-900 uppercase tracking-tight">Orderly Officer Narrative</h3>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      This section is reserved for higher-level administrative summaries. Use the formatting guide below to structure the narrative.
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="font-bold text-slate-700 text-xs md:text-sm">Overall Report Transcript</Label>
+                        <Textarea 
+                          {...form.register('orderlyOfficerReport')} 
+                          className="min-h-[300px] rounded-xl font-mono text-sm leading-relaxed" 
+                          placeholder="Type overall command report here..."
+                        />
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          <Type className="h-3 w-3" />
+                          Command Formatting Guide
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[10px] font-bold">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">*Bold*</code>
+                            <span>Main Heading</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">. Item</code>
+                            <span>Bullet Point</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">---</code>
+                            <span>Separator Line</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              )}
 
               <TabsContent value="preview" className="space-y-6 md:space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
