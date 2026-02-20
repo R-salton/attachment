@@ -9,7 +9,7 @@
         "id": { "type": "string" },
         "ownerId": { "type": "string", "description": "The UID of the user who owns this report." },
         "reportDate": { "type": "string" },
-        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"] },
+        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"] },
         "reportTitle": { "type": "string" },
         "reportingCommanderName": { "type": "string" },
         "reportingCommanderTitle": { "type": "string" },
@@ -28,7 +28,7 @@
         "email": { "type": "string" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["ADMIN", "TRAINEE", "LEADER", "COMMANDER"] },
-        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"] },
+        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "unit"]

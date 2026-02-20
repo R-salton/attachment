@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -26,7 +27,7 @@ export function AuthProfileSync() {
         if (!userSnap.exists()) {
           // Provision new profile
           const initialRole = isSystemAdmin ? 'ADMIN' : 'TRAINEE';
-          const initialUnit = isSystemAdmin ? 'N/A' : 'N/A';
+          const initialUnit = 'TRS'; // Default unit for new officers
           
           await setDoc(userRef, {
             uid: user.uid,
@@ -39,12 +40,10 @@ export function AuthProfileSync() {
         } else if (isSystemAdmin && userSnap.data().role !== 'ADMIN') {
           // Ensure System Admin always has the correct role if profile already exists
           await setDoc(userRef, { 
-            role: 'ADMIN',
-            unit: 'N/A'
+            role: 'ADMIN'
           }, { merge: true });
         }
       } catch (e) {
-        // Silently fail if rules block initial read/write during transition
         console.error("Profile sync failed:", e);
       }
     };

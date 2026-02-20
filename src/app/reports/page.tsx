@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -32,7 +33,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"];
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
 
 export default function ReportsList() {
   const router = useRouter();
@@ -51,12 +52,10 @@ export default function ReportsList() {
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins, Commanders, and Leaders see all reports (Global Command Visibility)
     if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'));
     } 
     
-    // Trainees are restricted to their own filings
     return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
     
   }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isAuthLoading]);

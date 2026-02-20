@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Utility to format report data into the standardized SITUATION REPORT format.
  */
@@ -45,17 +46,18 @@ export function formatDailyReport(input: SituationReportInput): string {
     orderlyOfficerReport,
   } = input;
 
-  // If there is an Orderly Officer report, we prepend it with the specific header requested
   let report = "";
   
+  // If there is an Orderly Officer report, it defines the entire document as an Overall Report
   if (orderlyOfficerReport) {
     report += `*OVERALL REPORT AS ON ${reportDate}*\n\n`;
     report += `${orderlyOfficerReport}\n\n`;
     report += `--- Operational Details Below ---\n\n`;
+  } else {
+    // Standard Unit Situation Report
+    report += `*SITUATION REPORT AS ON ${reportDate}*\n\n`;
+    report += `*UNIT: ${unitName}*\n\n`;
   }
-
-  report += `*SITUATION REPORT AS ON ${reportDate}*\n\n`;
-  report += `*UNIT: ${unitName}*\n\n`;
   
   report += `1. On Day ${dayNumber} of the attachment, cadets within ${unitName} ${operationalSummary}\n\n`;
   

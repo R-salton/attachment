@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -54,7 +55,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"];
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
 
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
@@ -110,12 +111,11 @@ export default function NewDailyReport() {
     },
   });
 
-  // Sync profile data to form once loaded
   useEffect(() => {
     if (profile) {
       form.reset({
         ...form.getValues(),
-        unitName: profile.unit || 'N/A',
+        unitName: profile.unit || UNITS[0],
         commanderName: profile.displayName || '',
       });
     }
@@ -171,12 +171,14 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
+    const isOrderlyReport = !!(isAdmin && values.orderlyOfficerReport);
+
     const reportData = {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
       unit: values.unitName,
-      reportTitle: values.orderlyOfficerReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
+      reportTitle: isOrderlyReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
       reportingCommanderTitle: 'Officer in Charge',
       creationDateTime: new Date().toISOString(),

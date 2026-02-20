@@ -58,8 +58,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Official Command Units including N/A for Command Staff
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "N/A"];
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
 const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE"];
 
 export default function UserManagementPage() {
@@ -76,7 +75,7 @@ export default function UserManagementPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('TRAINEE');
-  const [newUnit, setNewUnit] = useState('TRS');
+  const [newUnit, setNewUnit] = useState(UNITS[0]);
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !isAdmin) return null;
@@ -154,7 +153,7 @@ export default function UserManagementPage() {
       setNewPassword('');
       setNewName('');
       setNewRole('TRAINEE');
-      setNewUnit('TRS');
+      setNewUnit(UNITS[0]);
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
@@ -266,7 +265,9 @@ export default function UserManagementPage() {
                         <SelectValue placeholder="Select Role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                        {ROLES.map(role => (
+                          <SelectItem key={role} value={role}>{role}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -351,7 +352,7 @@ export default function UserManagementPage() {
                         <TableCell className="py-3 md:py-4">
                           <Select 
                             disabled={isSystemMaster}
-                            defaultValue={u.unit || 'N/A'} 
+                            defaultValue={u.unit} 
                             onValueChange={(val) => handleUnitChange(u.uid, val)}
                           >
                             <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
