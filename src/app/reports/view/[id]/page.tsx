@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useEffect, useState } from 'react';
@@ -18,7 +19,8 @@ import {
   Shield,
   Printer,
   Copy,
-  FileDown
+  FileDown,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -54,9 +56,14 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const handleCopy = () => {
     if (report?.fullText) {
-      navigator.clipboard.writeText(report.fullText);
+      // Create a temporary div to extract text from HTML if it is HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = report.fullText;
+      const text = tempDiv.innerText;
+      
+      navigator.clipboard.writeText(text);
       setIsCopied(true);
-      toast({ title: "Copied", description: "Transcript copied to clipboard." });
+      toast({ title: "Copied", description: "Transcript text copied to clipboard." });
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
@@ -94,33 +101,29 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const formatContent = (text: string) => {
-    if (!text) return null;
-    return text.split('\n').map((line, i) => {
+  const renderContent = (content: string) => {
+    if (!content) return null;
+
+    // Check if the content looks like HTML
+    const isHtml = content.trim().startsWith('<') || content.includes('class=') || content.includes('<p>');
+
+    if (isHtml) {
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: content }} 
+          className="prose prose-slate prose-sm md:prose-lg max-w-none text-slate-900 dark:text-white"
+        />
+      );
+    }
+
+    // Legacy fallback for plain text reports
+    return content.split('\n').map((line, i) => {
       if (line.trim() === '--- Operational Details Below ---') {
         return <div key={i} className="my-12 border-t-2 border-dashed border-slate-200 dark:border-slate-800" />;
       }
       if (line.startsWith('*') && line.endsWith('*')) {
-        const content = line.replace(/\*/g, '');
-        if (content.startsWith('OVERALL REPORT')) {
-          return (
-            <h3 key={i} className="text-2xl md:text-3xl font-black text-primary mt-4 mb-8 border-l-4 border-primary pl-4 uppercase tracking-tighter leading-none">
-              {content}
-            </h3>
-          );
-        }
-        return (
-          <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
-            {content}
-          </h3>
-        );
-      }
-      if (line.toUpperCase() === line && line.length > 5 && !line.includes('.') && !line.includes(':')) {
-        return (
-          <h4 key={i} className="text-lg font-black text-primary mt-8 mb-4 uppercase tracking-wider">
-            {line}
-          </h4>
-        );
+        const text = line.replace(/\*/g, '');
+        return <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight">{text}</h3>;
       }
       if (line.startsWith('.')) {
         return (
@@ -132,11 +135,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           </div>
         );
       }
-      return (
-        <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">
-          {line}
-        </p>
-      );
+      return <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">{line}</p>;
     });
   };
 
@@ -265,11 +264,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           <CardContent className="p-8 md:p-16 relative bg-card">
             {isEditing ? (
               <div className="relative z-10 space-y-4">
-                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Transcript Revision</Label>
+                <Label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML Source)</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-report text-lg leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8 text-slate-900 dark:text-white"
+                  className="min-h-[600px] font-mono text-sm leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-8"
                 />
               </div>
             ) : (
@@ -277,7 +276,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
                    <Shield className="h-[400px] w-[400px] text-slate-900 dark:text-white" />
                 </div>
-                {formatContent(report.fullText)}
+                {renderContent(report.fullText)}
               </div>
             )}
           </CardContent>

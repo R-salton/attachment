@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,8 @@ import {
   Lightbulb,
   Save,
   UserCheck,
-  Type
+  Type,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -53,6 +55,7 @@ import { formatDailyReport, SituationReportInput } from '@/lib/report-formatter'
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 
@@ -152,6 +155,7 @@ export default function NewDailyReport() {
       setActiveTab("preview");
       toast({ title: "Preview Generated", description: "Review the SITUATION REPORT below." });
     } catch (error) {
+      console.error(error);
       toast({ variant: "destructive", title: "Formatting Error", description: "Could not format the report data." });
     } finally {
       setIsLoading(false);
@@ -213,17 +217,6 @@ export default function NewDailyReport() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <ShieldAlert className="h-12 w-12 md:h-16 md:w-16 text-destructive mb-4" />
-        <h2 className="text-xl md:text-2xl font-bold">Authentication Required</h2>
-        <p className="text-slate-500 max-w-md mt-2 text-sm md:text-base">Please sign in to access the report creation terminal.</p>
-        <Button onClick={() => router.push('/login')} className="mt-6">Sign In</Button>
-      </div>
-    );
-  }
-
   const tabs = [
     { id: "header", label: "Basics" },
     { id: "summary", label: "Operations" },
@@ -232,7 +225,7 @@ export default function NewDailyReport() {
   ];
 
   if (isAdmin) {
-    tabs.push({ id: "orderly", label: "Orderly Officer" });
+    tabs.push({ id: "orderly", label: "Orderly Officer", icon: Sparkles });
   }
 
   tabs.push({ id: "preview", label: "Review", icon: Eye });
@@ -279,7 +272,14 @@ export default function NewDailyReport() {
             <CardHeader className="bg-slate-900 text-white p-6 md:p-8">
               <CardTitle className="flex items-center gap-3 text-lg md:text-xl">
                 <div className="p-1.5 md:p-2 bg-white/10 rounded-lg">
-                  <ShieldCheck className="h-4 w-4 md:h-5 md:w-5" />
+                  {tabs.find(t => t.id === activeTab)?.icon ? (
+                    (() => {
+                      const Icon = tabs.find(t => t.id === activeTab)!.icon!;
+                      return <Icon className="h-4 w-4 md:h-5 md:w-5" />;
+                    })()
+                  ) : (
+                    <ShieldCheck className="h-4 w-4 md:h-5 md:w-5" />
+                  )}
                 </div>
                 {tabs.find(t => t.id === activeTab)?.label}
               </CardTitle>
@@ -440,42 +440,36 @@ export default function NewDailyReport() {
                 <TabsContent value="orderly" className="space-y-6 animate-in fade-in duration-300">
                   <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-l-4 border-l-primary space-y-4">
                     <div className="flex items-center gap-3">
-                      <UserCheck className="h-5 w-5 text-primary" />
-                      <h3 className="font-black text-slate-900 uppercase tracking-tight">Orderly Officer Narrative</h3>
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <h3 className="font-black text-slate-900 uppercase tracking-tight">Orderly Officer Command Narrative</h3>
                     </div>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                      This section is reserved for higher-level administrative summaries. Use the formatting guide below to structure the narrative.
+                      Use the executive rich text editor below to draft the strategic command summary. This section supports complex formatting including bolding, lists, and text color.
                     </p>
                     
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="font-bold text-slate-700 text-xs md:text-sm">Overall Report Transcript</Label>
-                        <Textarea 
-                          {...form.register('orderlyOfficerReport')} 
-                          className="min-h-[300px] rounded-xl font-mono text-sm leading-relaxed" 
-                          placeholder="Type overall command report here..."
+                        <Label className="font-bold text-slate-700 text-xs md:text-sm">Strategic Narrative Report</Label>
+                        <Controller
+                          name="orderlyOfficerReport"
+                          control={form.control}
+                          render={({ field }) => (
+                            <RichTextEditor 
+                              value={field.value} 
+                              onChange={field.onChange} 
+                            />
+                          )}
                         />
                       </div>
                       
                       <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                         <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
                           <Type className="h-3 w-3" />
-                          Command Formatting Guide
+                          Executive Protocol
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[10px] font-bold">
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">*Bold*</code>
-                            <span>Main Heading</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">. Item</code>
-                            <span>Bullet Point</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">_Underline_</code>
-                            <span>Special Emphasis</span>
-                          </div>
-                        </div>
+                        <p className="text-[10px] text-slate-500 italic">
+                          Formatting applied in the editor will be preserved in the official command transcript.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -485,15 +479,18 @@ export default function NewDailyReport() {
               <TabsContent value="preview" className="space-y-6 md:space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
                   <div className="space-y-6">
-                    <div className="bg-slate-50 p-6 md:p-12 rounded-2xl font-report text-[13px] md:text-[15px] whitespace-pre-wrap border border-slate-200 shadow-inner leading-relaxed text-slate-800 overflow-x-auto">
-                      {previewContent}
+                    <div className="bg-slate-50 p-6 md:p-12 rounded-2xl font-report text-[13px] md:text-[15px] border border-slate-200 shadow-inner leading-relaxed text-slate-800 overflow-x-auto min-h-[400px]">
+                      <div dangerouslySetInnerHTML={{ __html: previewContent }} className="prose prose-slate max-w-none" />
                     </div>
                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                       <Button variant="outline" className="rounded-xl h-12 px-6 font-bold text-xs md:text-sm w-full sm:w-auto" onClick={() => {
-                        navigator.clipboard.writeText(previewContent);
+                        // For HTML content, we might want to copy text or HTML. Here we just copy text for simplicity.
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = previewContent;
+                        navigator.clipboard.writeText(tempDiv.innerText);
                         toast({ title: "Copied", description: "Report text copied to clipboard." });
                       }}>
-                        Copy Transcript
+                        Copy Text Only
                       </Button>
                       <Button className="rounded-xl h-12 px-10 font-bold text-xs md:text-sm w-full sm:w-auto shadow-xl shadow-primary/20" onClick={handleFinalize} disabled={isLoading}>
                         {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
