@@ -46,7 +46,8 @@ import {
   Save,
   UserCheck,
   Type,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -78,6 +79,7 @@ const FormSchema = z.object({
   overallSummary: z.string().optional().default(''),
   commanderName: z.string().min(1, "Commander name is required"),
   orderlyOfficerReport: z.string().optional().default(''),
+  strategicNarrative: z.string().optional().default(''),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -110,6 +112,7 @@ export default function NewDailyReport() {
       overallSummary: '',
       commanderName: '',
       orderlyOfficerReport: '',
+      strategicNarrative: '',
     },
   });
 
@@ -147,7 +150,8 @@ export default function NewDailyReport() {
           disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
         actionTaken: values.actionTaken || '',
-        orderlyOfficerReport: isAdmin ? values.orderlyOfficerReport : undefined
+        // Prioritize orderly report if available, else use strategic narrative
+        orderlyOfficerReport: isAdmin && values.orderlyOfficerReport ? values.orderlyOfficerReport : values.strategicNarrative
       };
 
       const content = formatDailyReport(formattedInput);
@@ -174,7 +178,7 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
-    const isOrderlyReport = !!(isAdmin && values.orderlyOfficerReport);
+    const isOrderlyReport = !!((isAdmin && values.orderlyOfficerReport) || values.strategicNarrative);
 
     const reportData = {
       id: reportId,
@@ -287,7 +291,7 @@ export default function NewDailyReport() {
             </CardHeader>
             <CardContent className="pt-6 md:pt-8 px-6 md:px-8">
               
-              <TabsContent value="header" className="space-y-6 animate-in fade-in duration-300">
+              <TabsContent value="header" className="space-y-8 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Report Date</Label>
@@ -314,6 +318,31 @@ export default function NewDailyReport() {
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Full Name)</Label>
                     <Input {...form.register('commanderName')} className="h-11 rounded-xl text-sm" placeholder="e.g. CASTRO Boaz" />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-l-4 border-l-blue-600 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Zap className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-black text-slate-900 uppercase tracking-tight">Strategic Narrative</h3>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Provide a detailed command summary using the rich text editor below. This narrative supports complex formatting (bold, lists, color) and will define the core assessment of the SITREP.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Executive Transcript</Label>
+                    <Controller
+                      name="strategicNarrative"
+                      control={form.control}
+                      render={({ field }) => (
+                        <RichTextEditor 
+                          value={field.value} 
+                          onChange={field.onChange} 
+                          placeholder="Draft the strategic overview here..."
+                        />
+                      )}
+                    />
                   </div>
                 </div>
               </TabsContent>
