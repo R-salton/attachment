@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,8 +68,21 @@
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.05);
   }
 
-  /* Styling for Markdown-style bolding in the plain text report */
   .report-content strong {
     @apply font-black text-slate-900;
+  }
+
+  /* Ensure Tiptap lists are visible even if prose classes aren't fully loaded */
+  .ProseMirror ul {
+    list-style-type: disc !important;
+    padding-left: 1.5rem !important;
+  }
+  .ProseMirror ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5rem !important;
+  }
+  .ProseMirror li p {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
   }
 }

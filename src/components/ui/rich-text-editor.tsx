@@ -158,7 +158,7 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm md:prose-base focus:outline-none min-h-[300px] p-6 max-w-none font-report',
+        class: 'prose prose-sm md:prose-base focus:outline-none min-h-[300px] p-6 max-w-none font-report dark:prose-invert',
       },
     },
   });
