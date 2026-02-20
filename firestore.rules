@@ -45,15 +45,15 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // 1. GLOBAL COMMAND ACCESS
-      // Admins and Commanders can list and read everything in the registry
-      allow read, list: if isCommander();
+      // GLOBAL REGISTRY ACCESS
+      // Admins, Commanders, and Leaders can view the entire archive
+      allow read, list: if isLeader();
       
-      // 2. RESTRICTED ACCESS
-      // Leaders and Trainees can only see their own filings
+      // RESTRICTED ACCESS
+      // Trainees can only see their own filings
       allow read, list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
       
-      // 3. FILING PROTOCOL
+      // FILING PROTOCOL
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow delete: if isAdmin() || isCommander();

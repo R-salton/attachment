@@ -36,23 +36,23 @@ const UNITS = [
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
-  const { isAdmin, isCommander, profile, isLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, profile, isLoading, user } = useUserProfile();
 
-  const displayLimit = (isAdmin || isCommander) ? 50 : 20;
+  const displayLimit = (isAdmin || isCommander || isLeader) ? 50 : 20;
 
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    // Admins and Commanders see everything globally
-    if (isAdmin || isCommander) {
+    // Admins, Commanders, and Leaders see the global feed
+    if (isAdmin || isCommander || isLeader) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
-      // Leaders and Trainees only see their own reports (Restricted Visibility Protocol)
+      // Trainees only see their own reports
       return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
-  }, [db, isAdmin, isCommander, profile, user?.uid, isLoading, displayLimit]);
+  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -91,7 +91,7 @@ export default function Home() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Secure Protocol Active</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none">
-            {isAdmin || isCommander ? 'Command Registry' : `Operational Feed: ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
+            {isAdmin || isCommander || isLeader ? 'Command Registry' : `Operational Feed: ${profile?.displayName?.split(' ')[0] || 'Officer'}`}
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="bg-card border-border text-muted-foreground font-bold px-3 py-1 text-[10px] rounded-lg shadow-sm uppercase">
@@ -112,7 +112,7 @@ export default function Home() {
         </div>
       </header>
 
-      {(isAdmin || isCommander) && (
+      {(isAdmin || isCommander || isLeader) && (
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-2">
             <Navigation className="h-4 w-4 text-primary" />
@@ -142,10 +142,10 @@ export default function Home() {
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black text-foreground flex items-center gap-2">
                 <Activity className="h-6 w-6 text-primary" />
-                {(isAdmin || isCommander) ? 'Operational Feed' : 'My Filings'}
+                {(isAdmin || isCommander || isLeader) ? 'Operational Feed' : 'My Filings'}
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Displaying latest {(isAdmin || isCommander) ? 'global logs' : 'personal entries'} across the registry.
+                Displaying latest {(isAdmin || isCommander || isLeader) ? 'global logs' : 'personal entries'} across the registry.
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="font-black text-primary hover:bg-primary/5 rounded-xl">
@@ -197,7 +197,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-lg font-black text-foreground mb-1 uppercase">No Records</h3>
                   <p className="text-[10px] text-muted-foreground max-w-[200px] mx-auto mb-6 font-medium">
-                    No {(isAdmin || isCommander) ? 'operational' : 'personal'} filings found in the registry.
+                    No {(isAdmin || isCommander || isLeader) ? 'operational' : 'personal'} filings found in the registry.
                   </p>
                   <Button asChild variant="outline" size="sm" className="rounded-xl font-bold">
                     <Link href="/daily/new">File First Report</Link>
@@ -232,7 +232,7 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              {(isAdmin || isCommander) && (
+              {(isAdmin || isCommander || isLeader) && (
                 <div className="pt-4 border-t border-white/5 mt-4">
                   <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl space-y-3">
                     <div className="flex items-center gap-2">
