@@ -17,7 +17,8 @@ import {
   Eye,
   Activity,
   Building2,
-  Navigation
+  Navigation,
+  FileText
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -31,6 +32,7 @@ const UNITS = [
   { id: "TRS", name: "TRS", color: "bg-slate-700" },
   { id: "SIF", name: "SIF", color: "bg-emerald-600" },
   { id: "TFU", name: "TFU", color: "bg-amber-600" },
+  { id: "ORDERLY REPORT", name: "ORDERLY REPORT", color: "bg-primary" },
 ];
 
 export default function Home() {
@@ -118,14 +120,14 @@ export default function Home() {
             <Navigation className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Unit Repositories</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             {UNITS.map((unit) => (
               <Link key={unit.id} href={`/reports/unit/${unit.id}`}>
                 <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-border shadow-sm cursor-pointer group overflow-hidden bg-card">
                   <div className={`h-1 w-full ${unit.color}`} />
                   <CardHeader className="p-4 space-y-2">
                     <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                      <Building2 className="h-4 w-4" />
+                      {unit.id === "ORDERLY REPORT" ? <FileText className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                     </div>
                     <CardTitle className="text-[10px] font-black uppercase tracking-tight truncate">{unit.name}</CardTitle>
                   </CardHeader>

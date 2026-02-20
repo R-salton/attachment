@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -58,7 +57,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU"];
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE"];
 
 export default function UserManagementPage() {
