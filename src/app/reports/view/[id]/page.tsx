@@ -128,7 +128,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     );
   }
 
-  const canEdit = isAdmin || isCommander || report.ownerId === user?.uid;
+  // Edit Protocol: Only the owner or an Admin can modify a record.
+  const canEdit = isAdmin || report.ownerId === user?.uid;
 
   return (
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">

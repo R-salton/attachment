@@ -55,8 +55,11 @@ service cloud.firestore {
       
       // FILING PROTOCOL
       allow create: if isSignedIn();
+      
+      // OWNERSHIP PROTOCOL
+      // Users can only update/delete if they own the report, or if they are elevated Command (Admin/Commander)
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin() || isCommander();
+      allow delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isCommander());
     }
   }
 }
