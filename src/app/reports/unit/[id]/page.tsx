@@ -39,7 +39,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const db = useFirestore();
   const { toast } = useToast();
-  const { isAdmin, profile, isLoading: isAuthLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, profile, isLoading: isAuthLoading, user } = useUserProfile();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-2xl bg-card shadow-sm border border-border">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-foreground" />
             </Button>
             <div className="space-y-1">
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-none uppercase">{unitName} Registry</h1>
@@ -111,7 +111,7 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder={`Search ${unitName} logs...`} 
-                className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold"
+                className="pl-11 h-12 rounded-2xl bg-card border-border shadow-sm text-sm font-bold text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -151,13 +151,13 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                         </AlertDialogTrigger>
                         <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl" onClick={(e) => e.stopPropagation()}>
                           <AlertDialogHeader className="p-4">
-                            <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Record?</AlertDialogTitle>
+                            <AlertDialogTitle className="text-2xl font-black tracking-tight text-foreground">Purge Record?</AlertDialogTitle>
                             <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed">
                               This will permanently expunge the report for <span className="text-foreground">{report.reportDate}</span> from the {unitName} registry.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter className="p-4 gap-3">
-                            <AlertDialogCancel className="rounded-2xl font-black h-12">Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="rounded-2xl font-black h-12 text-foreground">Cancel</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={(e) => handleDelete(e, report.id)} 
                               className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-black h-12 shadow-xl shadow-destructive/20"
