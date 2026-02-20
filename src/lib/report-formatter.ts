@@ -45,7 +45,15 @@ export function formatDailyReport(input: SituationReportInput): string {
     orderlyOfficerReport,
   } = input;
 
-  let report = `Good evening Sir\n\n`;
+  // If there is an Orderly Officer report, we prepend it with the specific header requested
+  let report = "";
+  
+  if (orderlyOfficerReport) {
+    report += `*OVERALL REPORT AS ON ${reportDate}*\n\n`;
+    report += `${orderlyOfficerReport}\n\n`;
+    report += `--- Operational Details Below ---\n\n`;
+  }
+
   report += `*SITUATION REPORT AS ON ${reportDate}*\n\n`;
   report += `*UNIT: ${unitName}*\n\n`;
   
@@ -87,11 +95,6 @@ export function formatDailyReport(input: SituationReportInput): string {
 
   report += `*Overall*\n\n`;
   report += `. ${overallSummary}\n\n`;
-
-  if (orderlyOfficerReport) {
-    report += `*OVERALL REPORT FROM ORDERLY OFFICER*\n\n`;
-    report += `${orderlyOfficerReport}\n\n`;
-  }
 
   report += `. Cadets continued to improve operational skills and professionalism. The security situation remains stable.\n\n`;
 

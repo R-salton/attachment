@@ -75,16 +75,29 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const formatContent = (text: string) => {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
+      // Separator
+      if (line.trim() === '--- Operational Details Below ---') {
+        return <div key={i} className="my-12 border-t-2 border-dashed border-slate-200 dark:border-slate-800" />;
+      }
       // Bold Headers
       if (line.startsWith('*') && line.endsWith('*')) {
+        const content = line.replace(/\*/g, '');
+        // Special highlighting for Overall Report header
+        if (content.startsWith('OVERALL REPORT')) {
+          return (
+            <h3 key={i} className="text-2xl md:text-3xl font-black text-primary mt-4 mb-8 border-l-4 border-primary pl-4 uppercase tracking-tighter leading-none">
+              {content}
+            </h3>
+          );
+        }
         return (
           <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight leading-none">
-            {line.replace(/\*/g, '')}
+            {content}
           </h3>
         );
       }
       // Section Labels / Subtitles (Orderly Officer Sections often have these)
-      if (line.toUpperCase() === line && line.length > 5 && !line.includes('.')) {
+      if (line.toUpperCase() === line && line.length > 5 && !line.includes('.') && !line.includes(':')) {
         return (
           <h4 key={i} className="text-lg font-black text-primary mt-8 mb-4 uppercase tracking-wider">
             {line}
@@ -100,6 +113,14 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               {line.substring(1).trim()}
             </p>
           </div>
+        );
+      }
+      // Underlined effect (using markdown style for simulation)
+      if (line.startsWith('_') && line.endsWith('_')) {
+        return (
+          <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold underline decoration-primary/40 underline-offset-4">
+            {line.replace(/_/g, '')}
+          </p>
         );
       }
       // Standard text

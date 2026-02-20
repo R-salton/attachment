@@ -176,7 +176,7 @@ export default function NewDailyReport() {
       ownerId: user.uid,
       reportDate: values.reportDate,
       unit: values.unitName,
-      reportTitle: `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
+      reportTitle: values.orderlyOfficerReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
       reportingCommanderTitle: 'Officer in Charge',
       creationDateTime: new Date().toISOString(),
@@ -471,8 +471,8 @@ export default function NewDailyReport() {
                             <span>Bullet Point</span>
                           </div>
                           <div className="flex items-center gap-2 text-slate-600">
-                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">---</code>
-                            <span>Separator Line</span>
+                            <code className="bg-slate-100 px-1.5 py-0.5 rounded">_Underline_</code>
+                            <span>Special Emphasis</span>
                           </div>
                         </div>
                       </div>
