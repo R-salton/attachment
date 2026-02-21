@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, 
   Sparkles, 
@@ -192,13 +192,13 @@ export default function ConsolidatedReportPage() {
             <div className="max-w-md space-y-3">
               <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Number of Operational Days (from Start)</Label>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Input 
+                <input 
                   type="number" 
                   min={1} 
                   max={100} 
                   value={targetDay} 
                   onChange={e => setTargetDay(parseInt(e.target.value) || 1)}
-                  className="h-12 rounded-xl text-lg font-black bg-slate-50 border-slate-200"
+                  className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <Button 
                   onClick={handleGenerate} 
