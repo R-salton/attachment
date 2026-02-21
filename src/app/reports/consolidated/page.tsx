@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -43,22 +43,41 @@ export default function ConsolidatedReportPage() {
     setResult(null);
 
     try {
-      // Query for all reports from day 1 up to targetDay
+      // Fetch all reports to handle potential string/number mismatches in dayNumber field
       const reportsRef = collection(db, 'reports');
-      const q = query(
-        reportsRef, 
-        where('dayNumber', '<=', targetDay),
-        orderBy('dayNumber', 'asc')
-      );
+      const snapshot = await getDocs(reportsRef);
       
-      const snapshot = await getDocs(q);
-      const reportTexts = snapshot.docs.map(doc => doc.data().fullText).filter(Boolean);
+      if (snapshot.empty) {
+        toast({ 
+          variant: "destructive", 
+          title: "Registry Empty", 
+          description: "No situational reports exist in the official archive yet." 
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Filter and sort in memory to ensure type safety and chronological order
+      const filteredReports = snapshot.docs
+        .map(doc => ({ ...doc.data(), id: doc.id } as any))
+        .filter(report => {
+          const d = typeof report.dayNumber === 'string' ? parseInt(report.dayNumber) : report.dayNumber;
+          // Include reports from Day 1 up to the target day
+          return d >= 1 && d <= targetDay;
+        })
+        .sort((a, b) => {
+          const da = typeof a.dayNumber === 'string' ? parseInt(a.dayNumber) : a.dayNumber;
+          const db = typeof b.dayNumber === 'string' ? parseInt(b.dayNumber) : b.dayNumber;
+          return (da || 0) - (db || 0);
+        });
+
+      const reportTexts = filteredReports.map(r => r.fullText).filter(Boolean);
 
       if (reportTexts.length === 0) {
         toast({ 
           variant: "destructive", 
-          title: "No Data", 
-          description: `No situational reports found for Days 1 through ${targetDay}.` 
+          title: "Range Empty", 
+          description: `No reports found between Day 1 and Day ${targetDay}. Please verify the day numbers of your filed SITREPs.` 
         });
         setIsGenerating(false);
         return;
@@ -82,7 +101,6 @@ export default function ConsolidatedReportPage() {
   const handleExport = async () => {
     if (!result) return;
     
-    // Construct a standard fullText format for the DOCX exporter
     let fullText = `### EXECUTIVE SUMMARY\n${result.executiveSummary}\n\n`;
     fullText += `### KEY ACHIEVEMENTS\n${result.keyAchievements.map(a => `. ${a}`).join('\n')}\n\n`;
     fullText += `### OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `. ${t}`).join('\n')}\n\n`;

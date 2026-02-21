@@ -183,6 +183,7 @@ export default function NewDailyReport() {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
+      // Ensure dayNumber is archived as a strictly-casted integer for registry consistency
       dayNumber: parseInt(values.dayNumber) || 0,
       unit: values.unitName,
       reportTitle: isOrderlyReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
