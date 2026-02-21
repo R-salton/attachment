@@ -150,7 +150,7 @@ export default function NewDailyReport() {
           disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
         actionTaken: values.actionTaken || '',
-        orderlyOfficerReport: isAdmin && values.orderlyOfficerReport ? values.orderlyOfficerReport : values.strategicNarrative
+        orderlyOfficerReport: (isAdmin && values.orderlyOfficerReport) ? values.orderlyOfficerReport : values.strategicNarrative
       };
 
       const content = formatDailyReport(formattedInput);
@@ -182,8 +182,8 @@ export default function NewDailyReport() {
     const reportData = {
       id: reportId,
       ownerId: user.uid,
-      reportDate: values.reportDate,
-      // Ensure dayNumber is archived as a strictly-casted integer for registry consistency
+      reportDate: values.reportDate.toUpperCase(),
+      // Strictly cast dayNumber to integer for registry consistency
       dayNumber: parseInt(values.dayNumber) || 0,
       unit: values.unitName,
       reportTitle: isOrderlyReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,

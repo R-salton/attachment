@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,8 @@ import {
   ListChecks, 
   AlertCircle, 
   Lightbulb,
-  FileDown
+  FileDown,
+  CalendarDays
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -43,9 +44,10 @@ export default function ConsolidatedReportPage() {
     setResult(null);
 
     try {
-      // Fetch all reports to handle potential string/number mismatches in dayNumber field
+      // Fetch all reports ordered by creation date to establish a timeline
       const reportsRef = collection(db, 'reports');
-      const snapshot = await getDocs(reportsRef);
+      const q = query(reportsRef, orderBy('createdAt', 'asc'));
+      const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
         toast({ 
@@ -57,27 +59,41 @@ export default function ConsolidatedReportPage() {
         return;
       }
 
-      // Filter and sort in memory to ensure type safety and chronological order
-      const filteredReports = snapshot.docs
-        .map(doc => ({ ...doc.data(), id: doc.id } as any))
-        .filter(report => {
-          const d = typeof report.dayNumber === 'string' ? parseInt(report.dayNumber) : report.dayNumber;
-          // Include reports from Day 1 up to the target day
-          return d >= 1 && d <= targetDay;
-        })
-        .sort((a, b) => {
-          const da = typeof a.dayNumber === 'string' ? parseInt(a.dayNumber) : a.dayNumber;
-          const db = typeof b.dayNumber === 'string' ? parseInt(b.dayNumber) : b.dayNumber;
-          return (da || 0) - (db || 0);
-        });
+      const allReports = snapshot.docs.map(doc => ({ 
+        ...doc.data(), 
+        id: doc.id 
+      }) as any);
 
+      // Determine the chronological "Days" based on unique report dates found in the registry
+      const uniqueDates: string[] = [];
+      allReports.forEach(r => {
+        if (r.reportDate && !uniqueDates.includes(r.reportDate)) {
+          uniqueDates.push(r.reportDate);
+        }
+      });
+
+      // Select the dates that fall within the "First X Days" requested
+      const targetDates = uniqueDates.slice(0, targetDay);
+
+      if (targetDates.length === 0) {
+        toast({ 
+          variant: "destructive", 
+          title: "No Data", 
+          description: `Could not identify any reporting days in the registry.` 
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Filter reports that belong to the identified chronological dates
+      const filteredReports = allReports.filter(r => targetDates.includes(r.reportDate));
       const reportTexts = filteredReports.map(r => r.fullText).filter(Boolean);
 
       if (reportTexts.length === 0) {
         toast({ 
           variant: "destructive", 
           title: "Range Empty", 
-          description: `No reports found between Day 1 and Day ${targetDay}. Please verify the day numbers of your filed SITREPs.` 
+          description: `No report content found for the first ${targetDay} reporting days.` 
         });
         setIsGenerating(false);
         return;
@@ -89,7 +105,7 @@ export default function ConsolidatedReportPage() {
       });
 
       setResult(consolidationResult);
-      toast({ title: "Analysis Complete", description: "Consolidated report generated successfully." });
+      toast({ title: "Analysis Complete", description: `Generated synthesis for ${targetDates.length} operational days.` });
     } catch (error) {
       console.error(error);
       toast({ variant: "destructive", title: "Consolidation Failed", description: "Could not aggregate registry data." });
@@ -109,7 +125,7 @@ export default function ConsolidatedReportPage() {
 
     try {
       await exportReportToDocx({
-        reportTitle: `CONSOLIDATED PROGRESS REPORT (UP TO DAY ${targetDay})`,
+        reportTitle: `CONSOLIDATED PROGRESS REPORT (FIRST ${targetDay} DAYS)`,
         reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
         unit: 'OVERALL ATTACHMENT',
         fullText: fullText,
@@ -160,19 +176,19 @@ export default function ConsolidatedReportPage() {
         <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white overflow-hidden">
           <CardHeader className="bg-slate-900 text-white p-8">
             <CardTitle className="text-xl font-black flex items-center gap-3">
-              <Activity className="h-6 w-6 text-primary" />
-              Consolidation Parameters
+              <CalendarDays className="h-6 w-6 text-primary" />
+              Consolidation Timeline
             </CardTitle>
-            <CardDescription className="text-slate-400">Select the attachment day milestone to aggregate logs.</CardDescription>
+            <CardDescription className="text-slate-400">Select how many reporting days to aggregate from the registry start date.</CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-8">
             <div className="max-w-xs space-y-3">
-              <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Milestone Day (up to)</Label>
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Number of Days (from Start)</Label>
               <div className="flex gap-4">
                 <Input 
                   type="number" 
                   min={1} 
-                  max={90} 
+                  max={100} 
                   value={targetDay} 
                   onChange={e => setTargetDay(parseInt(e.target.value) || 1)}
                   className="h-12 rounded-xl text-lg font-bold bg-slate-50"
@@ -183,7 +199,7 @@ export default function ConsolidatedReportPage() {
                   className="h-12 px-8 rounded-xl font-black shadow-lg shadow-blue-600/20 bg-blue-600 hover:bg-blue-700"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                  GENERATE
+                  ANALYZE
                 </Button>
               </div>
             </div>
@@ -192,8 +208,8 @@ export default function ConsolidatedReportPage() {
               <div className="py-20 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500">
                 <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
                 <div className="text-center">
-                  <p className="text-lg font-black text-slate-900 uppercase">Aggregating Tactical Data</p>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Cross-referencing logs Day 1 to {targetDay}...</p>
+                  <p className="text-lg font-black text-slate-900 uppercase">Synthesizing Registry Timeline</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Cross-referencing reports by date sequence...</p>
                 </div>
               </div>
             )}
@@ -203,7 +219,7 @@ export default function ConsolidatedReportPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-6">
                   <div className="space-y-1">
                     <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Executive Summary</h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Day 1 to {targetDay} Assessment</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Chronological Day 1 to {targetDay} Assessment</p>
                   </div>
                   <Button onClick={handleExport} variant="outline" className="rounded-xl h-11 px-6 font-bold border-slate-200">
                     <FileDown className="h-4 w-4 mr-2" />
@@ -296,7 +312,7 @@ export default function ConsolidatedReportPage() {
                 <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="space-y-2 text-center md:text-left">
                     <h4 className="text-2xl font-black uppercase tracking-tight">Finalize Cumulative Brief</h4>
-                    <p className="text-sm text-slate-400 font-bold max-w-md">Commit this analysis to the Command Registry for end-of-attachment review.</p>
+                    <p className="text-sm text-slate-400 font-bold max-w-md">Commit this analysis to the Command Registry for official end-of-period review.</p>
                   </div>
                   <Button onClick={handleExport} className="h-14 px-12 rounded-2xl font-black bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-600/40">
                     <Download className="mr-2 h-5 w-5" />
