@@ -13,6 +13,7 @@ interface ReportData {
 
 /**
  * Strips HTML tags and handles basic conversions like <p> to newlines.
+ * Optimized for DOCX paragraph splitting.
  */
 function cleanHtmlForExport(html: string): string {
   if (!html) return "";
@@ -37,40 +38,44 @@ function cleanHtmlForExport(html: string): string {
 }
 
 /**
- * Processes a line of text, handling '*' markers for bolding.
+ * Processes a line of text, handling '*' markers for bolding and ensuring all titles are bold and black.
  */
 function processLine(line: string): Paragraph {
   const trimmed = line.trim();
   if (!trimmed) return new Paragraph({ text: "" });
 
-  // Check if it's a bullet point (from our HTML cleaning or manual entry)
+  // Check if it's a bullet point
   const isBullet = trimmed.startsWith('. ');
   const content = isBullet ? trimmed.substring(2) : trimmed;
 
-  // Detect if the entire line is intended to be a header or specifically marked with *
+  // Detect if the entire line is specifically marked with * as a title/header
   const isMarkedHeader = content.startsWith('*') && content.endsWith('*');
   const cleanText = isMarkedHeader ? content.replace(/\*/g, '') : content;
 
-  // Create the paragraph
+  // Logic to determine if a line should be bold (Marked headers or all-caps lines)
+  const shouldBeBold = isMarkedHeader || (cleanText === cleanText.toUpperCase() && cleanText.length > 3);
+
   return new Paragraph({
     children: [
       new TextRun({
         text: cleanText,
-        bold: isMarkedHeader || (cleanText === cleanText.toUpperCase() && cleanText.length > 5),
-        size: isMarkedHeader ? 28 : 24, // Slightly larger for headers
+        bold: shouldBeBold,
+        color: "000000", // Ensure Black
+        size: shouldBeBold ? 26 : 24, // Slightly larger for headers
+        font: "Arial",
       }),
     ],
     bullet: isBullet ? { level: 0 } : undefined,
     spacing: { 
-      before: isMarkedHeader ? 240 : 120, 
+      before: shouldBeBold ? 240 : 120, 
       after: 120 
     },
-    heading: isMarkedHeader ? HeadingLevel.HEADING_3 : undefined,
+    heading: shouldBeBold ? HeadingLevel.HEADING_3 : undefined,
   });
 }
 
 export async function exportReportToDocx(report: ReportData) {
-  // First, clean the HTML if the report was saved in rich text format
+  // Clean HTML if the report was saved in rich text format
   const isHtml = report.fullText.includes('<p>') || report.fullText.includes('class=');
   const processedText = isHtml ? cleanHtmlForExport(report.fullText) : report.fullText;
   
@@ -81,39 +86,62 @@ export async function exportReportToDocx(report: ReportData) {
   const doc = new Document({
     sections: [
       {
-        properties: {},
+        properties: {
+          page: {
+            margin: {
+              top: 1440, // 1 inch
+              right: 1440,
+              bottom: 1440,
+              left: 1440,
+            },
+          },
+        },
         children: [
-          // Official Header
+          // Official Document Header (Title)
           new Paragraph({
             children: [
               new TextRun({
-                text: report.reportTitle,
+                text: report.reportTitle.toUpperCase(),
                 bold: true,
+                color: "000000",
                 size: 32,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
             spacing: { after: 400 },
           }),
           
-          // Operational Metadata
+          // Operational Metadata (Date & Unit)
           new Paragraph({
             children: [
-              new TextRun({ text: `DATE: ${report.reportDate}`, bold: true }),
+              new TextRun({ 
+                text: `DATE: ${report.reportDate.toUpperCase()}`, 
+                bold: true,
+                color: "000000",
+                size: 24,
+                font: "Arial",
+              }),
             ],
             spacing: { after: 120 },
           }),
           new Paragraph({
             children: [
-              new TextRun({ text: `UNIT: ${report.unit}`, bold: true }),
+              new TextRun({ 
+                text: `UNIT: ${report.unit.toUpperCase()}`, 
+                bold: true,
+                color: "000000",
+                size: 24,
+                font: "Arial",
+              }),
             ],
             spacing: { after: 400 },
           }),
 
-          // Main Content
+          // Main Transcript Content
           ...children,
 
-          // Signature Block
+          // Formal Signature Block
           new Paragraph({
             spacing: { before: 800 },
             children: [
@@ -121,6 +149,9 @@ export async function exportReportToDocx(report: ReportData) {
                 text: `OC ${report.unit}: OC ${report.reportingCommanderName}`,
                 bold: true,
                 allCaps: true,
+                color: "000000",
+                size: 24,
+                font: "Arial",
               }),
             ],
           }),
@@ -130,6 +161,8 @@ export async function exportReportToDocx(report: ReportData) {
                 text: "Respectfully Signed",
                 italics: true,
                 size: 18,
+                color: "444444",
+                font: "Arial",
               }),
             ],
           }),
