@@ -11,59 +11,134 @@ interface ReportData {
   reportingCommanderName: string;
 }
 
-export async function exportReportToDocx(report: ReportData) {
-  const lines = report.fullText.split('\n');
+/**
+ * Strips HTML tags and handles basic conversions like <p> to newlines.
+ */
+function cleanHtmlForExport(html: string): string {
+  if (!html) return "";
   
-  const children = lines.map((line) => {
-    const trimmedLine = line.trim();
-    
-    // Bold Headers
-    if (trimmedLine.startsWith('*') && trimmedLine.endsWith('*')) {
-      return new Paragraph({
-        text: trimmedLine.replace(/\*/g, ''),
-        heading: HeadingLevel.HEADING_3,
-        spacing: { before: 240, after: 120 },
-      });
-    }
-    
-    // Bullet points
-    if (trimmedLine.startsWith('.')) {
-      return new Paragraph({
-        text: trimmedLine.substring(1).trim(),
-        bullet: { level: 0 },
-        spacing: { after: 120 },
-      });
-    }
+  // Replace common block elements with newlines to preserve structure
+  let cleaned = html
+    .replace(/<\/p>/g, '\n')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<\/li>/g, '\n')
+    .replace(/<li[^>]*>/g, '. ') // Turn list items into bullet-style lines
+    .replace(/<[^>]+>/g, '');   // Strip all other tags
 
-    // Standard text
-    return new Paragraph({
-      children: [
-        new TextRun({
-          text: trimmedLine,
-          bold: trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 5,
-        }),
-      ],
-      spacing: { after: 120 },
-    });
+  // Decode basic entities
+  cleaned = cleaned
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+
+  return cleaned;
+}
+
+/**
+ * Processes a line of text, handling '*' markers for bolding.
+ */
+function processLine(line: string): Paragraph {
+  const trimmed = line.trim();
+  if (!trimmed) return new Paragraph({ text: "" });
+
+  // Check if it's a bullet point (from our HTML cleaning or manual entry)
+  const isBullet = trimmed.startsWith('. ');
+  const content = isBullet ? trimmed.substring(2) : trimmed;
+
+  // Detect if the entire line is intended to be a header or specifically marked with *
+  const isMarkedHeader = content.startsWith('*') && content.endsWith('*');
+  const cleanText = isMarkedHeader ? content.replace(/\*/g, '') : content;
+
+  // Create the paragraph
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: cleanText,
+        bold: isMarkedHeader || (cleanText === cleanText.toUpperCase() && cleanText.length > 5),
+        size: isMarkedHeader ? 28 : 24, // Slightly larger for headers
+      }),
+    ],
+    bullet: isBullet ? { level: 0 } : undefined,
+    spacing: { 
+      before: isMarkedHeader ? 240 : 120, 
+      after: 120 
+    },
+    heading: isMarkedHeader ? HeadingLevel.HEADING_3 : undefined,
   });
+}
+
+export async function exportReportToDocx(report: ReportData) {
+  // First, clean the HTML if the report was saved in rich text format
+  const isHtml = report.fullText.includes('<p>') || report.fullText.includes('class=');
+  const processedText = isHtml ? cleanHtmlForExport(report.fullText) : report.fullText;
+  
+  const lines = processedText.split('\n').filter(l => l.trim().length > 0);
+  
+  const children = lines.map(line => processLine(line));
 
   const doc = new Document({
     sections: [
       {
         properties: {},
         children: [
+          // Official Header
           new Paragraph({
-            text: report.reportTitle,
-            heading: HeadingLevel.HEADING_1,
+            children: [
+              new TextRun({
+                text: report.reportTitle,
+                bold: true,
+                size: 32,
+              }),
+            ],
             alignment: AlignmentType.CENTER,
             spacing: { after: 400 },
           }),
+          
+          // Operational Metadata
+          new Paragraph({
+            children: [
+              new TextRun({ text: `DATE: ${report.reportDate}`, bold: true }),
+            ],
+            spacing: { after: 120 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: `UNIT: ${report.unit}`, bold: true }),
+            ],
+            spacing: { after: 400 },
+          }),
+
+          // Main Content
           ...children,
+
+          // Signature Block
+          new Paragraph({
+            spacing: { before: 800 },
+            children: [
+              new TextRun({
+                text: `OC ${report.unit}: OC ${report.reportingCommanderName}`,
+                bold: true,
+                allCaps: true,
+              }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Respectfully Signed",
+                italics: true,
+                size: 18,
+              }),
+            ],
+          }),
         ],
       },
     ],
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
+  const fileName = report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-');
+  saveAs(blob, `${fileName}.docx`);
 }
