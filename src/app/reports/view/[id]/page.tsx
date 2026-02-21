@@ -105,7 +105,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     if (!reportRef || !report) return;
     setIsSaving(true);
     try {
-      // Logic to sync title based on new date/unit
       const isOverallReport = editableUnit === 'ORDERLY REPORT';
       const newTitle = isOverallReport 
         ? `OVERALL REPORT - ${editableDate}` 
@@ -204,14 +203,14 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
       <header className="border-b bg-background/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-1 md:px-4 font-bold h-9 md:h-10">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-1 md:px-4 font-bold h-9 md:h-10" disabled={isEditing}>
             <ArrowLeft className="h-5 w-5 md:mr-2 text-foreground" />
             <span className="hidden sm:inline uppercase tracking-widest text-[10px] text-foreground">Back</span>
           </Button>
           <div className="h-6 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
             <h1 className="text-[10px] md:text-sm font-black text-foreground truncate max-w-[100px] sm:max-w-xl leading-none mb-0.5 uppercase tracking-tighter">
-              {report.reportTitle}
+              {isEditing ? "Revising Operational Log" : report.reportTitle}
             </h1>
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className="text-[7px] md:text-[8px] font-black uppercase tracking-widest h-3 px-1 border-primary/20 text-primary">{report.unit}</Badge>
@@ -220,18 +219,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         </div>
         
         <div className="flex items-center gap-1.5 md:gap-2">
-          {isEditing ? (
-            <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-9 md:h-10 font-bold px-2 md:px-4 text-foreground text-xs">
-                <span className="hidden sm:inline">Cancel</span>
-                <X className="sm:hidden h-4 w-4" />
-              </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl font-black h-9 md:h-10 px-3 md:px-6 shadow-md shadow-primary/10 text-xs">
-                {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-0 md:mr-2" /> : <Save className="h-4 w-4 mr-0 md:mr-2" />}
-                <span className="hidden sm:inline">Save</span>
-              </Button>
-            </div>
-          ) : (
+          {!isEditing && (
             <div className="flex items-center gap-1.5">
               {canEdit && (
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
@@ -251,6 +239,11 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <Printer className="h-3.5 w-3.5 mr-2" /> Print
               </Button>
             </div>
+          )}
+          {isEditing && (
+            <Badge className="bg-amber-100 text-amber-700 border-amber-200 uppercase text-[9px] font-black px-3 py-1 rounded-xl">
+              Revision Mode Active
+            </Badge>
           )}
         </div>
       </header>
@@ -331,6 +324,27 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
             )}
           </CardContent>
         </Card>
+
+        {isEditing && (
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsEditing(false)} 
+              className="w-full sm:w-auto rounded-xl h-12 px-8 font-bold text-slate-500 hover:bg-slate-100"
+              disabled={isSaving}
+            >
+              Cancel Revision
+            </Button>
+            <Button 
+              onClick={handleSaveEdit} 
+              disabled={isSaving} 
+              className="w-full sm:w-auto rounded-xl h-12 px-12 font-black shadow-xl shadow-primary/20"
+            >
+              {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Commit Changes to Registry
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );
