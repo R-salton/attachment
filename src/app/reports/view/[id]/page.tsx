@@ -8,6 +8,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { 
   CheckCircle, 
   ShieldAlert, 
@@ -20,14 +21,23 @@ import {
   Printer,
   Copy,
   FileDown,
-  Sparkles,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { exportReportToDocx } from '@/lib/export-docx';
+
+const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -39,6 +49,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editableText, setEditableText] = useState("");
+  const [editableDate, setEditableDate] = useState("");
+  const [editableUnit, setEditableUnit] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -50,10 +62,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const { data: report, isLoading } = useDoc(reportRef);
 
   useEffect(() => {
-    if (report?.fullText) {
-      setEditableText(report.fullText);
+    if (report) {
+      setEditableText(report.fullText || "");
+      setEditableDate(report.reportDate || "");
+      setEditableUnit(report.unit || "");
     }
-  }, [report?.fullText]);
+  }, [report]);
 
   const handleCopy = () => {
     if (report?.fullText) {
@@ -88,10 +102,22 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   };
 
   const handleSaveEdit = async () => {
-    if (!reportRef) return;
+    if (!reportRef || !report) return;
     setIsSaving(true);
     try {
-      await updateDoc(reportRef, { fullText: editableText });
+      // Logic to sync title based on new date/unit
+      const isOverallReport = editableUnit === 'ORDERLY REPORT';
+      const newTitle = isOverallReport 
+        ? `OVERALL REPORT - ${editableDate}` 
+        : `SITUATION REPORT - ${editableUnit} (${editableDate})`;
+
+      await updateDoc(reportRef, { 
+        fullText: editableText,
+        reportDate: editableDate,
+        unit: editableUnit,
+        reportTitle: newTitle
+      });
+      
       setIsEditing(false);
       toast({ title: "Update Successful", description: "Operational log has been modified." });
     } catch (e) {
@@ -241,17 +267,45 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
               </div>
             </div>
-            <h2 className="text-3xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[1] md:leading-[0.9] uppercase">
-              {report.reportDate}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-2 md:pt-4">
-              <Badge className="bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900 h-7 md:h-8 px-2 md:px-4 font-black rounded-lg text-[9px] md:text-[10px] uppercase tracking-widest border-none">
-                UNIT: {report.unit}
-              </Badge>
-              <Badge variant="outline" className="h-7 md:h-8 px-2 md:px-4 font-black rounded-lg border-2 text-[9px] md:text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50">
-                OIC: {report.reportingCommanderName}
-              </Badge>
-            </div>
+            
+            {isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Revision Date</Label>
+                  <Input 
+                    value={editableDate} 
+                    onChange={(e) => setEditableDate(e.target.value)}
+                    className="h-12 rounded-xl bg-white border-slate-200 font-bold"
+                    placeholder="e.g. 18 FEB 26"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Deployment Unit</Label>
+                  <Select value={editableUnit} onValueChange={setEditableUnit}>
+                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold">
+                      <SelectValue placeholder="Select Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-3xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[1] md:leading-[0.9] uppercase">
+                  {report.reportDate}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-2 md:pt-4">
+                  <Badge className="bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900 h-7 md:h-8 px-2 md:px-4 font-black rounded-lg text-[9px] md:text-[10px] uppercase tracking-widest border-none">
+                    UNIT: {report.unit}
+                  </Badge>
+                  <Badge variant="outline" className="h-7 md:h-8 px-2 md:px-4 font-black rounded-lg border-2 text-[9px] md:text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50">
+                    OIC: {report.reportingCommanderName}
+                  </Badge>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
