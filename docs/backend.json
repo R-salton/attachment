@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Report": {
@@ -8,6 +9,7 @@
         "id": { "type": "string" },
         "ownerId": { "type": "string", "description": "The UID of the user who owns this report." },
         "reportDate": { "type": "string" },
+        "dayNumber": { "type": "integer", "description": "The day number of the attachment." },
         "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"] },
         "reportTitle": { "type": "string" },
         "reportingCommanderName": { "type": "string" },

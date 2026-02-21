@@ -63,7 +63,7 @@ const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TF
 const FormSchema = z.object({
   reportDate: z.string().min(1, "Date is required"),
   unitName: z.string().min(1, "Unit name is required"),
-  dayNumber: z.string().optional().default(''),
+  dayNumber: z.string().min(1, "Day number is required"),
   operationalSummary: z.string().optional().default(''),
   securitySituation: z.string().optional().default('calm and stable'),
   incidents: z.array(z.object({
@@ -150,7 +150,6 @@ export default function NewDailyReport() {
           disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
         actionTaken: values.actionTaken || '',
-        // Prioritize orderly report if available, else use strategic narrative
         orderlyOfficerReport: isAdmin && values.orderlyOfficerReport ? values.orderlyOfficerReport : values.strategicNarrative
       };
 
@@ -184,6 +183,7 @@ export default function NewDailyReport() {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate,
+      dayNumber: parseInt(values.dayNumber) || 0,
       unit: values.unitName,
       reportTitle: isOrderlyReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
@@ -313,7 +313,7 @@ export default function NewDailyReport() {
                   </div>
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Day Number of Attachment</Label>
-                    <Input {...form.register('dayNumber')} className="h-11 rounded-xl text-sm" placeholder="e.g. 3" />
+                    <Input {...form.register('dayNumber')} type="number" className="h-11 rounded-xl text-sm" placeholder="e.g. 3" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Officer in Charge (Full Name)</Label>
@@ -490,16 +490,6 @@ export default function NewDailyReport() {
                           )}
                         />
                       </div>
-                      
-                      <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                          <Type className="h-3 w-3" />
-                          Executive Protocol
-                        </div>
-                        <p className="text-[10px] text-slate-500 italic">
-                          Formatting applied in the editor will be preserved in the official command transcript.
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </TabsContent>
@@ -513,7 +503,6 @@ export default function NewDailyReport() {
                     </div>
                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                       <Button variant="outline" className="rounded-xl h-12 px-6 font-bold text-xs md:text-sm w-full sm:w-auto" onClick={() => {
-                        // For HTML content, we might want to copy text or HTML. Here we just copy text for simplicity.
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = previewContent;
                         navigator.clipboard.writeText(tempDiv.innerText);

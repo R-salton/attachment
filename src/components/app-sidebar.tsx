@@ -27,7 +27,9 @@ import {
   UserCircle,
   ShieldCheck,
   Settings,
-  Loader2
+  Loader2,
+  FileSearch,
+  Sparkles
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -35,7 +37,7 @@ import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAdmin, profile, user, isLoading } = useUserProfile();
+  const { isAdmin, isCommander, profile, user, isLoading } = useUserProfile();
   const auth = useAuth();
 
   const handleSignOut = () => signOut(auth);
@@ -94,6 +96,32 @@ export function AppSidebar() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {(isAdmin || isCommander) && (
+              <SidebarGroup>
+                <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Analysis</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/reports/consolidated'} className="h-11 rounded-xl">
+                        <Link href="/reports/consolidated">
+                          <Sparkles className="h-4 w-4" />
+                          <span className="font-bold">Consolidated Report</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/weekly/new'} className="h-11 rounded-xl">
+                        <Link href="/weekly/new">
+                          <FileSearch className="h-4 w-4" />
+                          <span className="font-bold">Weekly Summary</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
 
             <SidebarGroup>
               <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Terminal</SidebarGroupLabel>
