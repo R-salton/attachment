@@ -7,12 +7,10 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, 
   Sparkles, 
-  FileText, 
   ArrowLeft, 
   Download, 
   ShieldCheck, 
@@ -22,7 +20,9 @@ import {
   Lightbulb,
   FileDown,
   CalendarDays,
-  Target
+  Target,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -45,7 +45,6 @@ export default function ConsolidatedReportPage() {
     setResult(null);
 
     try {
-      // Fetch all reports ordered by creation date to establish an objective timeline
       const reportsRef = collection(db, 'reports');
       const q = query(reportsRef, orderBy('createdAt', 'asc'));
       const snapshot = await getDocs(q);
@@ -65,7 +64,6 @@ export default function ConsolidatedReportPage() {
         id: doc.id 
       }) as any);
 
-      // Determine the chronological sequence of operational days based on unique report dates
       const dateSequence: string[] = [];
       allReports.forEach(r => {
         if (r.reportDate && !dateSequence.includes(r.reportDate)) {
@@ -73,7 +71,6 @@ export default function ConsolidatedReportPage() {
         }
       });
 
-      // Select the dates that constitute the requested operational span
       const targetDates = dateSequence.slice(0, targetDay);
 
       if (targetDates.length === 0) {
@@ -86,7 +83,6 @@ export default function ConsolidatedReportPage() {
         return;
       }
 
-      // Filter all situational logs belonging to the identified chronological dates
       const filteredReports = allReports.filter(r => targetDates.includes(r.reportDate));
       const reportTexts = filteredReports.map(r => r.fullText).filter(Boolean);
 
@@ -100,7 +96,6 @@ export default function ConsolidatedReportPage() {
         return;
       }
 
-      // Execute AI Synthesis via Gemini
       const consolidationResult = await generateConsolidatedReport({
         targetDay,
         reports: reportTexts
@@ -124,6 +119,16 @@ export default function ConsolidatedReportPage() {
     if (!result) return;
     
     let fullText = `### EXECUTIVE SUMMARY\n${result.executiveSummary}\n\n`;
+    
+    fullText += `### TACTICAL TIMELINE (INCIDENTS & ACTIONS)\n`;
+    result.incidentTimeline.forEach(day => {
+      fullText += `*${day.dayLabel}*\n`;
+      day.events.forEach(event => {
+        fullText += `. ${event}\n`;
+      });
+      fullText += `\n`;
+    });
+
     fullText += `### KEY ACHIEVEMENTS\n${result.keyAchievements.map(a => `. ${a}`).join('\n')}\n\n`;
     fullText += `### OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `. ${t}`).join('\n')}\n\n`;
     fullText += `### CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `. ${c}`).join('\n')}\n\n`;
@@ -131,7 +136,7 @@ export default function ConsolidatedReportPage() {
 
     try {
       await exportReportToDocx({
-        reportTitle: `CONSOLIDATED PROGRESS REPORT (FIRST ${targetDay} DAYS)`,
+        reportTitle: `CONSOLIDATED PROGRESS REPORT (PERIOD DAY 1 - ${targetDay})`,
         reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
         unit: 'OVERALL ATTACHMENT',
         fullText: fullText,
@@ -198,7 +203,7 @@ export default function ConsolidatedReportPage() {
                   max={100} 
                   value={targetDay} 
                   onChange={e => setTargetDay(parseInt(e.target.value) || 1)}
-                  className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
                 <Button 
                   onClick={handleGenerate} 
@@ -237,92 +242,119 @@ export default function ConsolidatedReportPage() {
                   </Button>
                 </div>
 
-                <div className="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-inner relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-6 opacity-5">
-                    <Sparkles className="h-24 w-24 text-blue-600" />
-                  </div>
-                  <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.3em] mb-6">Strategic Narrative Summary</h4>
-                  <div className="prose prose-slate prose-lg max-w-none text-slate-800 leading-relaxed font-bold">
-                    {result.executiveSummary}
-                  </div>
-                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                   <div className="lg:col-span-3 space-y-8">
+                      <div className="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-inner relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-5">
+                          <Sparkles className="h-24 w-24 text-blue-600" />
+                        </div>
+                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.3em] mb-6">Strategic Narrative Summary</h4>
+                        <div className="prose prose-slate prose-lg max-w-none text-slate-800 leading-relaxed font-bold">
+                          {result.executiveSummary}
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden hover:translate-y-[-4px] transition-transform duration-300">
-                    <CardHeader className="bg-emerald-50 border-b border-emerald-100">
-                      <CardTitle className="text-emerald-800 text-sm font-black uppercase flex items-center gap-3">
-                        <ListChecks className="h-5 w-5" />
-                        Key Achievements
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <ul className="space-y-5">
-                        {result.keyAchievements.map((item, idx) => (
-                          <li key={idx} className="flex gap-4 text-[15px] font-bold text-slate-700">
-                            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 mt-1.5 shrink-0 shadow-sm shadow-emerald-200" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                      <section className="space-y-6">
+                        <div className="flex items-center gap-3 px-2">
+                          <Clock className="h-5 w-5 text-blue-600" />
+                          <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">Tactical Timeline of Events</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {result.incidentTimeline.map((day, idx) => (
+                            <Card key={idx} className="rounded-[1.5rem] border-slate-100 shadow-lg overflow-hidden">
+                              <div className="bg-slate-900 p-4 flex items-center justify-between">
+                                <span className="text-xs font-black text-white uppercase tracking-widest">{day.dayLabel}</span>
+                                <Badge variant="outline" className="text-[8px] border-white/20 text-white/60">Registry Record</Badge>
+                              </div>
+                              <CardContent className="p-6">
+                                <ul className="space-y-3">
+                                  {day.events.map((event, eIdx) => (
+                                    <li key={eIdx} className="flex gap-3 text-sm font-semibold text-slate-700 leading-relaxed">
+                                      <ChevronRight className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                                      {event}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </section>
+                   </div>
 
-                  <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden hover:translate-y-[-4px] transition-transform duration-300">
-                    <CardHeader className="bg-blue-50 border-b border-blue-100">
-                      <CardTitle className="text-blue-800 text-sm font-black uppercase flex items-center gap-3">
-                        <Activity className="h-5 w-5" />
-                        Operational Trends
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <ul className="space-y-5">
-                        {result.operationalTrends.map((item, idx) => (
-                          <li key={idx} className="flex gap-4 text-[15px] font-bold text-slate-700">
-                            <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mt-1.5 shrink-0 shadow-sm shadow-blue-200" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                   <aside className="lg:col-span-1 space-y-6">
+                      <Card className="rounded-[2rem] border-slate-100 shadow-2xl overflow-hidden bg-emerald-50">
+                        <CardHeader className="border-b border-emerald-100">
+                          <CardTitle className="text-emerald-800 text-xs font-black uppercase flex items-center gap-2">
+                            <ListChecks className="h-4 w-4" />
+                            Key Achievements
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-4">
+                            {result.keyAchievements.map((item, idx) => (
+                              <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
+                                . {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
 
-                  <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden hover:translate-y-[-4px] transition-transform duration-300">
-                    <CardHeader className="bg-red-50 border-b border-red-100">
-                      <CardTitle className="text-red-800 text-sm font-black uppercase flex items-center gap-3">
-                        <AlertCircle className="h-5 w-5" />
-                        Critical Challenges
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <ul className="space-y-5">
-                        {result.criticalChallenges.map((item, idx) => (
-                          <li key={idx} className="flex gap-4 text-[15px] font-bold text-slate-700">
-                            <div className="h-2.5 w-2.5 rounded-full bg-red-500 mt-1.5 shrink-0 shadow-sm shadow-red-200" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                      <Card className="rounded-[2rem] border-slate-100 shadow-2xl overflow-hidden bg-blue-50">
+                        <CardHeader className="border-b border-blue-100">
+                          <CardTitle className="text-blue-800 text-xs font-black uppercase flex items-center gap-2">
+                            <Activity className="h-4 w-4" />
+                            Operational Trends
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-4">
+                            {result.operationalTrends.map((item, idx) => (
+                              <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
+                                . {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
 
-                  <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden hover:translate-y-[-4px] transition-transform duration-300">
-                    <CardHeader className="bg-amber-50 border-b border-amber-100">
-                      <CardTitle className="text-amber-800 text-sm font-black uppercase flex items-center gap-3">
-                        <Lightbulb className="h-5 w-5" />
-                        Strategic Recommendations
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <ul className="space-y-5">
-                        {result.strategicRecommendations.map((item, idx) => (
-                          <li key={idx} className="flex gap-4 text-[15px] font-bold text-slate-700">
-                            <div className="h-2.5 w-2.5 rounded-full bg-amber-500 mt-1.5 shrink-0 shadow-sm shadow-amber-200" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                      <Card className="rounded-[2rem] border-slate-100 shadow-2xl overflow-hidden bg-red-50">
+                        <CardHeader className="border-b border-red-100">
+                          <CardTitle className="text-red-800 text-xs font-black uppercase flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            Critical Challenges
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-4">
+                            {result.criticalChallenges.map((item, idx) => (
+                              <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
+                                . {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="rounded-[2rem] border-slate-100 shadow-2xl overflow-hidden bg-amber-50">
+                        <CardHeader className="border-b border-amber-100">
+                          <CardTitle className="text-amber-800 text-xs font-black uppercase flex items-center gap-2">
+                            <Lightbulb className="h-4 w-4" />
+                            Recommendations
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-4">
+                            {result.strategicRecommendations.map((item, idx) => (
+                              <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
+                                . {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                   </aside>
                 </div>
 
                 <div className="bg-slate-900 rounded-[3rem] p-12 text-white flex flex-col lg:flex-row items-center justify-between gap-10 shadow-3xl">

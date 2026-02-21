@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProfileSync } from '@/components/AuthProfileSync';
 import { Shell } from '@/components/Shell';
+import { CommandChat } from '@/components/CommandChat';
 
 export const metadata: Metadata = {
   title: 'Report Master | Operations Management',
@@ -28,6 +29,7 @@ export default function RootLayout({
           <Shell>
             {children}
           </Shell>
+          <CommandChat />
           <Toaster />
         </FirebaseClientProvider>
       </body>
