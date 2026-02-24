@@ -181,13 +181,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 md:mr-2" />}
                 <span className="hidden sm:inline">Copy</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-slate-200 text-slate-900 text-xs bg-white shadow-sm hover:bg-slate-50">
-                {isExporting ? <Loader2 className="animate-spin h-4 w-4 md:mr-2" /> : <FileDown className="h-4 w-4 md:mr-2" />}
-                <span className="hidden sm:inline">Word</span>
-              </Button>
-              <Button size="sm" onClick={() => window.print()} className="hidden md:flex rounded-xl font-black h-10 px-6 shadow-xl shadow-primary/20">
-                <Printer className="h-3.5 w-3.5 mr-2" /> Print
-              </Button>
             </div>
           )}
         </div>
@@ -224,19 +217,41 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 leading-none uppercase">
-                {report.reportDate}
-              </h2>
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <Badge className="bg-slate-900 text-white h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest border-none">
-                  UNIT: {report.unit}
-                </Badge>
-                <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-slate-200 text-slate-900">
-                  OIC: {report.reportingCommanderName}
-                </Badge>
+            <>
+              <div className="space-y-2">
+                <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 leading-none uppercase">
+                  {report.reportDate}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <Badge className="bg-slate-900 text-white h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest border-none">
+                    UNIT: {report.unit}
+                  </Badge>
+                  <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-slate-200 text-slate-900">
+                    OIC: {report.reportingCommanderName}
+                  </Badge>
+                </div>
               </div>
-            </div>
+
+              {/* Responsive Download and Action Section */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 print:hidden">
+                <Button 
+                  onClick={handleExport} 
+                  disabled={isExporting} 
+                  className="h-14 sm:h-12 flex-1 sm:flex-initial rounded-2xl font-black bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all active:scale-95"
+                >
+                  {isExporting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <FileDown className="mr-2 h-5 w-5" />}
+                  DOWNLOAD DOCX
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.print()} 
+                  className="h-14 sm:h-12 flex-1 sm:flex-initial rounded-2xl font-black border-slate-200 bg-white hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                >
+                  <Printer className="mr-2 h-5 w-5 text-slate-900" />
+                  PRINT TRANSCRIPT
+                </Button>
+              </div>
+            </>
           )}
         </div>
 
@@ -282,9 +297,9 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         </Card>
 
         {isEditing && (
-          <div className="flex justify-end items-center gap-4 pt-6">
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl h-12 px-8 font-bold text-slate-500 hover:bg-slate-100" disabled={isSaving}>Cancel</Button>
-            <Button onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl h-12 px-12 font-black shadow-xl shadow-primary/20 bg-slate-900 hover:bg-slate-800 text-white">
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6">
+            <Button variant="ghost" onClick={() => setIsEditing(false)} className="w-full sm:w-auto rounded-xl h-12 px-8 font-bold text-slate-500 hover:bg-slate-100" disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving} className="w-full sm:w-auto rounded-xl h-12 px-12 font-black shadow-xl shadow-primary/20 bg-slate-900 hover:bg-slate-800 text-white">
               {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Commit Revision
             </Button>
