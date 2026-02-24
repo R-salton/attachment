@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -49,7 +48,7 @@ import {
   Sparkles,
   Zap,
   Camera,
-  Image as ImageIcon,
+  ImageIcon,
   X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -102,7 +101,7 @@ export default function NewDailyReport() {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
+      reportDate: '',
       unitName: '',
       dayNumber: '',
       operationalSummary: '',
@@ -123,12 +122,13 @@ export default function NewDailyReport() {
   });
 
   useEffect(() => {
+    // Set current date on mount to avoid hydration mismatch
+    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase();
+    form.setValue('reportDate', today);
+
     if (profile) {
-      form.reset({
-        ...form.getValues(),
-        unitName: profile.unit || UNITS[0],
-        commanderName: profile.displayName || '',
-      });
+      form.setValue('unitName', profile.unit || UNITS[0]);
+      form.setValue('commanderName', profile.displayName || '');
     }
   }, [profile, form]);
 
@@ -396,7 +396,7 @@ export default function NewDailyReport() {
                 <div className="space-y-6">
                   <div className="bg-slate-50 p-6 rounded-[2rem] border border-dashed border-slate-200 text-center space-y-4">
                     <div className="mx-auto w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
-                      <ImageIcon className="h-6 w-6" />
+                      <Camera className="h-6 w-6" />
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Attach Operational Evidence</h3>
@@ -430,13 +430,13 @@ export default function NewDailyReport() {
                           onClick={() => removeImage(idx)}
                           className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
                     {Array.from({ length: Math.max(0, 4 - form.watch('images').length) }).map((_, idx) => (
                       <div key={`empty-${idx}`} className="aspect-square rounded-2xl border border-dashed border-slate-200 flex items-center justify-center bg-slate-50/50">
-                        <ImageIcon className="h-6 w-6 text-slate-200" />
+                        <Camera className="h-6 w-6 text-slate-200" />
                       </div>
                     ))}
                   </div>
