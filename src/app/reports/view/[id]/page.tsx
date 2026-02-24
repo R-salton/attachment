@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -23,8 +23,8 @@ import {
   X,
   Calendar,
   Image as ImageIcon,
-  ChevronLeft,
-  ChevronRight
+  Plus,
+  Camera
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -45,7 +45,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const { id } = use(params);
   const { user } = useUser();
-  const { isAdmin, isCommander, isLeader } = useUserProfile();
+  const { isAdmin } = useUserProfile();
   const { toast } = useToast();
   const db = useFirestore();
   const [isCopied, setIsCopied] = useState(false);
@@ -53,8 +53,10 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const [editableText, setEditableText] = useState("");
   const [editableDate, setEditableDate] = useState("");
   const [editableUnit, setEditableUnit] = useState("");
+  const [editableImages, setEditableImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reportRef = useMemoFirebase(() => {
     if (!db || !id || !user) return null;
@@ -68,6 +70,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       setEditableText(report.fullText || "");
       setEditableDate(report.reportDate || "");
       setEditableUnit(report.unit || "");
+      setEditableImages(report.images || []);
     }
   }, [report]);
 
@@ -105,6 +108,29 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (editableImages.length + files.length > 4) {
+      toast({ variant: "destructive", title: "Limit Reached", description: "You can only attach up to 4 images." });
+      return;
+    }
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setEditableImages(prev => [...prev, base64String]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setEditableImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSaveEdit = async () => {
     if (!reportRef || !report) return;
     setIsSaving(true);
@@ -118,7 +144,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         fullText: editableText,
         reportDate: editableDate,
         unit: editableUnit,
-        reportTitle: newTitle
+        reportTitle: newTitle,
+        images: editableImages
       });
       
       setIsEditing(false);
@@ -233,7 +260,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
 
-              {/* Responsive Download and Action Section */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 print:hidden">
                 <Button 
                   onClick={handleExport} 
@@ -260,13 +286,55 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           <div className="h-2 bg-slate-900" />
           <CardContent className="p-8 md:p-16 relative">
             {isEditing ? (
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML)</Label>
-                <Textarea 
-                  value={editableText} 
-                  onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[600px] font-mono text-sm leading-relaxed rounded-2xl bg-slate-50 border-slate-200 p-8"
-                />
+              <div className="space-y-10">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML)</Label>
+                  <Textarea 
+                    value={editableText} 
+                    onChange={(e) => setEditableText(e.target.value)}
+                    className="min-h-[400px] font-mono text-sm leading-relaxed rounded-2xl bg-slate-50 border-slate-200 p-8"
+                  />
+                </div>
+
+                <div className="space-y-6 pt-6 border-t border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <ImageIcon className="h-5 w-5 text-primary" />
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Media Evidence Management</Label>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {editableImages.map((img, idx) => (
+                      <div key={idx} className="group relative aspect-square rounded-2xl overflow-hidden border bg-slate-100">
+                        <img src={img} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg shadow-lg"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {editableImages.length < 4 && (
+                      <button 
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-100 transition-colors gap-2"
+                      >
+                        <Plus className="h-6 w-6 text-slate-400" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Add Photo</span>
+                      </button>
+                    )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleImageUpload} 
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-12">
