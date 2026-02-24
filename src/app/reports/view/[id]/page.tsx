@@ -109,23 +109,32 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (editableImages.length + files.length > 4) {
-      toast({ variant: "destructive", title: "Limit Reached", description: "You can only attach up to 4 images." });
+      toast({ variant: "destructive", title: "Limit Reached", description: "Maximum of 4 images allowed." });
       return;
     }
 
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setEditableImages(prev => [...prev, base64String]);
-      };
-      reader.readAsDataURL(file);
-    });
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsSaving(true);
+    try {
+      const newImages = await Promise.all(
+        files.map(file => new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }))
+      );
+      
+      setEditableImages(prev => [...prev, ...newImages]);
+      toast({ title: "Images Added", description: `${files.length} evidence photos staged for commit.` });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to process selected images." });
+    } finally {
+      setIsSaving(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const removeImage = (index: number) => {
@@ -335,8 +344,8 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
                         onClick={() => fileInputRef.current?.click()}
                         className="aspect-square rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-100 transition-colors gap-2"
                       >
-                        <Plus className="h-6 w-6 text-slate-400" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Add Photo</span>
+                        {isSaving ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Plus className="h-6 w-6 text-slate-400" />}
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">{isSaving ? 'Processing' : 'Add Photo'}</span>
                       </button>
                     )}
                     <input 

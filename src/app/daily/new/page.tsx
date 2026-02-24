@@ -137,25 +137,42 @@ export default function NewDailyReport() {
     name: "incidents"
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const currentImages = form.getValues('images');
     
     if (currentImages.length + files.length > 4) {
-      toast({ variant: "destructive", title: "Limit Reached", description: "You can only attach up to 4 images." });
+      toast({ 
+        variant: "destructive", 
+        title: "Limit Reached", 
+        description: "You can only attach up to 4 images per report." 
+      });
       return;
     }
 
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        form.setValue('images', [...form.getValues('images'), base64String]);
-      };
-      reader.readAsDataURL(file);
-    });
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsLoading(true);
+    try {
+      const newImages = await Promise.all(
+        files.map(file => new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }))
+      );
+
+      form.setValue('images', [...currentImages, ...newImages]);
+      toast({ title: "Media Attached", description: `${files.length} evidence photos added to the draft.` });
+    } catch (error) {
+      toast({ 
+        variant: "destructive", 
+        title: "Upload Failed", 
+        description: "Could not process one or more images." 
+      });
+    } finally {
+      setIsLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const removeImage = (index: number) => {
@@ -396,7 +413,7 @@ export default function NewDailyReport() {
                 <div className="space-y-6">
                   <div className="bg-slate-50 p-6 rounded-[2rem] border border-dashed border-slate-200 text-center space-y-4">
                     <div className="mx-auto w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
-                      <Camera className="h-6 w-6" />
+                      {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Attach Operational Evidence</h3>
@@ -407,7 +424,7 @@ export default function NewDailyReport() {
                       variant="outline" 
                       onClick={() => fileInputRef.current?.click()}
                       className="rounded-xl font-bold h-10 border-slate-200"
-                      disabled={form.watch('images').length >= 4}
+                      disabled={form.watch('images').length >= 4 || isLoading}
                     >
                       <Plus className="h-4 w-4 mr-2" /> Select Photos
                     </Button>
