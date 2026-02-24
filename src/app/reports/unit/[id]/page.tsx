@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye, Building2 } from 'lucide-react';
+import { FileText, Calendar, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye, Building2, Clock } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,11 +155,17 @@ export default function UnitReportsArchive({ params }: { params: Promise<{ id: s
                     <h4 className="text-lg font-black text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight">
                       {report.reportTitle}
                     </h4>
-                    <div className="flex flex-col gap-3 pt-4 border-t border-slate-50">
+                    <div className="flex flex-col gap-2 pt-4 border-t border-slate-50">
                       <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         <Calendar className="h-4 w-4 text-blue-600" />
                         {report.reportDate}
                       </div>
+                      {report.createdAt && (
+                        <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                          <Clock className="h-3.5 w-3.5 text-blue-600/60" />
+                          Filed: {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 pt-4 mt-2">
                         <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center text-[10px] font-black text-blue-400 border border-slate-800 shadow-lg shadow-slate-900/10">
                           {report.reportingCommanderName?.charAt(0)}

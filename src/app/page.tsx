@@ -22,7 +22,8 @@ import {
   Calendar,
   Search,
   Filter,
-  User
+  User,
+  Clock
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -231,7 +232,7 @@ export default function Home() {
                     onClick={() => router.push(`/reports/view/${report.id}`)}
                     className="group relative flex flex-col p-5 rounded-2xl bg-white hover:bg-slate-50 transition-all border border-slate-100 hover:border-blue-600 hover:shadow-2xl cursor-pointer"
                   >
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-2">
                       <Badge className="text-[8px] font-black px-2 py-0.5 bg-blue-600 text-white uppercase tracking-widest border-none">
                         {report.unit}
                       </Badge>
@@ -240,9 +241,17 @@ export default function Home() {
                         {report.reportDate}
                       </div>
                     </div>
-                    <h4 className="font-black text-slate-900 text-sm line-clamp-1 mb-4 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
+                    <h4 className="font-black text-slate-900 text-sm line-clamp-1 mb-2 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
                       {report.reportTitle}
                     </h4>
+                    
+                    {report.createdAt && (
+                      <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-4">
+                        <Clock className="h-2.5 w-2.5" />
+                        Filed: {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
+                      </div>
+                    )}
+
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-lg bg-slate-900 text-blue-400 flex items-center justify-center text-[9px] font-black border border-slate-800">

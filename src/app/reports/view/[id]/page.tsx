@@ -24,7 +24,8 @@ import {
   Calendar,
   Image as ImageIcon,
   Plus,
-  Camera
+  Camera,
+  Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -216,14 +217,27 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
       <main className="max-w-4xl mx-auto mt-6 md:mt-12 px-4 md:px-10 space-y-6 md:space-y-10 print:mt-0 print:px-0">
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 p-2.5 rounded-2xl shadow-lg">
-              <Building2 className="h-6 w-6 text-primary" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-900 p-2.5 rounded-2xl shadow-lg">
+                <Building2 className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
+                <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Entry #{report.id.substring(0,8).toUpperCase()}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
-              <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Entry #{report.id.substring(0,8).toUpperCase()}</span>
-            </div>
+            {report.createdAt && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border shadow-sm">
+                <Clock className="h-3.5 w-3.5 text-blue-600" />
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Submission Registry</span>
+                  <span className="text-[10px] font-bold text-slate-900 leading-none">
+                    {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           
           {isEditing ? (

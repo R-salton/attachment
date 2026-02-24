@@ -5,7 +5,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { FileText, Calendar, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye, Filter, Building2, User } from 'lucide-react';
+import { FileText, Calendar, Loader2, Search, ArrowLeft, Trash2, ShieldAlert, Eye, Filter, Building2, User, Clock } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -237,11 +237,17 @@ export default function ReportsList() {
                       {report.reportTitle}
                     </h4>
                     
-                    <div className="flex flex-col gap-3 pt-4 border-t border-slate-50">
+                    <div className="flex flex-col gap-2 pt-4 border-t border-slate-50">
                       <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         <Calendar className="h-4 w-4 text-blue-600" />
                         {report.reportDate}
                       </div>
+                      {report.createdAt && (
+                        <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                          <Clock className="h-3.5 w-3.5 text-blue-600/60" />
+                          Filed: {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         <Building2 className="h-4 w-4 text-blue-600" />
                         {report.unit}
