@@ -43,7 +43,7 @@ import { exportReportToDocx } from '@/lib/export-docx';
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 
 /**
- * Compresses an image to stay under Firestore document limits.
+ * Aggressively compresses an image to stay under Firestore document limits (1MB).
  */
 const compressImage = (base64Str: string): Promise<string> => {
   return new Promise((resolve) => {
@@ -51,8 +51,8 @@ const compressImage = (base64Str: string): Promise<string> => {
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 800;
+      const MAX_WIDTH = 600; // Reduced from 800 for better safety margin
+      const MAX_HEIGHT = 600;
       let width = img.width;
       let height = img.height;
 
@@ -71,7 +71,8 @@ const compressImage = (base64Str: string): Promise<string> => {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      // Using JPEG with 0.6 quality to balance size and clarity
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
     };
   });
 };
@@ -101,7 +102,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const { data: report, isLoading } = useDoc(reportRef);
 
-  // Initialize form state once when report loads
   useEffect(() => {
     if (report && !hasInitialized.current) {
       setEditableText(report.fullText || "");
@@ -137,7 +137,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         reportingCommanderName: report.reportingCommanderName,
         images: report.images
       });
-      toast({ title: "Export Complete", description: "Word document has been generated with media evidence." });
+      toast({ title: "Export Complete", description: "Word document has been generated." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
@@ -148,8 +148,10 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (editableImages.length + files.length > 4) {
-      toast({ variant: "destructive", title: "Limit Reached", description: "Maximum of 4 images allowed." });
+    const currentTotal = editableImages.length + files.length;
+    
+    if (currentTotal > 4) {
+      toast({ variant: "destructive", title: "Limit Reached", description: "Maximum of 4 images allowed per report." });
       return;
     }
 
@@ -199,12 +201,15 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       });
       
       setIsEditing(false);
-      // Reset initialization to allow sync from fresh data if needed after edit
       hasInitialized.current = false;
       toast({ title: "Update Successful", description: "Operational log has been modified." });
     } catch (e) {
       console.error("Save error:", e);
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes. Ensure images aren't too large." });
+      toast({ 
+        variant: "destructive", 
+        title: "Update Failed", 
+        description: "Could not save changes. The total data size may be too large for the registry." 
+      });
     } finally {
       setIsSaving(false);
     }

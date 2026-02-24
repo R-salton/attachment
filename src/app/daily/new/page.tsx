@@ -88,7 +88,7 @@ const FormSchema = z.object({
 type FormValues = z.infer<typeof FormSchema>;
 
 /**
- * Compresses an image to stay under Firestore document limits.
+ * Aggressively compresses an image to stay under Firestore document limits.
  */
 const compressImage = (base64Str: string): Promise<string> => {
   return new Promise((resolve) => {
@@ -96,8 +96,8 @@ const compressImage = (base64Str: string): Promise<string> => {
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 800;
+      const MAX_WIDTH = 600;
+      const MAX_HEIGHT = 600;
       let width = img.width;
       let height = img.height;
 
@@ -116,7 +116,7 @@ const compressImage = (base64Str: string): Promise<string> => {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
     };
   });
 };
@@ -281,7 +281,11 @@ export default function NewDailyReport() {
       })
       .catch(error => {
         console.error("Save error:", error);
-        toast({ variant: "destructive", title: "Archive Failed", description: "Could not save report. Total size may exceed limits." });
+        toast({ 
+          variant: "destructive", 
+          title: "Archive Failed", 
+          description: "Could not save report. Total data size (including high-res images) may exceed registry limits." 
+        });
         const contextualError = new FirestorePermissionError({
           path: reportRef.path,
           operation: 'create',
