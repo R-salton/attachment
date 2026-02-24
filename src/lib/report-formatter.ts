@@ -26,6 +26,7 @@ export interface SituationReportInput {
   overallSummary: string;
   commanderName: string;
   orderlyOfficerReport?: string;
+  images?: string[];
 }
 
 export function formatDailyReport(input: SituationReportInput): string {
@@ -44,6 +45,7 @@ export function formatDailyReport(input: SituationReportInput): string {
     overallSummary,
     commanderName,
     orderlyOfficerReport,
+    images
   } = input;
 
   let html = `<div class="report-container font-report">`;
@@ -105,6 +107,16 @@ export function formatDailyReport(input: SituationReportInput): string {
   html += `<p class="font-black uppercase text-primary mb-2 text-xs tracking-widest">Overall Assessment:</p>`;
   html += `<p class="font-bold border-l-2 border-primary pl-4">${overallSummary}</p>`;
   html += `</div>`;
+
+  if (images && images.length > 0) {
+    html += `<div class="images-section mb-10">`;
+    html += `<p class="font-black uppercase text-primary mb-4 text-xs tracking-widest">Attached Media Evidence:</p>`;
+    html += `<div class="grid grid-cols-2 gap-4">`;
+    images.forEach((img, idx) => {
+      html += `<img src="${img}" alt="Evidence ${idx + 1}" class="rounded-xl border border-slate-200 shadow-sm w-full h-auto" />`;
+    });
+    html += `</div></div>`;
+  }
 
   html += `<p class="mb-10 text-slate-600 italic">Cadets continued to improve operational skills and professionalism. The security situation remains stable.</p>`;
 

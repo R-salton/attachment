@@ -22,7 +22,10 @@ import {
   Copy,
   FileDown,
   X,
-  Calendar
+  Calendar,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -126,41 +129,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const renderContent = (content: string) => {
-    if (!content) return null;
-    const isHtml = content.trim().startsWith('<') || content.includes('class=') || content.includes('<p>');
-
-    if (isHtml) {
-      return (
-        <div 
-          dangerouslySetInnerHTML={{ __html: content }} 
-          className="prose prose-slate prose-sm md:prose-lg max-w-none text-slate-900 dark:text-white"
-        />
-      );
-    }
-
-    return content.split('\n').map((line, i) => {
-      if (line.trim() === '--- Operational Details Below ---') {
-        return <div key={i} className="my-12 border-t-2 border-dashed border-slate-200 dark:border-slate-800" />;
-      }
-      if (line.startsWith('*') && line.endsWith('*')) {
-        const text = line.replace(/\*/g, '');
-        return <h3 key={i} className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mt-10 mb-6 border-b-2 border-primary/20 pb-3 uppercase tracking-tight">{text}</h3>;
-      }
-      if (line.startsWith('.')) {
-        return (
-          <div key={i} className="flex gap-3 mb-3 ml-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2.5 shrink-0" />
-            <p className="text-base md:text-lg text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
-              {line.substring(1).trim()}
-            </p>
-          </div>
-        );
-      }
-      return <p key={i} className="mb-4 text-base md:text-lg text-slate-900 dark:text-white leading-relaxed font-bold">{line}</p>;
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -177,21 +145,6 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
         <h2 className="text-3xl md:text-5xl font-black text-foreground mb-4">Transcript Restricted</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm md:text-lg font-bold uppercase tracking-tight">Access Prohibited.</p>
-        <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">
-          Return to Dashboard
-        </Button>
-      </div>
-    );
-  }
-
-  const canView = isAdmin || isCommander || isLeader || report.ownerId === user?.uid;
-  if (!canView) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-        <ShieldAlert className="h-24 w-24 text-destructive/20 mb-8" />
-        <h2 className="text-3xl font-black text-foreground mb-4">Access Denied</h2>
-        <p className="text-muted-foreground mb-10 max-w-md text-sm font-bold uppercase">Classified Record.</p>
         <Button onClick={() => router.push('/')} size="lg" className="h-14 px-12 font-black rounded-2xl">Return Dashboard</Button>
       </div>
     );
@@ -200,21 +153,18 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const canEdit = isAdmin || report.ownerId === user?.uid;
 
   return (
-    <div className="min-h-screen bg-background pb-24 selection:bg-primary/20">
-      <header className="border-b bg-background/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
+    <div className="min-h-screen bg-[#f8fafc] pb-24 selection:bg-primary/20">
+      <header className="border-b bg-white/95 backdrop-blur-xl px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-accent text-muted-foreground rounded-xl px-1 md:px-4 font-bold h-9 md:h-10" disabled={isEditing}>
             <ArrowLeft className="h-5 w-5 md:mr-2 text-foreground" />
             <span className="hidden sm:inline uppercase tracking-widest text-[10px] text-foreground">Back</span>
           </Button>
-          <div className="h-6 w-px bg-border hidden sm:block" />
           <div className="flex flex-col overflow-hidden">
             <h1 className="text-[10px] md:text-sm font-black text-foreground truncate max-w-[100px] sm:max-w-xl leading-none mb-0.5 uppercase tracking-tighter">
               {isEditing ? "Revising Operational Log" : report.reportTitle}
             </h1>
-            <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[7px] md:text-[8px] font-black uppercase tracking-widest h-3 px-1 border-primary/20 text-primary">{report.unit}</Badge>
-            </div>
+            <Badge variant="outline" className="text-[7px] md:text-[8px] font-black uppercase tracking-widest h-3 px-1 border-primary/20 text-primary w-fit">{report.unit}</Badge>
           </div>
         </div>
         
@@ -222,16 +172,16 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
           {!isEditing && (
             <div className="flex items-center gap-1.5">
               {canEdit && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-slate-200 text-slate-900 text-xs bg-white shadow-sm hover:bg-slate-50">
                   <Edit3 className="h-4 w-4 md:mr-2" />
                   <span className="hidden sm:inline">Edit</span>
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+              <Button variant="outline" size="sm" onClick={handleCopy} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-slate-200 text-slate-900 text-xs bg-white shadow-sm hover:bg-slate-50">
                 {isCopied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 md:mr-2" />}
                 <span className="hidden sm:inline">Copy</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-border text-foreground text-xs bg-white shadow-sm">
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="rounded-xl font-bold h-9 md:h-10 px-2 md:px-4 border-slate-200 text-slate-900 text-xs bg-white shadow-sm hover:bg-slate-50">
                 {isExporting ? <Loader2 className="animate-spin h-4 w-4 md:mr-2" /> : <FileDown className="h-4 w-4 md:mr-2" />}
                 <span className="hidden sm:inline">Word</span>
               </Button>
@@ -240,108 +190,103 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
               </Button>
             </div>
           )}
-          {isEditing && (
-            <Badge className="bg-amber-100 text-amber-700 border-amber-200 uppercase text-[9px] font-black px-3 py-1 rounded-xl">
-              Revision Mode Active
-            </Badge>
-          )}
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto mt-6 md:mt-12 px-4 md:px-10 space-y-6 md:space-y-10 print:mt-0 print:px-0">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-          <div className="space-y-3 md:space-y-4 flex-1">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/10">
-                <Building2 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-slate-900 p-2.5 rounded-2xl shadow-lg">
+              <Building2 className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] leading-none mb-1">Command Registry</span>
+              <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Entry #{report.id.substring(0,8).toUpperCase()}</span>
+            </div>
+          </div>
+          
+          {isEditing ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Revision Date</Label>
+                <Input value={editableDate} onChange={(e) => setEditableDate(e.target.value)} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Command Registry</span>
-                <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Record Entry #{report.id.substring(0,8).toUpperCase()}</span>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Deployment Unit</Label>
+                <Select value={editableUnit} onValueChange={setEditableUnit}>
+                  <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            
-            {isEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Revision Date</Label>
-                  <Input 
-                    value={editableDate} 
-                    onChange={(e) => setEditableDate(e.target.value)}
-                    className="h-12 rounded-xl bg-white border-slate-200 font-bold"
-                    placeholder="e.g. 18 FEB 26"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Deployment Unit</Label>
-                  <Select value={editableUnit} onValueChange={setEditableUnit}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold">
-                      <SelectValue placeholder="Select Unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+          ) : (
+            <div className="space-y-2">
+              <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-slate-900 leading-none uppercase">
+                {report.reportDate}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <Badge className="bg-slate-900 text-white h-8 px-4 font-black rounded-lg text-[10px] uppercase tracking-widest border-none">
+                  UNIT: {report.unit}
+                </Badge>
+                <Badge variant="outline" className="h-8 px-4 font-black rounded-lg border-2 text-[10px] uppercase tracking-widest border-slate-200 text-slate-900">
+                  OIC: {report.reportingCommanderName}
+                </Badge>
               </div>
-            ) : (
-              <>
-                <h2 className="text-3xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-[1] md:leading-[0.9] uppercase">
-                  {report.reportDate}
-                </h2>
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-2 md:pt-4">
-                  <Badge className="bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900 h-7 md:h-8 px-2 md:px-4 font-black rounded-lg text-[9px] md:text-[10px] uppercase tracking-widest border-none">
-                    UNIT: {report.unit}
-                  </Badge>
-                  <Badge variant="outline" className="h-7 md:h-8 px-2 md:px-4 font-black rounded-lg border-2 text-[9px] md:text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50">
-                    OIC: {report.reportingCommanderName}
-                  </Badge>
-                </div>
-              </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden bg-card print:shadow-none print:border-none print:rounded-none">
-          <div className="h-1.5 md:h-2 bg-primary" />
-          <CardContent className="p-6 md:p-16 relative bg-card">
+        <Card className="shadow-2xl border-none rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-white print:shadow-none print:border-none print:rounded-none">
+          <div className="h-2 bg-slate-900" />
+          <CardContent className="p-8 md:p-16 relative">
             {isEditing ? (
-              <div className="relative z-10 space-y-4">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML Source)</Label>
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Transcript Revision (HTML)</Label>
                 <Textarea 
                   value={editableText} 
                   onChange={(e) => setEditableText(e.target.value)}
-                  className="min-h-[400px] md:min-h-[600px] font-mono text-xs md:text-sm leading-relaxed rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4 md:p-8"
+                  className="min-h-[600px] font-mono text-sm leading-relaxed rounded-2xl bg-slate-50 border-slate-200 p-8"
                 />
               </div>
             ) : (
-              <div className="font-report text-base md:text-lg leading-relaxed text-slate-900 dark:text-white tracking-tight relative z-10 max-w-3xl mx-auto">
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center -z-10">
-                   <Shield className="h-[200px] w-[200px] md:h-[400px] md:w-[400px] text-slate-900 dark:text-white" />
+              <div className="space-y-12">
+                <div className="font-report text-base md:text-lg leading-relaxed text-slate-900 relative z-10 max-w-3xl mx-auto">
+                  <div dangerouslySetInnerHTML={{ __html: report.fullText }} className="prose prose-slate prose-lg max-w-none prose-p:font-bold prose-strong:font-black" />
                 </div>
-                {renderContent(report.fullText)}
+
+                {report.images && report.images.length > 0 && (
+                  <div className="pt-12 border-t border-slate-100">
+                    <div className="flex items-center gap-3 mb-8">
+                      <ImageIcon className="h-5 w-5 text-primary" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Tactical Media Evidence</h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {report.images.map((img, idx) => (
+                        <div key={idx} className="group relative rounded-3xl overflow-hidden border border-slate-100 shadow-lg hover:shadow-2xl transition-all cursor-zoom-in">
+                          <img src={img} alt="Evidence" className="w-full h-auto object-cover aspect-video group-hover:scale-105 transition-transform duration-700" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                            <span className="text-white text-[10px] font-black uppercase tracking-widest">Exhibit {idx + 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
         {isEditing && (
-          <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsEditing(false)} 
-              className="w-full sm:w-auto rounded-xl h-12 px-8 font-bold text-slate-500 hover:bg-slate-100"
-              disabled={isSaving}
-            >
-              Cancel Revision
-            </Button>
-            <Button 
-              onClick={handleSaveEdit} 
-              disabled={isSaving} 
-              className="w-full sm:w-auto rounded-xl h-12 px-12 font-black shadow-xl shadow-primary/20"
-            >
+          <div className="flex justify-end items-center gap-4 pt-6">
+            <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl h-12 px-8 font-bold text-slate-500 hover:bg-slate-100" disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving} className="rounded-xl h-12 px-12 font-black shadow-xl shadow-primary/20 bg-slate-900 hover:bg-slate-800 text-white">
               {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              Commit Changes to Registry
+              Commit Revision
             </Button>
           </div>
         )}

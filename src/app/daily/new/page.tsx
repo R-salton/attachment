@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,7 +47,10 @@ import {
   UserCheck,
   Type,
   Sparkles,
-  Zap
+  Zap,
+  Camera,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
@@ -80,6 +83,7 @@ const FormSchema = z.object({
   commanderName: z.string().min(1, "Commander name is required"),
   orderlyOfficerReport: z.string().optional().default(''),
   strategicNarrative: z.string().optional().default(''),
+  images: z.array(z.string()).max(4).default([]),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -93,6 +97,7 @@ export default function NewDailyReport() {
   const [activeTab, setActiveTab] = useState("header");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -113,6 +118,7 @@ export default function NewDailyReport() {
       commanderName: '',
       orderlyOfficerReport: '',
       strategicNarrative: '',
+      images: [],
     },
   });
 
@@ -130,6 +136,32 @@ export default function NewDailyReport() {
     control: form.control,
     name: "incidents"
   });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const currentImages = form.getValues('images');
+    
+    if (currentImages.length + files.length > 4) {
+      toast({ variant: "destructive", title: "Limit Reached", description: "You can only attach up to 4 images." });
+      return;
+    }
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        form.setValue('images', [...form.getValues('images'), base64String]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    const currentImages = form.getValues('images');
+    form.setValue('images', currentImages.filter((_, i) => i !== index));
+  };
 
   const onSubmitPreview = async (values: FormValues) => {
     if (!user) {
@@ -150,7 +182,8 @@ export default function NewDailyReport() {
           disciplinaryCases: values.disciplinaryCases || 'No disciplinary cases'
         },
         actionTaken: values.actionTaken || '',
-        orderlyOfficerReport: (isAdmin && values.orderlyOfficerReport) ? values.orderlyOfficerReport : values.strategicNarrative
+        orderlyOfficerReport: (isAdmin && values.orderlyOfficerReport) ? values.orderlyOfficerReport : values.strategicNarrative,
+        images: values.images
       };
 
       const content = formatDailyReport(formattedInput);
@@ -165,10 +198,6 @@ export default function NewDailyReport() {
     }
   };
 
-  const handleFinalize = () => {
-    setShowConfirmDialog(true);
-  };
-
   const saveReport = () => {
     if (!user || !db || !previewContent || !profile) return;
     setIsLoading(true);
@@ -177,20 +206,17 @@ export default function NewDailyReport() {
     const reportId = doc(collection(db, 'reports')).id;
     const reportRef = doc(db, 'reports', reportId);
 
-    const isOrderlyReport = !!((isAdmin && values.orderlyOfficerReport) || values.strategicNarrative);
-
     const reportData = {
       id: reportId,
       ownerId: user.uid,
       reportDate: values.reportDate.toUpperCase(),
-      // Strictly cast dayNumber to integer for registry consistency
       dayNumber: parseInt(values.dayNumber) || 0,
       unit: values.unitName,
-      reportTitle: isOrderlyReport ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
+      reportTitle: values.unitName === 'ORDERLY REPORT' ? `OVERALL REPORT - ${values.reportDate}` : `SITUATION REPORT - ${values.unitName} (${values.reportDate})`,
       reportingCommanderName: values.commanderName,
       reportingCommanderTitle: 'Officer in Charge',
-      creationDateTime: new Date().toISOString(),
       fullText: previewContent,
+      images: values.images,
       status: 'SUBMITTED',
       createdAt: serverTimestamp(),
     };
@@ -227,10 +253,11 @@ export default function NewDailyReport() {
     { id: "summary", label: "Operations" },
     { id: "incidents", label: "Security" },
     { id: "discipline", label: "Force" },
+    { id: "media", label: "Media", icon: Camera },
   ];
 
   if (isAdmin) {
-    tabs.push({ id: "orderly", label: "Orderly Officer", icon: Sparkles });
+    tabs.splice(4, 0, { id: "orderly", label: "Orderly Officer", icon: Sparkles });
   }
 
   tabs.push({ id: "preview", label: "Review", icon: Eye });
@@ -327,10 +354,6 @@ export default function NewDailyReport() {
                     <Zap className="h-5 w-5 text-blue-600" />
                     <h3 className="font-black text-slate-900 uppercase tracking-tight">Strategic Narrative</h3>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Provide a detailed command summary using the rich text editor below. This narrative supports complex formatting (bold, lists, color) and will define the core assessment of the SITREP.
-                  </p>
-                  
                   <div className="space-y-3">
                     <Label className="font-bold text-slate-700 text-xs md:text-sm">Executive Transcript</Label>
                     <Controller
@@ -366,154 +389,70 @@ export default function NewDailyReport() {
                       placeholder="Regulated traffic flow&#10;Checked vehicle documents&#10;Punished law violators"
                     />
                   </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Overall Status Narrative</Label>
-                    <Textarea 
-                      {...form.register('overallSummary')} 
-                      className="min-h-[100px] rounded-xl font-mono text-xs md:text-sm" 
-                      placeholder="Summarize the overall success or tone of the day's activities."
-                    />
-                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="incidents" className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
-                <div className="space-y-5 md:space-y-6">
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">General Security Situation</Label>
-                    <Input {...form.register('securitySituation')} className="h-11 rounded-xl text-sm" placeholder="e.g. calm and stable" />
+              <TabsContent value="media" className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6">
+                  <div className="bg-slate-50 p-6 rounded-[2rem] border border-dashed border-slate-200 text-center space-y-4">
+                    <div className="mx-auto w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Attach Operational Evidence</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Maximum 4 images allowed (JPG/PNG)</p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-xl font-bold h-10 border-slate-200"
+                      disabled={form.watch('images').length >= 4}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Select Photos
+                    </Button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleImageUpload} 
+                    />
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-slate-700 text-xs md:text-sm">Incident Records</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={() => appendIncident({ time: '', description: '' })} className="rounded-lg h-8 text-[10px] md:text-xs font-bold">
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Record
-                      </Button>
-                    </div>
-                    
-                    {incidentFields.length === 0 && (
-                      <div className="text-center py-8 border border-dashed rounded-2xl bg-slate-50">
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium italic">No specific incidents to log.</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {form.watch('images').map((img, idx) => (
+                      <div key={idx} className="group relative aspect-square rounded-2xl overflow-hidden border bg-slate-100">
+                        <img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                    )}
-
-                    {incidentFields.map((field, index) => (
-                      <div key={field.id} className="p-4 bg-slate-50 rounded-2xl border space-y-4 animate-in slide-in-from-right-2">
-                        <div className="flex flex-col md:flex-row md:items-start gap-4">
-                          <div className="w-full md:w-48 space-y-1.5">
-                            <Label className="text-[9px] uppercase font-black text-slate-400">Time (DTG)</Label>
-                            <div className="relative">
-                              <Clock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                              <Input {...form.register(`incidents.${index}.time`)} className="pl-9 h-9 text-xs rounded-lg" placeholder="181020B FEB 26" />
-                            </div>
-                          </div>
-                          <div className="flex-1 space-y-1.5">
-                            <Label className="text-[9px] uppercase font-black text-slate-400">Description & Location</Label>
-                            <Input {...form.register(`incidents.${index}.description`)} className="h-9 text-xs rounded-lg" placeholder="e.g. Minor collision at Nyabugogo..." />
-                          </div>
-                          <Button type="button" variant="ghost" size="icon" className="md:mt-6 text-destructive h-9 w-9 self-end md:self-auto hover:bg-destructive/10" onClick={() => removeIncident(index)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                    ))}
+                    {Array.from({ length: Math.max(0, 4 - form.watch('images').length) }).map((_, idx) => (
+                      <div key={`empty-${idx}`} className="aspect-square rounded-2xl border border-dashed border-slate-200 flex items-center justify-center bg-slate-50/50">
+                        <ImageIcon className="h-6 w-6 text-slate-200" />
                       </div>
                     ))}
                   </div>
-
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                      Actions Taken
-                    </Label>
-                    <Textarea 
-                      {...form.register('actionTaken')} 
-                      className="min-h-[100px] rounded-xl font-mono text-xs md:text-sm" 
-                      placeholder="Detail the response to incidents logged above."
-                    />
-                  </div>
                 </div>
               </TabsContent>
-
-              <TabsContent value="discipline" className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Casualties Report</Label>
-                    <Input {...form.register('casualties')} className="h-11 rounded-xl text-sm" placeholder="e.g. No casualties" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <Label className="font-bold text-slate-700 text-xs md:text-sm">Disciplinary Status</Label>
-                    <Input {...form.register('disciplinaryCases')} className="h-11 rounded-xl text-sm" placeholder="e.g. No disciplinary cases" />
-                  </div>
-                </div>
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="font-bold text-slate-700 text-xs md:text-sm">Challenges Encountered (One per line)</Label>
-                  <Textarea 
-                    {...form.register('challenges')} 
-                    className="min-h-[120px] rounded-xl font-mono text-xs md:text-sm" 
-                    placeholder="e.g. Delay in shift replacement&#10;Adverse weather conditions"
-                  />
-                </div>
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="font-bold text-slate-700 text-xs md:text-sm flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4 text-primary" />
-                    Recommendations (One per line)
-                  </Label>
-                  <Textarea 
-                    {...form.register('recommendations')} 
-                    className="min-h-[120px] rounded-xl font-mono text-xs md:text-sm" 
-                    placeholder="Suggest specific improvements for future deployments."
-                  />
-                </div>
-              </TabsContent>
-
-              {isAdmin && (
-                <TabsContent value="orderly" className="space-y-6 animate-in fade-in duration-300">
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-l-4 border-l-primary space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <h3 className="font-black text-slate-900 uppercase tracking-tight">Orderly Officer Command Narrative</h3>
-                    </div>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                      Use the executive rich text editor below to draft the strategic command summary. This section supports complex formatting including bolding, lists, and text color.
-                    </p>
-                    
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="font-bold text-slate-700 text-xs md:text-sm">Strategic Narrative Report</Label>
-                        <Controller
-                          name="orderlyOfficerReport"
-                          control={form.control}
-                          render={({ field }) => (
-                            <RichTextEditor 
-                              value={field.value} 
-                              onChange={field.onChange} 
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              )}
 
               <TabsContent value="preview" className="space-y-6 md:space-y-8 animate-in zoom-in-95 duration-500">
                 {previewContent ? (
                   <div className="space-y-6">
-                    <div className="bg-slate-50 p-6 md:p-12 rounded-2xl font-report text-[13px] md:text-[15px] border border-slate-200 shadow-inner leading-relaxed text-slate-800 overflow-x-auto min-h-[400px]">
+                    <div className="bg-white p-6 md:p-12 rounded-2xl font-report text-[13px] md:text-[15px] border border-slate-200 shadow-xl leading-relaxed text-slate-800 overflow-x-auto min-h-[400px]">
                       <div dangerouslySetInnerHTML={{ __html: previewContent }} className="prose prose-slate max-w-none" />
                     </div>
                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-                      <Button variant="outline" className="rounded-xl h-12 px-6 font-bold text-xs md:text-sm w-full sm:w-auto" onClick={() => {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = previewContent;
-                        navigator.clipboard.writeText(tempDiv.innerText);
-                        toast({ title: "Copied", description: "Report text copied to clipboard." });
-                      }}>
-                        Copy Text Only
-                      </Button>
-                      <Button className="rounded-xl h-12 px-10 font-bold text-xs md:text-sm w-full sm:w-auto shadow-xl shadow-primary/20" onClick={handleFinalize} disabled={isLoading}>
+                      <Button className="rounded-xl h-12 px-10 font-bold text-xs md:text-sm w-full sm:w-auto shadow-xl shadow-primary/20 bg-slate-900 hover:bg-slate-800" onClick={() => setShowConfirmDialog(true)} disabled={isLoading}>
                         {isLoading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                        Finalize & Archive
+                        Archive Registry Record
                       </Button>
                     </div>
                   </div>
@@ -570,7 +509,7 @@ export default function NewDailyReport() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black">Archive SITUATION REPORT?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed">
-              By confirming, you authorize this transcript for the official registry. This document will be accessible to Command oversight and archived permanently.
+              By confirming, you authorize this transcript for the official registry. This document and its media attachments will be archived permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-3 mt-4">

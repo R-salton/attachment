@@ -15,6 +15,11 @@
         "reportingCommanderName": { "type": "string" },
         "reportingCommanderTitle": { "type": "string" },
         "fullText": { "type": "string" },
+        "images": { 
+          "type": "array", 
+          "items": { "type": "string" }, 
+          "description": "Up to 4 images stored as base64 data URIs."
+        },
         "status": { "type": "string", "enum": ["DRAFT", "SUBMITTED"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
