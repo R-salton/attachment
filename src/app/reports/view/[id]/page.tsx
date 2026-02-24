@@ -42,6 +42,40 @@ import { exportReportToDocx } from '@/lib/export-docx';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 
+/**
+ * Compresses an image to stay under Firestore document limits.
+ */
+const compressImage = (base64Str: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+  });
+};
+
 export default function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
@@ -57,6 +91,7 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
   const [editableImages, setEditableImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const hasInitialized = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reportRef = useMemoFirebase(() => {
@@ -66,12 +101,14 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
 
   const { data: report, isLoading } = useDoc(reportRef);
 
+  // Initialize form state once when report loads
   useEffect(() => {
-    if (report) {
+    if (report && !hasInitialized.current) {
       setEditableText(report.fullText || "");
       setEditableDate(report.reportDate || "");
       setEditableUnit(report.unit || "");
       setEditableImages(report.images || []);
+      hasInitialized.current = true;
     }
   }, [report]);
 
@@ -121,14 +158,17 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       const newImages = await Promise.all(
         files.map(file => new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
+          reader.onload = async () => {
+            const compressed = await compressImage(reader.result as string);
+            resolve(compressed);
+          };
           reader.onerror = reject;
           reader.readAsDataURL(file);
         }))
       );
       
       setEditableImages(prev => [...prev, ...newImages]);
-      toast({ title: "Images Added", description: `${files.length} evidence photos staged for commit.` });
+      toast({ title: "Images Added", description: `${files.length} evidence photos optimized for archive.` });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to process selected images." });
     } finally {
@@ -159,9 +199,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
       });
       
       setIsEditing(false);
+      // Reset initialization to allow sync from fresh data if needed after edit
+      hasInitialized.current = false;
       toast({ title: "Update Successful", description: "Operational log has been modified." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes." });
+      console.error("Save error:", e);
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes. Ensure images aren't too large." });
     } finally {
       setIsSaving(false);
     }
