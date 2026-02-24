@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface ReportData {
@@ -9,6 +9,7 @@ interface ReportData {
   unit: string;
   fullText: string;
   reportingCommanderName: string;
+  images?: string[];
 }
 
 /**
@@ -82,6 +83,50 @@ export async function exportReportToDocx(report: ReportData) {
   const lines = processedText.split('\n').filter(l => l.trim().length > 0);
   
   const children = lines.map(line => processLine(line));
+
+  // Add images to the document if they exist
+  if (report.images && report.images.length > 0) {
+    children.push(new Paragraph({
+      children: [
+        new TextRun({
+          text: "ATTACHED MEDIA EVIDENCE",
+          bold: true,
+          color: "000000",
+          size: 26,
+          font: "Arial",
+          break: 2
+        }),
+      ],
+      spacing: { before: 400, after: 200 },
+    }));
+
+    for (const imgUri of report.images) {
+      try {
+        // Extract base64 content
+        const base64Data = imgUri.split(',')[1];
+        if (!base64Data) continue;
+        
+        // Convert to Uint8Array for docx library
+        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        
+        children.push(new Paragraph({
+          children: [
+            new ImageRun({
+              data: binaryData,
+              transformation: {
+                width: 450, // Standard width for A4
+                height: 300,
+              },
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 240, after: 240 },
+        }));
+      } catch (e) {
+        console.warn("Failed to embed image in DOCX:", e);
+      }
+    }
+  }
 
   const doc = new Document({
     sections: [

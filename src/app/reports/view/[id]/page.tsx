@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useEffect, useState } from 'react';
@@ -94,10 +93,12 @@ export default function ReportDetail({ params }: { params: Promise<{ id: string 
         reportDate: report.reportDate,
         unit: report.unit,
         fullText: report.fullText,
-        reportingCommanderName: report.reportingCommanderName
+        reportingCommanderName: report.reportingCommanderName,
+        images: report.images
       });
-      toast({ title: "Export Complete", description: "Word document has been generated." });
+      toast({ title: "Export Complete", description: "Word document has been generated with media evidence." });
     } catch (e) {
+      console.error(e);
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
     } finally {
       setIsExporting(false);
