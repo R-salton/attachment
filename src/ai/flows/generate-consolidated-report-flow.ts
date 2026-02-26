@@ -16,12 +16,12 @@ const GenerateConsolidatedReportInputSchema = z.object({
 export type GenerateConsolidatedReportInput = z.infer<typeof GenerateConsolidatedReportInputSchema>;
 
 const GenerateConsolidatedReportOutputSchema = z.object({
-  executiveSummary: z.string().describe('A high-level narrative overview of progress and operational status for the period.'),
+  executiveSummary: z.string().describe('A deep, narrative-driven executive overview of progress and operational status.'),
   keyAchievements: z.array(z.string()).describe('Specific major milestones, duties completed, or operational successes.'),
   operationalTrends: z.array(z.string()).describe('Observed patterns in performance, security stability, or personnel discipline.'),
   criticalChallenges: z.array(z.string()).describe('Significant or persistent obstacles that impacted operations or morale.'),
-  strategicRecommendations: z.array(z.string()).describe('Actionable guidance for optimizing performance in the subsequent phase.'),
-  incidentTimeline: z.array(IncidentEventSchema).describe('A day-by-day detailed breakdown of incidents and actions taken.'),
+  strategicRecommendations: z.array(z.string()).describe('Actionable, high-level guidance for optimizing performance in the subsequent phase.'),
+  incidentTimeline: z.array(IncidentEventSchema).describe('A day-by-day detailed breakdown specifically mapping incidents to actions taken.'),
 });
 
 export type GenerateConsolidatedReportOutput = z.infer<typeof GenerateConsolidatedReportOutputSchema>;
@@ -34,9 +34,9 @@ const consolidatedPrompt = ai.definePrompt({
   name: 'generateConsolidatedReportPrompt',
   input: { schema: GenerateConsolidatedReportInputSchema },
   output: { schema: GenerateConsolidatedReportOutputSchema },
-  prompt: `You are an AI Operational Strategic Analyst for a Command Registry. You have been provided with SITUATION REPORTS (SITREPs) spanning Day 1 to Day {{{targetDay}}}.
+  prompt: `You are an AI Operational Strategic Analyst for a Command Registry. You are synthesizing multiple SITUATION REPORTS (SITREPs) into a CUMULATIVE PROGRESS BRIEFING.
 
-Analyze the following transcripts carefully:
+Analyze the following transcripts meticulously:
 
 {{#each reports}}
 --- REPORT START ---
@@ -44,16 +44,16 @@ Analyze the following transcripts carefully:
 --- REPORT END ---
 {{/each}}
 
-Your task is to synthesize this data into a detailed CUMULATIVE PROGRESS BRIEFING.
+Your task is to provide a much more detailed synthesis than a standard summary.
 
-1. **Executive Summary**: Narrate the overall trajectory and maturity of the attachment up to Day {{{targetDay}}}.
-2. **Key Achievements**: List significant duties performed and operational goals successfully met.
-3. **Operational Trends**: Identify evolving patterns in performance, security stability, and cadet discipline.
-4. **Critical Challenges**: Highlight persistent or structural issues.
-5. **Strategic Recommendations**: Provide actionable guidance for future optimization.
-6. **Detailed Incident Timeline**: Create a day-by-day breakdown. For each report (which represents a day), extract the incidents logged and the actions taken. Ensure the 'dayLabel' clearly identifies which chronological day or date the events belong to.
+1. **Executive Summary**: Provide a high-fidelity narrative of the overall operational trajectory.
+2. **Key Achievements**: List significant duties and milestones met.
+3. **Operational Trends**: Identify patterns in security, stability, and discipline.
+4. **Critical Challenges**: Highlight persistent structural or situational obstacles.
+5. **Strategic Recommendations**: Provide actionable guidance for Command.
+6. **Detailed Incident Timeline**: For every single report provided, create an entry in the timeline. Extract the incidents logged AND the specific actions taken in response. Ensure the 'dayLabel' identifies the date or chronological day.
 
-Ensure the tone is authoritative, formal, and suitable for high-level Command oversight. Strip any HTML tags from your analysis, providing clean, professional text.`,
+Ensure the tone is authoritative and professional. Strip all HTML tags, providing only clean, strategic text.`,
 });
 
 const generateConsolidatedReportFlow = ai.defineFlow(
@@ -64,7 +64,7 @@ const generateConsolidatedReportFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await consolidatedPrompt(input);
-    if (!output) throw new Error("AI failed to generate synthesis.");
+    if (!output) throw new Error("AI failed to generate detailed synthesis.");
     return output;
   }
 );
