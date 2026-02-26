@@ -26,6 +26,9 @@ const GenerateConsolidatedReportOutputSchema = z.object({
 
 export type GenerateConsolidatedReportOutput = z.infer<typeof GenerateConsolidatedReportOutputSchema>;
 
+/**
+ * Consolidates multiple operational reports into a strategic briefing.
+ */
 export async function generateConsolidatedReport(input: GenerateConsolidatedReportInput): Promise<GenerateConsolidatedReportOutput> {
   return generateConsolidatedReportFlow(input);
 }
@@ -44,16 +47,16 @@ Analyze the following transcripts meticulously:
 --- REPORT END ---
 {{/each}}
 
-Your task is to provide a much more detailed synthesis than a standard summary.
+Your task is to provide a much more detailed synthesis than a standard summary. 
 
-1. **Executive Summary**: Provide a high-fidelity narrative of the overall operational trajectory.
+1. **Executive Summary**: Provide a high-fidelity narrative of the overall operational trajectory. Do not just summarize; analyze progress.
 2. **Key Achievements**: List significant duties and milestones met.
 3. **Operational Trends**: Identify patterns in security, stability, and discipline.
 4. **Critical Challenges**: Highlight persistent structural or situational obstacles.
-5. **Strategic Recommendations**: Provide actionable guidance for Command.
-6. **Detailed Incident Timeline**: For every single report provided, create an entry in the timeline. Extract the incidents logged AND the specific actions taken in response. Ensure the 'dayLabel' identifies the date or chronological day.
+5. **Strategic Recommendations**: Provide actionable, professional guidance for Command.
+6. **Detailed Incident Timeline**: For every single report provided, create an entry in the timeline. Extract the incidents logged AND the specific actions taken in response. Ensure the 'dayLabel' identifies the date or chronological day clearly.
 
-Ensure the tone is authoritative and professional. Strip all HTML tags, providing only clean, strategic text.`,
+Ensure the tone is authoritative, professional, and tactical. Strip all HTML tags from your analysis, providing only clean, strategic text. Your response MUST strictly follow the JSON schema provided.`,
 });
 
 const generateConsolidatedReportFlow = ai.defineFlow(
@@ -63,8 +66,18 @@ const generateConsolidatedReportFlow = ai.defineFlow(
     outputSchema: GenerateConsolidatedReportOutputSchema,
   },
   async (input) => {
-    const { output } = await consolidatedPrompt(input);
-    if (!output) throw new Error("AI failed to generate detailed synthesis.");
-    return output;
+    // Basic validation to prevent empty input crashes
+    if (!input.reports || input.reports.length === 0) {
+      throw new Error("No reports provided for synthesis.");
+    }
+
+    try {
+      const { output } = await consolidatedPrompt(input);
+      if (!output) throw new Error("AI failed to generate a valid synthesis object.");
+      return output;
+    } catch (error: any) {
+      console.error("AI Synthesis Error:", error);
+      throw new Error(`Strategic analysis failed: ${error.message}`);
+    }
   }
 );

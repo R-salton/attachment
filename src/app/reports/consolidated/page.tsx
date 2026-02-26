@@ -69,7 +69,7 @@ export default function ConsolidatedReportPage() {
         id: doc.id 
       }) as any);
 
-      // Sequence reports by unique dates
+      // Unique date sequence to determine "Days"
       const dateSequence: string[] = [];
       allReports.forEach(r => {
         if (r.reportDate && !dateSequence.includes(r.reportDate)) {
@@ -77,23 +77,25 @@ export default function ConsolidatedReportPage() {
         }
       });
 
-      const effectiveTargetDay = all ? dateSequence.length : targetDay;
+      const effectiveTargetDay = all ? dateSequence.length : Math.min(targetDay, dateSequence.length);
       const targetDates = dateSequence.slice(0, effectiveTargetDay);
 
       if (targetDates.length === 0) {
         toast({ 
           variant: "destructive", 
           title: "Timeline Error", 
-          description: `Could not identify any reporting days in the registry timeline.` 
+          description: `No records found within the requested period.` 
         });
         setIsGenerating(false);
         return;
       }
 
       const filteredReports = allReports.filter(r => targetDates.includes(r.reportDate));
+      
+      // Extract clean text for the AI to process (stripping potential heavy tags if needed)
       const reportTexts = filteredReports.map(r => r.fullText).filter(Boolean);
       
-      // Collect all images from the selected reports
+      // Harvest all media evidence from the constituent reports
       const images: string[] = [];
       filteredReports.forEach(r => {
         if (r.images && Array.isArray(r.images)) {
@@ -106,12 +108,13 @@ export default function ConsolidatedReportPage() {
         toast({ 
           variant: "destructive", 
           title: "Range Empty", 
-          description: `No report content found for the selected reporting period.` 
+          description: `No textual content found for the selected reporting period.` 
         });
         setIsGenerating(false);
         return;
       }
 
+      // Invoke the Gemini AI Strategic Synthesis
       const consolidationResult = await generateConsolidatedReport({
         targetDay: targetDates.length,
         reports: reportTexts
@@ -121,12 +124,12 @@ export default function ConsolidatedReportPage() {
       if (all) setTargetDay(dateSequence.length);
       
       toast({ title: "Detailed Analysis Complete", description: `Successfully synthesized data for ${targetDates.length} operational days.` });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Consolidation Error:", error);
       toast({ 
         variant: "destructive", 
-        title: "Consolidation Failed", 
-        description: "Gemini AI could not aggregate registry data. Please try again." 
+        title: "Synthesis Error", 
+        description: error.message || "Gemini AI could not aggregate registry data. Try reducing the span." 
       });
     } finally {
       setIsGenerating(false);
@@ -136,32 +139,32 @@ export default function ConsolidatedReportPage() {
   const handleExport = async () => {
     if (!result) return;
     
-    let fullText = `### EXECUTIVE SUMMARY\n${result.executiveSummary}\n\n`;
+    let fullText = `### EXECUTIVE STRATEGIC BRIEFING\n${result.executiveSummary}\n\n`;
     
     fullText += `### TACTICAL TIMELINE (INCIDENTS & ACTIONS)\n`;
     result.incidentTimeline.forEach(day => {
-      fullText += `*${day.dayLabel}*\n`;
+      fullText += `*${day.dayLabel.toUpperCase()}*\n`;
       day.events.forEach(event => {
-        fullText += `. ${event}\n`;
+        fullText += `• ${event}\n`;
       });
       fullText += `\n`;
     });
 
-    fullText += `### KEY ACHIEVEMENTS\n${result.keyAchievements.map(a => `. ${a}`).join('\n')}\n\n`;
-    fullText += `### OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `. ${t}`).join('\n')}\n\n`;
-    fullText += `### CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `. ${c}`).join('\n')}\n\n`;
-    fullText += `### STRATEGIC RECOMMENDATIONS\n${result.strategicRecommendations.map(r => `. ${r}`).join('\n')}`;
+    fullText += `### KEY ACHIEVEMENTS\n${result.keyAchievements.map(a => `• ${a}`).join('\n')}\n\n`;
+    fullText += `### OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `• ${t}`).join('\n')}\n\n`;
+    fullText += `### CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `• ${c}`).join('\n')}\n\n`;
+    fullText += `### STRATEGIC RECOMMENDATIONS\n${result.strategicRecommendations.map(r => `• ${r}`).join('\n')}`;
 
     try {
       await exportReportToDocx({
-        reportTitle: `DETAILED CUMULATIVE PROGRESS BRIEFING (PERIOD DAY 1 - ${targetDay})`,
+        reportTitle: `STRATEGIC CUMULATIVE BRIEFING (DAY 1 - ${targetDay})`,
         reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-        unit: 'OVERALL ATTACHMENT',
+        unit: 'COMMAND REGISTRY CONSOLIDATION',
         fullText: fullText,
-        reportingCommanderName: 'Gemini AI Strategic Analyst',
+        reportingCommanderName: 'Gemini AI Operational Analyst',
         images: consolidatedImages
       });
-      toast({ title: "Export Success", description: "Consolidated Briefing downloaded as DOCX." });
+      toast({ title: "Export Success", description: "Strategic Briefing downloaded as DOCX." });
     } catch (e) {
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate Word document." });
     }
@@ -210,7 +213,7 @@ export default function ConsolidatedReportPage() {
               <Zap className="h-6 w-6 text-primary" />
               Detailed Operational Synthesis
             </CardTitle>
-            <CardDescription className="text-slate-400 font-medium">Generate a comprehensive tactical overview. Choose to synthesize a specific span or the entire available registry.</CardDescription>
+            <CardDescription className="text-slate-400 font-medium">Choose a specific operational span or synthesize the entire registry into a high-fidelity tactical briefing.</CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-8">
             <div className="flex flex-col md:flex-row items-end gap-6">
@@ -241,7 +244,7 @@ export default function ConsolidatedReportPage() {
                   className="h-12 px-8 rounded-xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Layers className="mr-2 h-5 w-5 text-blue-600" />}
-                  CONSOLIDATE ALL RECORDS
+                  CONSOLIDATE ENTIRE REGISTRY
                 </Button>
               </div>
             </div>
@@ -250,8 +253,8 @@ export default function ConsolidatedReportPage() {
               <div className="py-24 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500">
                 <Loader2 className="h-20 w-20 animate-spin text-blue-600" />
                 <div className="text-center space-y-2">
-                  <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">AI Deep Analysis in Progress</p>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Aggregating situational logs and operational evidence...</p>
+                  <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">AI Strategic Analysis in Progress</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Aggregating tactical SITREPs and operational media...</p>
                 </div>
               </div>
             )}
@@ -260,15 +263,15 @@ export default function ConsolidatedReportPage() {
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-8">
                   <div className="space-y-2">
-                    <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Strategic Detailed Briefing</h3>
+                    <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Executive Briefing</h3>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-slate-900 text-white border-none font-black text-[10px] uppercase px-3 py-1">Registry Period: Day 1 to {targetDay}</Badge>
-                      <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold text-[10px] uppercase px-3 py-1">AI Analyst Powered</Badge>
+                      <Badge className="bg-blue-600 text-white border-none font-black text-[10px] uppercase px-3 py-1">Timeline: Day 1 to {targetDay}</Badge>
+                      <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold text-[10px] uppercase px-3 py-1">Source: Operational Registry</Badge>
                     </div>
                   </div>
                   <Button onClick={handleExport} className="rounded-xl h-12 px-8 font-black bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20">
                     <FileDown className="h-5 w-5 mr-2" />
-                    DOWNLOAD DETAILED DOCX
+                    DOWNLOAD STRATEGIC DOCX
                   </Button>
                 </div>
 
@@ -278,7 +281,7 @@ export default function ConsolidatedReportPage() {
                         <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
                           <Zap className="h-48 w-48 text-blue-600" />
                         </div>
-                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.4em] mb-6">Executive Strategic Narrative</h4>
+                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.4em] mb-6">Strategic Tactical Narrative</h4>
                         <div className="prose prose-slate prose-lg max-w-none text-slate-800 leading-relaxed font-bold">
                           {result.executiveSummary}
                         </div>
@@ -287,7 +290,7 @@ export default function ConsolidatedReportPage() {
                       <section className="space-y-6">
                         <div className="flex items-center gap-3 px-2">
                           <Clock className="h-5 w-5 text-blue-600" />
-                          <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">Tactical Timeline: Incidents & Actions</h4>
+                          <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">Tactical Chronology: Incidents & Actions</h4>
                         </div>
                         <div className="space-y-4">
                           {result.incidentTimeline.map((day, idx) => (
@@ -317,18 +320,21 @@ export default function ConsolidatedReportPage() {
                         <section className="space-y-6 pt-6 border-t border-slate-100">
                           <div className="flex items-center gap-3 px-2">
                             <ImageIcon className="h-5 w-5 text-blue-600" />
-                            <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">Consolidated Media Evidence</h4>
+                            <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">Consolidated Operational Media</h4>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {consolidatedImages.slice(0, 12).map((img, idx) => (
+                            {consolidatedImages.slice(0, 16).map((img, idx) => (
                               <div key={idx} className="aspect-video rounded-2xl overflow-hidden border border-slate-100 shadow-md group relative">
                                 <img src={img} alt="Evidence" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <span className="text-[8px] font-black text-white uppercase tracking-widest border border-white/40 px-2 py-1 rounded">Registry Exhibit</span>
+                                  <span className="text-[8px] font-black text-white uppercase tracking-widest border border-white/40 px-2 py-1 rounded">Archive Exhibit</span>
                                 </div>
                               </div>
                             ))}
                           </div>
+                          {consolidatedImages.length > 16 && (
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">Plus {consolidatedImages.length - 16} additional evidence photos archived in briefing document.</p>
+                          )}
                         </section>
                       )}
                    </div>
@@ -345,7 +351,7 @@ export default function ConsolidatedReportPage() {
                           <ul className="space-y-4">
                             {result.keyAchievements.map((item, idx) => (
                               <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
-                                . {item}
+                                • {item}
                               </li>
                             ))}
                           </ul>
@@ -356,14 +362,14 @@ export default function ConsolidatedReportPage() {
                         <CardHeader className="border-b border-blue-100 p-6">
                           <CardTitle className="text-blue-800 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                             <Activity className="h-4 w-4" />
-                            Performance Trends
+                            Operational Trends
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                           <ul className="space-y-4">
                             {result.operationalTrends.map((item, idx) => (
                               <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
-                                . {item}
+                                • {item}
                               </li>
                             ))}
                           </ul>
@@ -374,14 +380,14 @@ export default function ConsolidatedReportPage() {
                         <CardHeader className="border-b border-red-100 p-6">
                           <CardTitle className="text-red-800 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            Critical Barriers
+                            Registry Challenges
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                           <ul className="space-y-4">
                             {result.criticalChallenges.map((item, idx) => (
                               <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
-                                . {item}
+                                • {item}
                               </li>
                             ))}
                           </ul>
@@ -392,14 +398,14 @@ export default function ConsolidatedReportPage() {
                         <CardHeader className="border-b border-amber-100 p-6">
                           <CardTitle className="text-amber-800 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                             <Lightbulb className="h-4 w-4" />
-                            Command Guidance
+                            Strategic Guidance
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                           <ul className="space-y-4">
                             {result.strategicRecommendations.map((item, idx) => (
                               <li key={idx} className="text-[13px] font-bold text-slate-700 leading-tight">
-                                . {item}
+                                • {item}
                               </li>
                             ))}
                           </ul>
@@ -412,13 +418,13 @@ export default function ConsolidatedReportPage() {
                   <div className="space-y-3 text-center lg:text-left">
                     <div className="flex items-center justify-center lg:justify-start gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
-                      <h4 className="text-2xl font-black uppercase tracking-tight">Finalize Detailed Synthesis</h4>
+                      <h4 className="text-2xl font-black uppercase tracking-tight">Finalize Command Briefing</h4>
                     </div>
-                    <p className="text-slate-400 font-bold max-w-xl leading-relaxed">The resulting brief includes deep AI insights, incident-to-action tracking, and consolidated media evidence from the entire selected period.</p>
+                    <p className="text-slate-400 font-bold max-w-xl leading-relaxed">The resulting brief includes deep strategic insights and all harvested media evidence from the constituent situational reports.</p>
                   </div>
                   <Button onClick={handleExport} size="lg" className="h-16 px-12 rounded-2xl font-black bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-600/40 text-lg">
                     <Download className="mr-3 h-6 w-6" />
-                    DOWNLOAD DETAILED DOCX
+                    DOWNLOAD STRATEGIC DOCX
                   </Button>
                 </div>
               </div>
