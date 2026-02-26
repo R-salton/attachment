@@ -19,7 +19,9 @@ import {
   Search,
   CheckCircle2,
   TrendingUp,
-  ArrowUpRight
+  ArrowUpRight,
+  Eye,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -53,7 +55,8 @@ export default function MagazineManagementPortal() {
 
   const { data: articles, isLoading: isArticlesLoading } = useCollection(articlesQuery);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!db) return;
     try {
       await deleteDoc(doc(db, 'articles', id));
@@ -196,31 +199,46 @@ export default function MagazineManagementPortal() {
               <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10">
+            <div className="space-y-4">
               {filteredArticles.map((article) => (
-                <Card key={article.id} className="group border-none shadow-xl md:shadow-2xl rounded-[2.5rem] overflow-hidden bg-white hover:-translate-y-2 transition-all duration-500 flex flex-col h-full">
-                  <div className="h-2 w-full bg-slate-900 group-hover:bg-primary transition-colors" />
-                  <CardContent className="p-8 md:p-10 space-y-6 flex flex-col h-full">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex items-center gap-4 overflow-hidden">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner shrink-0 group-hover:shadow-lg transition-all duration-500">
-                          {article.imageUrl ? (
-                            <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                          ) : (
-                            <User className="h-6 w-6 md:h-8 md:w-8 text-slate-300" />
-                          )}
+                <div 
+                  key={article.id} 
+                  onClick={() => router.push(`/magazine/view/${article.id}`)}
+                  className="group flex flex-col md:flex-row items-center gap-6 p-4 bg-white border border-slate-100 rounded-3xl hover:shadow-2xl hover:border-primary/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                >
+                  <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
+                  
+                  {/* Left Side: Avatar */}
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500">
+                    {article.imageUrl ? (
+                      <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="h-10 w-10 text-slate-200" />
+                    )}
+                  </div>
+
+                  {/* Right Side: Content */}
+                  <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">{article.cadetName}</h4>
+                        <Badge className="bg-slate-900 text-white text-[8px] font-black px-2 py-0.5 uppercase tracking-widest border-none shrink-0">{article.company} CO</Badge>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <Layers className="h-3 w-3" /> PLT {article.platoon}
                         </div>
-                        <div className="flex flex-col overflow-hidden">
-                          <h4 className="font-black text-slate-900 uppercase tracking-tight leading-none mb-1.5 text-base md:text-lg truncate">{article.cadetName}</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 uppercase tracking-widest">{article.company} CO</Badge>
-                            <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 uppercase tracking-widest">PLT {article.platoon}</Badge>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <Calendar className="h-3 w-3" /> {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Processing...'}
                         </div>
                       </div>
+                      <p className="text-sm font-medium text-slate-500 line-clamp-1 italic max-w-2xl">"{article.content}"</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 self-end md:self-auto" onClick={e => e.stopPropagation()}>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
+                          <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
                             <Trash2 className="h-5 w-5" />
                           </Button>
                         </AlertDialogTrigger>
@@ -236,32 +254,19 @@ export default function MagazineManagementPortal() {
                           </AlertDialogHeader>
                           <AlertDialogFooter className="mt-10 gap-4">
                             <AlertDialogCancel className="rounded-2xl h-14 font-black border-none bg-slate-50 text-slate-600 px-8">Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(article.id)} className="bg-red-500 text-white rounded-2xl h-14 font-black shadow-2xl shadow-red-500/30 px-10 border-none hover:bg-red-600">
+                            <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-2xl h-14 font-black shadow-2xl shadow-red-500/30 px-10 border-none hover:bg-red-600">
                               Confirm Purge
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </div>
-
-                    <div className="bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 relative min-h-[180px] md:min-h-[220px] flex-1">
-                      <p className="text-[13px] md:text-[15px] font-medium text-slate-600 leading-relaxed line-clamp-[8] italic">"{article.content}"</p>
-                      <div className="absolute bottom-4 right-6 p-4 opacity-5 pointer-events-none">
-                        <CheckCircle2 className="h-12 w-12 md:h-16 md:w-16 text-slate-900" />
+                      
+                      <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                        <ChevronRight className="h-5 w-5" />
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-slate-300" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          Filed: {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Archiving...'}
-                        </span>
-                      </div>
-                      <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Verified Contrib</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
