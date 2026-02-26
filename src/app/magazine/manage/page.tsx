@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -18,7 +17,9 @@ import {
   Layers,
   ShieldCheck,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  TrendingUp,
+  ArrowUpRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -90,7 +91,10 @@ export default function MagazineManagementPortal() {
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Synchronizing Command...</p>
+        </div>
       </div>
     );
   }
@@ -98,68 +102,85 @@ export default function MagazineManagementPortal() {
   if (!isMasterAdmin) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <Layers className="h-20 w-20 text-slate-200 mb-6" />
-        <h2 className="text-3xl font-black uppercase tracking-tighter">Access Unauthorized</h2>
-        <p className="text-slate-500 font-bold mt-2">Only Master Command personnel may access the magazine registry.</p>
-        <Button onClick={() => router.push('/')} className="mt-8 rounded-2xl h-14 px-12 font-black">Return Home</Button>
+        <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 max-w-lg">
+          <Layers className="h-20 w-20 text-slate-200 mb-6 mx-auto" />
+          <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Access Unauthorized</h2>
+          <p className="text-slate-500 font-bold mt-2">Only Master Command personnel may access the magazine registry terminal.</p>
+          <Button onClick={() => router.push('/')} className="mt-10 rounded-2xl h-14 px-12 font-black w-full shadow-xl">Return to Dashboard</Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex-1 bg-[#f8fafc] pb-32">
-      <header className="border-b bg-white px-4 md:px-12 py-6 md:py-8 flex flex-col md:flex-row items-start md:items-center justify-between sticky top-0 z-50 shadow-sm gap-4 md:gap-0">
-        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 shadow-sm hover:bg-white transition-all shrink-0">
-            <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
+      <header className="border-b bg-white/95 backdrop-blur-md px-4 md:px-12 py-6 md:py-10 flex flex-col md:flex-row items-start md:items-center justify-between sticky top-0 z-50 shadow-sm gap-6 md:gap-0">
+        <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 md:h-16 md:w-16 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm hover:bg-white transition-all shrink-0">
+            <ArrowLeft className="h-6 w-6 md:h-7 md:w-7" />
           </Button>
           <div className="flex flex-col overflow-hidden">
-            <div className="flex items-center gap-2 mb-0.5 md:mb-1">
-              <ShieldCheck className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
-              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-blue-600 truncate">Master Registry</span>
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-primary truncate">Master Command Terminal</span>
             </div>
-            <h1 className="text-xl md:text-4xl font-black tracking-tighter text-slate-900 leading-none uppercase truncate">Magazine Portal</h1>
+            <h1 className="text-2xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase truncate">Magazine Registry</h1>
           </div>
         </div>
         <Button 
           onClick={handleExport} 
           disabled={isExporting || stats.total === 0} 
-          className="w-full md:w-auto rounded-xl md:rounded-2xl h-12 md:h-14 px-6 md:px-8 font-black shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-sm md:text-base"
+          className="w-full md:w-auto rounded-2xl h-14 md:h-16 px-8 md:px-10 font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-sm md:text-lg transition-all active:scale-95"
         >
-          {isExporting ? <Loader2 className="animate-spin mr-2 h-4 w-4 md:h-6 md:w-6" /> : <FileDown className="mr-2 h-4 w-4 md:h-6 md:w-6" />}
-          GENERATE DOCX
+          {isExporting ? <Loader2 className="animate-spin mr-3 h-5 w-5 md:h-6 md:w-6" /> : <FileDown className="mr-3 h-5 w-5 md:h-6 md:w-6" />}
+          GENERATE MAG DRAFT
         </Button>
       </header>
 
-      <main className="max-w-7xl mx-auto mt-6 md:mt-12 px-4 md:px-12 space-y-8 md:space-y-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-          <Card className="col-span-2 md:col-span-1 border-none shadow-xl rounded-[1.5rem] md:rounded-[2rem] bg-slate-900 text-white p-6 md:p-8 space-y-1 md:space-y-2">
-            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Total Articles</span>
-            <div className="text-3xl md:text-5xl font-black">{stats.total}</div>
-            <div className="pt-2 md:pt-4"><Badge className="bg-primary/20 text-primary border-none text-[8px] md:text-xs">Active Database</Badge></div>
+      <main className="max-w-7xl mx-auto mt-8 md:mt-16 px-4 md:px-12 space-y-10 md:space-y-16">
+        {/* Statistics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+          <Card className="border-none shadow-2xl rounded-[2rem] bg-slate-900 text-white p-8 md:p-10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <TrendingUp className="h-20 w-20" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Total Contributions</span>
+            <div className="text-5xl md:text-6xl font-black leading-none">{stats.total}</div>
+            <div className="mt-6 flex items-center gap-2">
+              <Badge className="bg-primary text-white border-none text-[9px] font-black px-3 py-1">ACTIVE DATABASE</Badge>
+            </div>
           </Card>
-          {['Alpha', 'Bravo', 'Charlie'].map(company => (
-            <Card key={company} className="border-none shadow-xl rounded-[1.5rem] md:rounded-[2rem] bg-white p-6 md:p-8 space-y-1 md:space-y-2">
-              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">{company} Company</span>
-              <div className="text-3xl md:text-5xl font-black text-slate-900">
-                {company === 'Alpha' ? stats.alpha : company === 'Bravo' ? stats.bravo : stats.charlie}
-              </div>
-              <div className="pt-2 md:pt-4 text-[8px] md:text-[10px] font-black uppercase text-slate-300">Submissions</div>
+          
+          {[
+            { name: 'Alpha', count: stats.alpha, color: 'bg-blue-600' },
+            { name: 'Bravo', count: stats.bravo, color: 'bg-emerald-600' },
+            { name: 'Charlie', count: stats.charlie, color: 'bg-amber-600' }
+          ].map(company => (
+            <Card key={company.name} className="border-none shadow-xl rounded-[2rem] bg-white p-8 md:p-10 relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
+              <div className={`absolute top-0 right-0 w-1.5 h-full ${company.color}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">{company.name} Company</span>
+              <div className="text-5xl md:text-6xl font-black text-slate-900 leading-none">{company.count}</div>
+              <p className="mt-6 text-[10px] font-black uppercase text-slate-300 tracking-tighter flex items-center gap-1">
+                Filed Submissions <ArrowUpRight className="h-3 w-3" />
+              </p>
             </Card>
           ))}
         </div>
 
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 px-2 md:px-4">
-            <div className="flex items-center gap-3 md:gap-4">
-              <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Contribution Registry</h2>
+        <div className="space-y-8">
+          {/* Filter Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-slate-900">Submission Archives</h2>
             </div>
-            <div className="relative w-full md:w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-slate-400" />
+            <div className="relative w-full md:w-[400px]">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input 
-                placeholder="Filter cadet or company..." 
-                className="pl-11 md:pl-12 h-12 md:h-14 rounded-xl md:rounded-2xl bg-white shadow-lg md:shadow-xl border-none font-bold text-sm"
+                placeholder="Filter by cadet name or company..." 
+                className="pl-14 h-14 md:h-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-white shadow-2xl border-none font-bold text-sm md:text-base focus:ring-primary transition-all"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -167,46 +188,55 @@ export default function MagazineManagementPortal() {
           </div>
 
           {isArticlesLoading ? (
-            <div className="py-24 md:py-32 flex flex-col items-center justify-center gap-4 md:gap-6">
-              <Loader2 className="h-12 w-12 md:h-16 md:w-16 animate-spin text-primary" />
-              <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Harvesting Articles...</span>
+            <div className="py-32 flex flex-col items-center justify-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                <Loader2 className="h-16 w-16 md:h-20 md:w-20 animate-spin text-primary relative z-10" />
+              </div>
+              <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10">
               {filteredArticles.map((article) => (
-                <Card key={article.id} className="group border-none shadow-xl md:shadow-2xl rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white hover:-translate-y-1 md:hover:-translate-y-2 transition-all duration-500">
-                  <div className="h-1.5 md:h-2 w-full bg-slate-900 group-hover:bg-primary transition-colors" />
-                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+                <Card key={article.id} className="group border-none shadow-xl md:shadow-2xl rounded-[2.5rem] overflow-hidden bg-white hover:-translate-y-2 transition-all duration-500 flex flex-col h-full">
+                  <div className="h-2 w-full bg-slate-900 group-hover:bg-primary transition-colors" />
+                  <CardContent className="p-8 md:p-10 space-y-6 flex flex-col h-full">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex items-center gap-4 overflow-hidden">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner shrink-0 group-hover:shadow-lg transition-all duration-500">
                           {article.imageUrl ? (
-                            <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
+                            <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                           ) : (
-                            <User className="h-5 w-5 md:h-6 md:w-6 text-slate-300" />
+                            <User className="h-6 w-6 md:h-8 md:w-8 text-slate-300" />
                           )}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                          <h4 className="font-black text-slate-900 uppercase tracking-tight leading-none mb-1 text-sm md:text-base truncate">{article.cadetName}</h4>
-                          <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{article.company} Co | Plat {article.platoon}</span>
+                          <h4 className="font-black text-slate-900 uppercase tracking-tight leading-none mb-1.5 text-base md:text-lg truncate">{article.cadetName}</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 uppercase tracking-widest">{article.company} CO</Badge>
+                            <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 uppercase tracking-widest">PLT {article.platoon}</Badge>
+                          </div>
                         </div>
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
-                            <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
+                          <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-[2rem] md:rounded-[2.5rem] border-none shadow-3xl p-6 md:p-10 max-w-[90vw] md:max-w-lg">
+                        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-3xl p-10 max-w-lg">
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="text-xl md:text-2xl font-black uppercase tracking-tighter">Expunge Article?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm md:text-base font-bold text-slate-500 mt-2">
-                              Permanent removal of contribution from the magazine draft registry.
+                            <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                              <Trash2 className="h-8 w-8 text-red-500" />
+                            </div>
+                            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter text-slate-900">Purge Contribution?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-base font-bold text-slate-500 mt-2">
+                              This will permanently expunge OC {article.cadetName}'s article from the magazine draft registry. This action is final.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
-                          <AlertDialogFooter className="mt-6 md:mt-8 gap-3 md:gap-4">
-                            <AlertDialogCancel className="rounded-xl md:rounded-2xl h-12 md:h-14 font-black border-none bg-slate-50 text-sm">Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(article.id)} className="bg-red-500 text-white rounded-xl md:rounded-2xl h-12 md:h-14 font-black shadow-xl shadow-red-500/20 text-sm">
+                          <AlertDialogFooter className="mt-10 gap-4">
+                            <AlertDialogCancel className="rounded-2xl h-14 font-black border-none bg-slate-50 text-slate-600 px-8">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(article.id)} className="bg-red-500 text-white rounded-2xl h-14 font-black shadow-2xl shadow-red-500/30 px-10 border-none hover:bg-red-600">
                               Confirm Purge
                             </AlertDialogAction>
                           </AlertDialogFooter>
@@ -214,34 +244,34 @@ export default function MagazineManagementPortal() {
                       </AlertDialog>
                     </div>
 
-                    <div className="bg-slate-50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-100 relative min-h-[120px] md:min-h-[160px]">
-                      <p className="text-[11px] md:text-xs font-medium text-slate-600 leading-relaxed line-clamp-5 md:line-clamp-6 italic">"{article.content}"</p>
-                      <div className="absolute bottom-0 right-0 p-3 md:p-4 opacity-[0.03] md:opacity-5 pointer-events-none">
-                        <CheckCircle2 className="h-8 w-8 md:h-12 md:w-12 text-slate-900" />
+                    <div className="bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 relative min-h-[180px] md:min-h-[220px] flex-1">
+                      <p className="text-[13px] md:text-[15px] font-medium text-slate-600 leading-relaxed line-clamp-[8] italic">"{article.content}"</p>
+                      <div className="absolute bottom-4 right-6 p-4 opacity-5 pointer-events-none">
+                        <CheckCircle2 className="h-12 w-12 md:h-16 md:w-16 text-slate-900" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-slate-50">
-                      <div className="flex items-center gap-1.5 md:gap-2">
-                        <Calendar className="h-3 w-3 md:h-3.5 md:w-3.5 text-slate-300" />
-                        <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-slate-300" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                           Filed: {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Archiving...'}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-[7px] md:text-[8px] font-black uppercase px-1.5 md:px-2 py-0 border-slate-200 text-slate-400">PLATOON {article.platoon}</Badge>
+                      <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Verified Contrib</span>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="text-center py-24 md:py-48 bg-white rounded-[2rem] md:rounded-[4rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 md:gap-8 px-6 md:px-10 shadow-sm">
-              <div className="h-16 w-16 md:h-24 md:w-24 bg-slate-50 rounded-2xl md:rounded-[2.5rem] flex items-center justify-center">
-                <BookOpen className="h-8 w-8 md:h-12 md:w-12 text-slate-200" />
+            <div className="text-center py-32 md:py-56 bg-white rounded-[3rem] md:rounded-[5rem] border border-dashed border-slate-200 flex flex-col items-center gap-8 px-10 shadow-sm">
+              <div className="h-20 w-20 md:h-28 md:w-28 bg-slate-50 rounded-[2rem] md:rounded-[3rem] flex items-center justify-center shadow-inner">
+                <BookOpen className="h-10 w-10 md:h-14 md:w-14 text-slate-200" />
               </div>
-              <div className="space-y-1 md:space-y-2">
-                <h3 className="text-xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase">Article Registry Empty</h3>
-                <p className="text-[10px] md:text-sm text-slate-400 font-bold uppercase tracking-wide">No literary contributions have been harvested yet.</p>
+              <div className="space-y-3">
+                <h3 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
+                <p className="text-[10px] md:text-sm text-slate-400 font-bold uppercase tracking-[0.3em] max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
               </div>
             </div>
           )}
