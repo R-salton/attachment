@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -45,21 +46,16 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
-      // GLOBAL REGISTRY ACCESS
-      // Admins, Commanders, and Leaders can view the entire archive
       allow read, list: if isLeader();
-      
-      // RESTRICTED ACCESS
-      // Trainees can only see their own filings
       allow read, list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      
-      // FILING PROTOCOL
       allow create: if isSignedIn();
-      
-      // OWNERSHIP PROTOCOL
-      // Users can only update/delete if they own the report, or if they are elevated Command (Admin/Commander)
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isCommander());
+    }
+
+    match /articles/{articleId} {
+      allow create: if true; // Public submission terminal
+      allow read, list, delete: if isLeader(); // Command oversight
     }
   }
 }

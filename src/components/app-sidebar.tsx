@@ -29,7 +29,9 @@ import {
   Settings,
   Loader2,
   FileSearch,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  Layers
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -37,7 +39,7 @@ import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAdmin, isCommander, profile, user, isLoading } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, profile, user, isLoading } = useUserProfile();
   const auth = useAuth();
 
   const handleSignOut = () => signOut(auth);
@@ -97,24 +99,26 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {(isAdmin || isCommander) && (
+            {(isAdmin || isCommander || isLeader) && (
               <SidebarGroup>
-                <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Analysis</SidebarGroupLabel>
+                <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Special Portals</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
+                    {(isAdmin || isCommander) && (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={pathname === '/reports/consolidated'} className="h-11 rounded-xl">
+                          <Link href="/reports/consolidated">
+                            <Sparkles className="h-4 w-4" />
+                            <span className="font-bold">Consolidated Report</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname === '/reports/consolidated'} className="h-11 rounded-xl">
-                        <Link href="/reports/consolidated">
-                          <Sparkles className="h-4 w-4" />
-                          <span className="font-bold">Consolidated Report</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname === '/weekly/new'} className="h-11 rounded-xl">
-                        <Link href="/weekly/new">
-                          <FileSearch className="h-4 w-4" />
-                          <span className="font-bold">Weekly Summary</span>
+                      <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
+                        <Link href="/magazine/manage">
+                          <BookOpen className="h-4 w-4" />
+                          <span className="font-bold">Magazine Registry</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

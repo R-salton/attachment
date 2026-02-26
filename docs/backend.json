@@ -25,6 +25,21 @@
       },
       "required": ["id", "ownerId", "reportTitle", "createdAt", "unit"]
     },
+    "Article": {
+      "title": "Article",
+      "description": "An article submission for the cadet magazine.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cadetName": { "type": "string" },
+        "company": { "type": "string", "enum": ["Alpha", "Bravo", "Charlie"] },
+        "platoon": { "type": "string", "enum": ["1", "2", "3"] },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string", "description": "Base64 data URI of the cadet's image." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "cadetName", "company", "platoon", "content", "createdAt"]
+    },
     "UserProfile": {
       "title": "UserProfile",
       "description": "User account metadata and role assignments.",
@@ -51,6 +66,10 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User role and profile data."
+    },
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Collection of cadet magazine articles."
     }
   }
 }
