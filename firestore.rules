@@ -17,28 +17,23 @@ service cloud.firestore {
       );
     }
 
+    // Helper for role-based access
+    function hasRole(role) {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
     function isAdmin() {
-      return isMasterAdmin() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN'
-      );
+      return isMasterAdmin() || hasRole('ADMIN');
     }
 
     function isCommander() {
-      return isAdmin() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COMMANDER'
-      );
+      return isAdmin() || hasRole('COMMANDER');
     }
 
     function isLeader() {
-      return isCommander() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER'
-      );
+      return isCommander() || hasRole('LEADER');
     }
 
     match /users/{userId} {
@@ -47,7 +42,7 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow read, list: if isLeader();
-      allow read, list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isCommander());
@@ -55,7 +50,7 @@ service cloud.firestore {
 
     match /articles/{articleId} {
       allow create: if true; // Public submission terminal
-      allow read, list, delete: if isLeader(); // Command oversight
+      allow read, list, delete: if isMasterAdmin() || isLeader(); // Command oversight
     }
   }
 }
