@@ -28,10 +28,8 @@ import {
   ShieldCheck,
   Settings,
   Loader2,
-  FileSearch,
   Sparkles,
   BookOpen,
-  Layers
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -39,7 +37,7 @@ import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAdmin, isCommander, isLeader, profile, user, isLoading } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, isMasterAdmin, profile, user, isLoading } = useUserProfile();
   const auth = useAuth();
 
   const handleSignOut = () => signOut(auth);
@@ -114,14 +112,16 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
-                        <Link href="/magazine/manage">
-                          <BookOpen className="h-4 w-4" />
-                          <span className="font-bold">Magazine Registry</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {isMasterAdmin && (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
+                          <Link href="/magazine/manage">
+                            <BookOpen className="h-4 w-4" />
+                            <span className="font-bold">Magazine Registry</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -172,7 +172,7 @@ export function AppSidebar() {
               <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <span className="text-xs font-black text-foreground truncate max-w-[120px] leading-tight">{profile?.displayName}</span>
                 <span className="text-[10px] text-primary uppercase font-black tracking-tighter">
-                  {isAdmin ? 'System Admin' : profile?.role}
+                  {isMasterAdmin ? 'Master Admin' : isAdmin ? 'System Admin' : profile?.role}
                 </span>
               </div>
             )}
