@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useEffect, useState, useRef } from 'react';
@@ -34,6 +35,8 @@ import {
 } from 'lucide-react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const COMPANIES = ["Alpha", "Bravo", "Charlie"];
 const PLATOONS = ["1", "2", "3"];
@@ -129,24 +132,39 @@ export default function ArticleDetailPortal({ params }: { params: Promise<{ id: 
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!articleRef) return;
     setIsSaving(true);
-    try {
-      await updateDoc(articleRef, {
-        cadetName: editedName,
-        company: editedCompany,
-        platoon: editedPlatoon,
-        content: editedContent,
-        imageUrl: editedImage,
+
+    const updateData = {
+      cadetName: editedName,
+      company: editedCompany,
+      platoon: editedPlatoon,
+      content: editedContent,
+      imageUrl: editedImage,
+    };
+
+    updateDoc(articleRef, updateData)
+      .then(() => {
+        setIsEditing(false);
+        toast({ title: "Update Success", description: "Article revised in registry." });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: articleRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ 
+          variant: "destructive", 
+          title: "Save Error", 
+          description: "Could not update article archive. This may be due to payload size limits." 
+        });
+      })
+      .finally(() => {
+        setIsSaving(false);
       });
-      setIsEditing(false);
-      toast({ title: "Update Success", description: "Article revised in registry." });
-    } catch (err) {
-      toast({ variant: "destructive", title: "Save Error", description: "Could not update article archive." });
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   if (isAuthLoading) {

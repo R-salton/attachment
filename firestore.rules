@@ -50,7 +50,7 @@ service cloud.firestore {
 
     match /articles/{articleId} {
       allow create: if true; // Public submission terminal
-      allow read, list, delete: if isMasterAdmin(); // Restricted to Master Admin only
+      allow read, list, update, delete: if isMasterAdmin(); // Restricted to Master Admin only
     }
   }
 }
