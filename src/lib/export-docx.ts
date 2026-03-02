@@ -3,13 +3,27 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
+interface BriefingDay {
+  dayLabel: string;
+  summary: string;
+  keyIncidents: string[];
+  images?: string[];
+}
+
 interface ReportData {
   reportTitle: string;
   reportDate: string;
   unit: string;
-  fullText: string;
+  fullText?: string;
   reportingCommanderName: string;
   images?: string[];
+  // Structured fields for Overall Report
+  executiveSummary?: string;
+  dailyBriefings?: BriefingDay[];
+  forceWideAchievements?: string[];
+  operationalTrends?: string[];
+  criticalChallenges?: string[];
+  strategicRecommendations?: string[];
 }
 
 /**
@@ -37,39 +51,57 @@ function cleanTextForExport(text: string): string {
   return cleaned.trim();
 }
 
-function processLine(line: string): Paragraph {
-  const content = line.trim();
-  if (!content) return new Paragraph({ children: [] });
-
-  const isBullet = content.startsWith('• ');
-  const finalText = isBullet ? content.substring(2) : content;
-  const isHeaderCandidate = content === content.toUpperCase() && content.length > 5;
-
+function createParagraph(text: string, options: { bold?: boolean, size?: number, italic?: boolean, bullet?: boolean, color?: string, alignment?: any, spacing?: any } = {}) {
   return new Paragraph({
     children: [
       new TextRun({
-        text: finalText,
-        bold: isHeaderCandidate,
-        color: "000000",
-        size: isHeaderCandidate ? 26 : 24,
+        text: text,
+        bold: options.bold,
+        italic: options.italic,
+        size: options.size || 24,
         font: "Arial",
+        color: options.color || "000000",
       }),
     ],
-    bullet: isBullet ? { level: 0 } : undefined,
-    spacing: { 
-      before: isHeaderCandidate ? 300 : 120, 
-      after: 120 
-    },
-    heading: isHeaderCandidate ? HeadingLevel.HEADING_3 : undefined,
+    bullet: options.bullet ? { level: 0 } : undefined,
+    alignment: options.alignment,
+    spacing: options.spacing || { before: 120, after: 120 },
   });
 }
 
-export async function exportReportToDocx(report: ReportData) {
-  const processedText = cleanTextForExport(report.fullText);
-  const lines = processedText.split('\n').filter(l => l.trim().length > 0);
-  
-  const bodyParagraphs: any[] = lines.map(line => processLine(line));
+function createImageParagraph(imgUri: string, title: string) {
+  try {
+    const base64Parts = imgUri.split(',');
+    if (base64Parts.length < 2) return null;
+    const bytes = new Uint8Array(atob(base64Parts[1].replace(/\s/g, '')).split('').map(c => c.charCodeAt(0)));
+    
+    return [
+      new Paragraph({
+        children: [new ImageRun({ data: bytes, transformation: { width: 500, height: 330 } })],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 240, after: 120 },
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: title,
+            italic: true,
+            size: 18,
+            font: "Arial",
+            color: "666666",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 240 },
+      }),
+    ];
+  } catch (e) {
+    console.error("DOCX Image Error:", e);
+    return null;
+  }
+}
 
+export async function exportReportToDocx(report: ReportData) {
   // --- MEMO COVER PAGE ---
   const coverPage = [
     new Paragraph({
@@ -186,28 +218,69 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }),
   ];
 
-  // --- EVIDENCE SECTION ---
-  if (report.images && report.images.length > 0) {
-    bodyParagraphs.push(new Paragraph({
-      children: [new TextRun({ text: "ATTACHED OPERATIONAL EVIDENCE", bold: true, size: 26, font: "Arial", break: 2 })],
-      spacing: { before: 400, after: 200 },
-    }));
+  // --- CONTENT BUILDER ---
+  let bodyParagraphs: any[] = [];
 
-    for (const imgUri of report.images) {
-      try {
-        const base64Parts = imgUri.split(',');
-        if (base64Parts.length < 2) continue;
-        const bytes = new Uint8Array(atob(base64Parts[1].replace(/\s/g, '')).split('').map(c => c.charCodeAt(0)));
-        
-        bodyParagraphs.push(new Paragraph({
-          children: [new ImageRun({ data: bytes, transformation: { width: 500, height: 330 } })],
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 240, after: 240 },
-        }));
-      } catch (e) {
-        console.error("DOCX Image Error:", e);
+  if (report.executiveSummary) {
+    bodyParagraphs.push(createParagraph("EXECUTIVE STRATEGIC SUMMARY", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
+    bodyParagraphs.push(createParagraph(report.executiveSummary, { size: 24 }));
+    bodyParagraphs.push(new Paragraph({ spacing: { after: 400 } }));
+  }
+
+  if (report.dailyBriefings && report.dailyBriefings.length > 0) {
+    bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
+    
+    report.dailyBriefings.forEach((day, index) => {
+      bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase(), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
+      bodyParagraphs.push(createParagraph(day.summary, { size: 24, italic: true }));
+      
+      if (day.keyIncidents.length > 0) {
+        bodyParagraphs.push(createParagraph("Significant Incidents & Responses:", { bold: true, size: 22, spacing: { before: 150, after: 100 } }));
+        day.keyIncidents.forEach(inc => {
+          bodyParagraphs.push(createParagraph(inc, { size: 22, bullet: true }));
+        });
       }
+
+      // Contextual Images for this day
+      if (day.images && day.images.length > 0) {
+        day.images.forEach((img, imgIdx) => {
+          const imgParagraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel} - Operational Photo ${imgIdx + 1}`);
+          if (imgParagraphs) bodyParagraphs.push(...imgParagraphs);
+        });
+      }
+      
+      bodyParagraphs.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 300 } }));
+    });
+  }
+
+  // Fallback for standard text if not structured
+  if (report.fullText && !report.dailyBriefings) {
+    const processedText = cleanTextForExport(report.fullText);
+    processedText.split('\n').forEach(line => {
+      if (line.trim()) bodyParagraphs.push(createParagraph(line.trim()));
+    });
+  }
+
+  // --- STRATEGIC SECTIONS ---
+  const addListSection = (title: string, list?: string[]) => {
+    if (list && list.length > 0) {
+      bodyParagraphs.push(createParagraph(title, { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
+      list.forEach(item => bodyParagraphs.push(createParagraph(item, { size: 24, bullet: true })));
     }
+  };
+
+  addListSection("FORCE-WIDE ACHIEVEMENTS", report.forceWideAchievements);
+  addListSection("OBSERVED OPERATIONAL TRENDS", report.operationalTrends);
+  addListSection("CRITICAL CHALLENGES", report.criticalChallenges);
+  addListSection("STRATEGIC COMMAND RECOMMENDATIONS", report.strategicRecommendations);
+
+  // --- EVIDENCE FALLBACK (If any left) ---
+  if (report.images && report.images.length > 0 && !report.dailyBriefings) {
+    bodyParagraphs.push(createParagraph("ATTACHED OPERATIONAL EVIDENCE", { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
+    report.images.forEach((img, idx) => {
+      const imgParagraphs = createImageParagraph(img, `EXHIBIT: Operational Photo ${idx + 1}`);
+      if (imgParagraphs) bodyParagraphs.push(...imgParagraphs);
+    });
   }
 
   const doc = new Document({

@@ -58,13 +58,13 @@ export default function OverallReportPage() {
   const [targetDaySpan, setTargetDaySpan] = useState<number>(30);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerateConsolidatedReportOutput | null>(null);
-  const [consolidatedImages, setConsolidatedImages] = useState<string[]>([]);
+  const [dateToImagesMap, setDateToImagesMap] = useState<Map<string, string[]>>(new Map());
 
   const handleGenerate = async (all = false) => {
     if (!db) return;
     setIsGenerating(true);
     setResult(null);
-    setConsolidatedImages([]);
+    setDateToImagesMap(new Map());
 
     try {
       const reportsRef = collection(db, 'reports');
@@ -85,6 +85,17 @@ export default function OverallReportPage() {
         ...doc.data(), 
         id: doc.id 
       }) as any);
+
+      // Build a reliable mapping of Date String to Images
+      const imgMap = new Map<string, string[]>();
+      allReports.forEach(r => {
+        if (r.reportDate && r.images && Array.isArray(r.images)) {
+          const dateKey = r.reportDate.toUpperCase().trim();
+          const existing = imgMap.get(dateKey) || [];
+          imgMap.set(dateKey, [...existing, ...r.images]);
+        }
+      });
+      setDateToImagesMap(imgMap);
 
       const uniqueDatesMap = new Map<string, Date>();
       allReports.forEach(r => {
@@ -113,14 +124,6 @@ export default function OverallReportPage() {
         return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
       }).filter(Boolean);
       
-      const images: string[] = [];
-      filteredReports.forEach(r => {
-        if (r.images && Array.isArray(r.images)) {
-          images.push(...r.images);
-        }
-      });
-      setConsolidatedImages(images.slice(0, 20));
-
       if (reportTexts.length === 0) {
         throw new Error("No textual SITREPs found in selection.");
       }
@@ -142,7 +145,7 @@ export default function OverallReportPage() {
       toast({ 
         variant: "destructive", 
         title: "Synthesis Error", 
-        description: error.message || "An unexpected response was received from the server. Try selecting fewer days." 
+        description: error.message || "An unexpected response was received from the server." 
       });
     } finally {
       setIsGenerating(false);
@@ -152,34 +155,26 @@ export default function OverallReportPage() {
   const handleExport = async () => {
     if (!result) return;
     
-    let docContent = `EXECUTIVE STRATEGIC ANALYSIS\n${result.executiveSummary}\n\n`;
-    
-    docContent += `CHRONOLOGICAL DAILY BRIEFINGS\n`;
-    result.dailyBriefings.forEach(day => {
-      docContent += `${day.dayLabel.toUpperCase()}\n`;
-      docContent += `${day.summary}\n\n`;
-      if (day.keyIncidents.length > 0) {
-        docContent += `Significant Incidents & Actions:\n`;
-        day.keyIncidents.forEach(inc => {
-          docContent += `• ${inc}\n`;
-        });
-        docContent += `\n`;
-      }
-    });
-
-    docContent += `FORCE-WIDE ACHIEVEMENTS\n${result.forceWideAchievements.map(a => `• ${a}`).join('\n')}\n\n`;
-    docContent += `OBSERVED OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `• ${t}`).join('\n')}\n\n`;
-    docContent += `CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `• ${c}`).join('\n')}\n\n`;
-    docContent += `STRATEGIC COMMAND RECOMMENDATIONS\n${result.strategicRecommendations.map(r => `• ${r}`).join('\n')}`;
-
     try {
       await exportReportToDocx({
         reportTitle: `OVERALL STRATEGIC COMMAND REPORT - DAY 1 TO ${targetDaySpan}`,
         reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
         unit: 'FIELD TRAINING EXERCISE COMMAND REGISTRY',
-        fullText: docContent,
         reportingCommanderName: 'OFFICER CADET INTAKE 14/25-26',
-        images: consolidatedImages
+        executiveSummary: result.executiveSummary,
+        dailyBriefings: result.dailyBriefings.map(day => {
+          // Extract the date part from "Day X - 18 FEB 26" or similar
+          const dateParts = day.dayLabel.split('-');
+          const rawDate = dateParts.length > 1 ? dateParts[1].trim().toUpperCase() : day.dayLabel.trim().toUpperCase();
+          return {
+            ...day,
+            images: dateToImagesMap.get(rawDate) || []
+          };
+        }),
+        forceWideAchievements: result.forceWideAchievements,
+        operationalTrends: result.operationalTrends,
+        criticalChallenges: result.criticalChallenges,
+        strategicRecommendations: result.strategicRecommendations
       });
       toast({ title: "Report Exported", description: "Overall Report downloaded successfully." });
     } catch (e) {
@@ -231,7 +226,7 @@ export default function OverallReportPage() {
               <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-primary">Consolidation Terminal</span>
             </div>
             <CardTitle className="text-xl md:text-2xl font-black">Archive Force-Wide Narrative</CardTitle>
-            <CardDescription className="text-slate-400 font-bold max-w-2xl text-xs md:text-base">Synthesize all unit reports into a chronological tactical narrative.</CardDescription>
+            <CardDescription className="text-slate-400 font-bold max-w-2xl text-xs md:text-base">Synthesize unit reports into a chronological strategic narrative.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 md:p-10 space-y-8 md:space-y-10">
             <div className="flex flex-col lg:flex-row lg:items-end gap-6 md:gap-8 bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100">
@@ -277,7 +272,7 @@ export default function OverallReportPage() {
                 </div>
                 <div className="text-center space-y-2 md:space-y-3 px-4">
                   <p className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">Command Synthesis Active</p>
-                  <p className="text-[10px] md:text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Processing all chronological SITREPs into narrative intelligence...</p>
+                  <p className="text-[10px] md:text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Processing chronological SITREPs into narrative intelligence...</p>
                 </div>
               </div>
             )}
@@ -319,38 +314,62 @@ export default function OverallReportPage() {
                           <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Chronological Daily Summaries</h4>
                         </div>
                         <div className="space-y-6 md:space-y-8">
-                          {result.dailyBriefings.map((day, idx) => (
-                            <Card key={idx} className="rounded-[1.5rem] md:rounded-[2.5rem] border-slate-100 shadow-xl md:shadow-2xl overflow-hidden transition-all hover:border-blue-400 duration-300 bg-white">
-                              <div className="bg-slate-900 px-6 md:px-8 py-4 md:py-5 flex items-center justify-between border-b border-white/5">
-                                <div className="flex items-center gap-2 md:gap-3">
-                                  <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-                                  <span className="text-xs md:text-sm font-black text-white uppercase tracking-widest">{day.dayLabel}</span>
-                                </div>
-                                <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/20 text-primary uppercase font-black px-2 md:px-3">SITREP</Badge>
-                              </div>
-                              <CardContent className="p-6 md:p-10 space-y-6 md:space-y-8">
-                                <div className="text-sm md:text-lg font-bold text-slate-700 leading-relaxed italic border-l-4 border-blue-100 pl-4 md:pl-6">
-                                  {day.summary}
-                                </div>
-                                
-                                {day.keyIncidents.length > 0 && (
-                                  <div className="space-y-3 md:space-y-4">
-                                    <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Tactical Incident Log:</p>
-                                    <ul className="space-y-3 md:space-y-4">
-                                      {day.keyIncidents.map((incident, eIdx) => (
-                                        <li key={eIdx} className="flex gap-3 md:gap-6 text-sm md:text-base font-bold text-slate-700 leading-relaxed group">
-                                          <div className="h-6 w-6 md:h-7 md:w-7 rounded-lg md:rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                                            <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                          </div>
-                                          <span className="group-hover:text-slate-900 transition-colors">{incident}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
+                          {result.dailyBriefings.map((day, idx) => {
+                            const rawDate = day.dayLabel.split('-').length > 1 ? day.dayLabel.split('-')[1].trim().toUpperCase() : day.dayLabel.trim().toUpperCase();
+                            const dayImages = dateToImagesMap.get(rawDate) || [];
+
+                            return (
+                              <Card key={idx} className="rounded-[1.5rem] md:rounded-[2.5rem] border-slate-100 shadow-xl md:shadow-2xl overflow-hidden transition-all hover:border-blue-400 duration-300 bg-white">
+                                <div className="bg-slate-900 px-6 md:px-8 py-4 md:py-5 flex items-center justify-between border-b border-white/5">
+                                  <div className="flex items-center gap-2 md:gap-3">
+                                    <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                                    <span className="text-xs md:text-sm font-black text-white uppercase tracking-widest">{day.dayLabel}</span>
                                   </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
+                                  <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/20 text-primary uppercase font-black px-2 md:px-3">SITREP</Badge>
+                                </div>
+                                <CardContent className="p-6 md:p-10 space-y-6 md:space-y-8">
+                                  <div className="text-sm md:text-lg font-bold text-slate-700 leading-relaxed italic border-l-4 border-blue-100 pl-4 md:pl-6">
+                                    {day.summary}
+                                  </div>
+                                  
+                                  {day.keyIncidents.length > 0 && (
+                                    <div className="space-y-3 md:space-y-4">
+                                      <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Tactical Incident Log:</p>
+                                      <ul className="space-y-3 md:space-y-4">
+                                        {day.keyIncidents.map((incident, eIdx) => (
+                                          <li key={eIdx} className="flex gap-3 md:gap-6 text-sm md:text-base font-bold text-slate-700 leading-relaxed group">
+                                            <div className="h-6 w-6 md:h-7 md:w-7 rounded-lg md:rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                              <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                            </div>
+                                            <span className="group-hover:text-slate-900 transition-colors">{incident}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* Contextual Media for this specific day */}
+                                  {dayImages.length > 0 && (
+                                    <div className="pt-6 border-t border-slate-50">
+                                      <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                                        <ImageIcon className="h-3 w-3" /> Evidence Briefing ({dayImages.length}):
+                                      </p>
+                                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {dayImages.map((img, iIdx) => (
+                                          <div key={iIdx} className="aspect-video rounded-xl overflow-hidden border shadow-sm group relative">
+                                            <img src={img} alt="Evidence" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <p className="text-[7px] text-white font-black uppercase truncate">Photo {iIdx + 1}</p>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
                         </div>
                       </section>
 
@@ -405,25 +424,6 @@ export default function OverallReportPage() {
                           </Card>
                         </div>
                       </section>
-
-                      {consolidatedImages.length > 0 && (
-                        <section className="space-y-8 md:space-y-10 pt-8 md:pt-10 border-t border-slate-100">
-                          <div className="flex items-center gap-3 md:gap-4 px-2">
-                            <ImageIcon className="h-6 w-6 md:h-7 md:w-7 text-blue-600" />
-                            <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Consolidated Media</h4>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
-                            {consolidatedImages.slice(0, 20).map((img, idx) => (
-                              <div key={idx} className="aspect-square rounded-xl md:rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-lg group relative">
-                                <img src={img} alt="Evidence" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125" />
-                                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                                  <span className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-widest">Exhibit {idx + 1}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
                    </div>
 
                    <aside className="lg:col-span-1 space-y-6 md:space-y-8">
