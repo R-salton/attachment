@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface BriefingDay {
@@ -17,7 +17,6 @@ interface ReportData {
   fullText?: string;
   reportingCommanderName: string;
   images?: string[];
-  // Structured fields for Overall Report
   executiveSummary?: string;
   dailyBriefings?: BriefingDay[];
   forceWideAchievements?: string[];
@@ -26,12 +25,8 @@ interface ReportData {
   strategicRecommendations?: string[];
 }
 
-/**
- * Strips HTML tags and Markdown formatting artifacts (###, *).
- */
 function cleanTextForExport(text: string): string {
   if (!text) return "";
-  
   let cleaned = text
     .replace(/<\/p>/g, '\n')
     .replace(/<br\s*\/?>/g, '\n')
@@ -102,7 +97,6 @@ function createImageParagraph(imgUri: string, title: string) {
 }
 
 export async function exportReportToDocx(report: ReportData) {
-  // --- MEMO COVER PAGE ---
   const coverPage = [
     new Paragraph({
       children: [
@@ -175,7 +169,7 @@ export async function exportReportToDocx(report: ReportData) {
     }),
     new Paragraph({
       children: [new TextRun({ text: "Sir,", size: 24, font: "Arial" })],
-      spacing: { before: 400, after: 400 },
+      spacing: { before: 400, after: 200 },
     }),
     new Paragraph({
       children: [
@@ -192,7 +186,7 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({
       children: [
         new TextRun({
-          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise ${report.reportTitle.toLowerCase().replace(/###/g, '')} report.`,
+          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise report for the specified period.`,
           size: 24,
           font: "Arial",
         }),
@@ -218,7 +212,6 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }),
   ];
 
-  // --- CONTENT BUILDER ---
   let bodyParagraphs: any[] = [];
 
   if (report.executiveSummary) {
@@ -230,7 +223,7 @@ export async function exportReportToDocx(report: ReportData) {
   if (report.dailyBriefings && report.dailyBriefings.length > 0) {
     bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
     
-    report.dailyBriefings.forEach((day, index) => {
+    report.dailyBriefings.forEach((day) => {
       bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase().replace(/###/g, ''), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
       bodyParagraphs.push(createParagraph(cleanTextForExport(day.summary), { size: 24, italic: true }));
       
@@ -241,7 +234,6 @@ export async function exportReportToDocx(report: ReportData) {
         });
       }
 
-      // Contextual Images for this day
       if (day.images && day.images.length > 0) {
         day.images.forEach((img, imgIdx) => {
           const imgParagraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel.replace(/###/g, '')} - Operational Photo ${imgIdx + 1}`);
@@ -253,7 +245,6 @@ export async function exportReportToDocx(report: ReportData) {
     });
   }
 
-  // Fallback for standard text if not structured
   if (report.fullText && !report.dailyBriefings) {
     const processedText = cleanTextForExport(report.fullText);
     processedText.split('\n').forEach(line => {
@@ -261,7 +252,6 @@ export async function exportReportToDocx(report: ReportData) {
     });
   }
 
-  // --- STRATEGIC SECTIONS ---
   const addListSection = (title: string, list?: string[]) => {
     if (list && list.length > 0) {
       bodyParagraphs.push(createParagraph(title, { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
@@ -274,7 +264,6 @@ export async function exportReportToDocx(report: ReportData) {
   addListSection("CRITICAL CHALLENGES", report.criticalChallenges);
   addListSection("STRATEGIC COMMAND RECOMMENDATIONS", report.strategicRecommendations);
 
-  // --- EVIDENCE FALLBACK (If any left) ---
   if (report.images && report.images.length > 0 && !report.dailyBriefings) {
     bodyParagraphs.push(createParagraph("ATTACHED OPERATIONAL EVIDENCE", { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
     report.images.forEach((img, idx) => {

@@ -68,9 +68,8 @@ export default function OverallReportPage() {
 
     try {
       const reportsRef = collection(db, 'reports');
-      // For Full History, we still limit to 150 latest to avoid payload crashes, 
-      // but chronological logic handles the rest.
-      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(150));
+      // Safety limit reduced to 100 to ensure processing within server action limits
+      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(100));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
@@ -83,7 +82,6 @@ export default function OverallReportPage() {
         return;
       }
 
-      // Convert to array and sort ASCENDING by creation date for logic
       const allReports = snapshot.docs.map(doc => ({ 
         ...doc.data(), 
         id: doc.id 
@@ -93,7 +91,6 @@ export default function OverallReportPage() {
         return timeA - timeB;
       });
 
-      // Build a reliable mapping of Date String to Images
       const imgMap = new Map<string, string[]>();
       allReports.forEach(r => {
         if (r.reportDate && r.images && Array.isArray(r.images)) {
@@ -127,10 +124,10 @@ export default function OverallReportPage() {
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
       
       const reportTexts = filteredReports.map(r => {
-        // Strip HTML and prune to 1500 chars to avoid exceeding payload limits
-        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, '').substring(0, 1500);
+        // Reduced to 800 chars for extreme efficiency
+        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, '').substring(0, 800);
         return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
-      }).filter(text => text.length > 20); // Avoid empty/too-short entries
+      }).filter(text => text.length > 20);
       
       if (reportTexts.length === 0) {
         throw new Error("No sufficient textual SITREPs found in selection.");
@@ -153,7 +150,7 @@ export default function OverallReportPage() {
       toast({ 
         variant: "destructive", 
         title: "Synthesis Error", 
-        description: "Large volume consolidation requires aggressive data pruning. Retrying with shorter spans is recommended if this persists." 
+        description: "The volume of history exceeds current synthesis limits. Try a specific day range." 
       });
     } finally {
       setIsGenerating(false);
@@ -171,7 +168,6 @@ export default function OverallReportPage() {
         reportingCommanderName: 'OFFICER CADET INTAKE 14/25-26',
         executiveSummary: result.executiveSummary,
         dailyBriefings: result.dailyBriefings.map(day => {
-          // Extract the date part from "Day X - 18 FEB 26" or similar
           const dateParts = day.dayLabel.split('-');
           const rawDate = dateParts.length > 1 ? dateParts[1].trim().toUpperCase() : day.dayLabel.trim().toUpperCase();
           return {
