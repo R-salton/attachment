@@ -55,7 +55,7 @@ export default function OverallReportPage() {
   const db = useFirestore();
   const { isAdmin, isCommander, isLeader, isLoading: isAuthLoading } = useUserProfile();
 
-  const [targetDaySpan, setTargetDaySpan] = useState<number>(14);
+  const [targetDaySpan, setTargetDaySpan] = useState<number>(30);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerateConsolidatedReportOutput | null>(null);
   const [consolidatedImages, setConsolidatedImages] = useState<string[]>([]);
@@ -68,6 +68,7 @@ export default function OverallReportPage() {
 
     try {
       const reportsRef = collection(db, 'reports');
+      // Sort by creation date to help uniqueDates logic, though we'll sort uniqueDates later too
       const q = query(reportsRef, orderBy('createdAt', 'asc'));
       const snapshot = await getDocs(q);
       
@@ -86,22 +87,38 @@ export default function OverallReportPage() {
         id: doc.id 
       }) as any);
 
-      const uniqueDates: string[] = [];
+      // Extract unique dates and sort them chronologically
+      const uniqueDatesMap = new Map<string, Date>();
       allReports.forEach(r => {
-        if (r.reportDate && !uniqueDates.includes(r.reportDate)) {
-          uniqueDates.push(r.reportDate);
+        if (r.reportDate) {
+          // Attempt to parse date for sorting (assuming format like "18 FEB 26")
+          try {
+            uniqueDatesMap.set(r.reportDate, r.createdAt?.toDate() || new Date());
+          } catch(e) {
+            uniqueDatesMap.set(r.reportDate, new Date());
+          }
         }
       });
 
+      const uniqueDates = Array.from(uniqueDatesMap.keys()).sort((a, b) => {
+        const dateA = uniqueDatesMap.get(a)!;
+        const dateB = uniqueDatesMap.get(b)!;
+        return dateA.getTime() - dateB.getTime();
+      });
+
       const spanCount = all ? uniqueDates.length : Math.min(targetDaySpan, uniqueDates.length);
-      const selectedDates = uniqueDates.slice(0, spanCount);
+      // For "All", we take the full list. For specific range, we usually take the most recent ones
+      const selectedDates = all ? uniqueDates : uniqueDates.slice(-spanCount);
 
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
       
+      // Tactical Pruning: Extract only relevant text to avoid payload limits
       const reportTexts = filteredReports.map(r => {
         const div = document.createElement('div');
         div.innerHTML = r.fullText || "";
-        return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${div.innerText || div.textContent || ""}`;
+        // Clean text and limit size per report to keep the Server Action payload manageable
+        const cleanedText = (div.innerText || div.textContent || "").substring(0, 3000);
+        return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
       }).filter(Boolean);
       
       const images: string[] = [];
@@ -110,7 +127,8 @@ export default function OverallReportPage() {
           images.push(...r.images);
         }
       });
-      setConsolidatedImages(images);
+      // Limit to 20 images total for consolidation to avoid DOCX crashes
+      setConsolidatedImages(images.slice(0, 20));
 
       if (reportTexts.length === 0) {
         throw new Error("No textual SITREPs found in selection.");
@@ -133,7 +151,7 @@ export default function OverallReportPage() {
       toast({ 
         variant: "destructive", 
         title: "Synthesis Error", 
-        description: error.message || "Failed to generate Overall Report." 
+        description: error.message || "An unexpected response was received from the server. Try selecting fewer days or contact command." 
       });
     } finally {
       setIsGenerating(false);
@@ -147,7 +165,7 @@ export default function OverallReportPage() {
     
     docContent += `CHRONOLOGICAL DAILY BRIEFINGS\n`;
     result.dailyBriefings.forEach(day => {
-      docContent += `--- ${day.dayLabel.toUpperCase()} ---\n`;
+      docContent += `${day.dayLabel.toUpperCase()}\n`;
       docContent += `${day.summary}\n\n`;
       if (day.keyIncidents.length > 0) {
         docContent += `Significant Incidents & Actions:\n`;
@@ -227,7 +245,7 @@ export default function OverallReportPage() {
           <CardContent className="p-10 space-y-10">
             <div className="flex flex-col md:flex-row items-end gap-8 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
               <div className="w-full md:w-72 space-y-3">
-                <Label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Window (Days)</Label>
+                <Label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Window (Last X Days)</Label>
                 <div className="relative">
                   <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input 
