@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface ReportData {
@@ -13,18 +13,19 @@ interface ReportData {
 }
 
 /**
- * Strips HTML tags and handles basic conversions.
- * Optimized for pure text extraction for DOCX.
+ * Strips HTML tags and Markdown formatting artifacts (###, *).
  */
-function cleanHtmlForExport(html: string): string {
-  if (!html) return "";
+function cleanTextForExport(text: string): string {
+  if (!text) return "";
   
-  let cleaned = html
+  let cleaned = text
     .replace(/<\/p>/g, '\n')
     .replace(/<br\s*\/?>/g, '\n')
     .replace(/<\/li>/g, '\n')
-    .replace(/<li[^>]*>/g, '• ') // Use a standard bullet character
-    .replace(/<[^>]+>/g, '');
+    .replace(/<li[^>]*>/g, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/###/g, '')
+    .replace(/\*/g, '');
 
   cleaned = cleaned
     .replace(/&nbsp;/g, ' ')
@@ -36,195 +37,191 @@ function cleanHtmlForExport(html: string): string {
   return cleaned.trim();
 }
 
-/**
- * Creates a Paragraph for a line of text with proper formatting.
- */
 function processLine(line: string): Paragraph {
   const content = line.trim();
   if (!content) return new Paragraph({ children: [] });
 
-  const isMarkedHeader = content.startsWith('*') && content.endsWith('*');
-  const cleanText = isMarkedHeader ? content.replace(/\*/g, '') : content;
-  const isBullet = cleanText.startsWith('• ');
-  const finalText = isBullet ? cleanText.substring(2) : cleanText;
-
-  // Header detection: marked headers OR all-caps lines
-  const shouldBeBold = isMarkedHeader || (cleanText === cleanText.toUpperCase() && cleanText.length > 3);
+  const isBullet = content.startsWith('• ');
+  const finalText = isBullet ? content.substring(2) : content;
+  const isHeaderCandidate = content === content.toUpperCase() && content.length > 5;
 
   return new Paragraph({
     children: [
       new TextRun({
         text: finalText,
-        bold: shouldBeBold,
+        bold: isHeaderCandidate,
         color: "000000",
-        size: shouldBeBold ? 26 : 24,
+        size: isHeaderCandidate ? 26 : 24,
         font: "Arial",
       }),
     ],
     bullet: isBullet ? { level: 0 } : undefined,
     spacing: { 
-      before: shouldBeBold ? 240 : 120, 
+      before: isHeaderCandidate ? 300 : 120, 
       after: 120 
     },
-    heading: shouldBeBold ? HeadingLevel.HEADING_3 : undefined,
+    heading: isHeaderCandidate ? HeadingLevel.HEADING_3 : undefined,
   });
 }
 
-/**
- * Exports report data to a pure .docx file.
- */
 export async function exportReportToDocx(report: ReportData) {
-  // Ensure we have a valid transcript
-  const isHtml = report.fullText.includes('<p>') || report.fullText.includes('class=');
-  const processedText = isHtml ? cleanHtmlForExport(report.fullText) : report.fullText;
+  const processedText = cleanTextForExport(report.fullText);
   const lines = processedText.split('\n').filter(l => l.trim().length > 0);
   
-  const children: any[] = lines.map(line => processLine(line));
+  const bodyParagraphs: any[] = lines.map(line => processLine(line));
 
-  // Process and embed images if present
-  if (report.images && report.images.length > 0) {
-    children.push(new Paragraph({
+  // --- MEMO COVER PAGE ---
+  const coverPage = [
+    new Paragraph({
       children: [
         new TextRun({
-          text: "ATTACHED OPERATIONAL EVIDENCE",
+          text: "OFFICE OF RWAMAGANA DPU",
           bold: true,
-          color: "000000",
-          size: 26,
+          size: 36,
           font: "Arial",
-          break: 2
+          color: "000000",
         }),
       ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "MEMO",
+          bold: true,
+          size: 28,
+          font: "Arial",
+          underline: {},
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.SINGLE, size: 2, color: "000000" },
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: "To: OIC CADET", bold: true, size: 24, font: "Arial" })],
+                  spacing: { before: 200, after: 200 },
+                }),
+              ],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: "From: OIC ATTACHMENT", bold: true, size: 24, font: "Arial" })],
+                  spacing: { before: 200, after: 100 },
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Date: ${report.reportDate}`, bold: true, size: 24, font: "Arial" })],
+                  spacing: { after: 200 },
+                }),
+              ],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({
+      border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+      spacing: { after: 400 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "Sir,", size: 24, font: "Arial" })],
+      spacing: { before: 400, after: 400 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: report.reportTitle.toUpperCase(),
+          bold: true,
+          size: 26,
+          font: "Arial",
+          underline: {},
+        }),
+      ],
+      spacing: { after: 400 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise reports for the period of ${report.reportDate}.`,
+          size: 24,
+          font: "Arial",
+        }),
+      ],
+      spacing: { after: 200 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "2. Forwarded for your consideration and further guidance.", size: 24, font: "Arial" })],
+      spacing: { after: 200 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "3. Respectfully,", size: 24, font: "Arial" })],
+      spacing: { after: 800 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "RANK: OC    NAMES: ", bold: true, size: 24, font: "Arial" }),
+        new TextRun({ text: report.reportingCommanderName.toUpperCase(), bold: true, size: 24, font: "Arial" }),
+        new TextRun({ text: "    APT: .........    SIGNATURE: ............", bold: true, size: 24, font: "Arial" }),
+      ],
+      spacing: { before: 1200 },
+    }),
+    new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }),
+  ];
+
+  // --- EVIDENCE SECTION ---
+  if (report.images && report.images.length > 0) {
+    bodyParagraphs.push(new Paragraph({
+      children: [new TextRun({ text: "ATTACHED OPERATIONAL EVIDENCE", bold: true, size: 26, font: "Arial", break: 2 })],
       spacing: { before: 400, after: 200 },
     }));
 
     for (const imgUri of report.images) {
       try {
-        // Sanitize base64 string: remove header and any whitespace/newlines
         const base64Parts = imgUri.split(',');
         if (base64Parts.length < 2) continue;
-        const base64Data = base64Parts[1].replace(/\s/g, '');
+        const bytes = new Uint8Array(atob(base64Parts[1].replace(/\s/g, '')).split('').map(c => c.charCodeAt(0)));
         
-        // Convert to binary array safely
-        const binaryString = window.atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        children.push(new Paragraph({
-          children: [
-            new ImageRun({
-              data: bytes,
-              transformation: {
-                width: 500, // Balanced width for Word
-                height: 330,
-              },
-            }),
-          ],
+        bodyParagraphs.push(new Paragraph({
+          children: [new ImageRun({ data: bytes, transformation: { width: 500, height: 330 } })],
           alignment: AlignmentType.CENTER,
           spacing: { before: 240, after: 240 },
         }));
       } catch (e) {
-        console.error("DOCX Image Processing Error:", e);
+        console.error("DOCX Image Error:", e);
       }
     }
   }
 
-  // Build document structure
   const doc = new Document({
     sections: [
       {
-        properties: {
-          page: {
-            margin: {
-              top: 1440, // 1 inch
-              right: 1440,
-              bottom: 1440,
-              left: 1440,
-            },
-          },
-        },
-        children: [
-          // Header
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: report.reportTitle.toUpperCase(),
-                bold: true,
-                color: "000000",
-                size: 32,
-                font: "Arial",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 400 },
-          }),
-          
-          // Metadata
-          new Paragraph({
-            children: [
-              new TextRun({ 
-                text: `DATE: ${report.reportDate.toUpperCase()}`, 
-                bold: true,
-                color: "000000",
-                size: 24,
-                font: "Arial",
-              }),
-            ],
-            spacing: { after: 120 },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ 
-                text: `UNIT: ${report.unit.toUpperCase()}`, 
-                bold: true,
-                color: "000000",
-                size: 24,
-                font: "Arial",
-              }),
-            ],
-            spacing: { after: 400 },
-          }),
-
-          // Content body
-          ...children,
-
-          // Formal Signature
-          new Paragraph({
-            spacing: { before: 800 },
-            children: [
-              new TextRun({
-                text: `OC ${report.unit}: OC ${report.reportingCommanderName}`,
-                bold: true,
-                allCaps: true,
-                color: "000000",
-                size: 24,
-                font: "Arial",
-              }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "Official Registry Record - Electronically Signed",
-                italics: true,
-                size: 18,
-                color: "666666",
-                font: "Arial",
-              }),
-            ],
-          }),
-        ],
+        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        children: [...coverPage, ...bodyParagraphs],
       },
     ],
   });
 
-  // Export as Blob and trigger download
   try {
     const blob = await Packer.toBlob(doc);
-    const safeFileName = report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-');
-    saveAs(blob, `${safeFileName}.docx`);
+    saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
   } catch (error) {
     console.error("DOCX Packing Error:", error);
     throw error;

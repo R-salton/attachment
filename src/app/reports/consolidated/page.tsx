@@ -15,27 +15,39 @@ import {
   Download, 
   ShieldCheck, 
   Activity, 
-  ListChecks, 
-  AlertCircle, 
-  Lightbulb,
   FileDown,
   CalendarDays,
-  Target,
-  Clock,
   ChevronRight,
   Zap,
   Layers,
   ImageIcon,
   TrendingUp,
-  FileText,
   FileSearch,
-  BookOpen
+  BookOpen,
+  PieChart,
+  BarChart3,
+  ListChecks,
+  AlertCircle,
+  Lightbulb
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { generateConsolidatedReport, GenerateConsolidatedReportOutput } from '@/ai/flows/generate-consolidated-report-flow';
 import { exportReportToDocx } from '@/lib/export-docx';
-import { cn } from '@/lib/utils';
+import { 
+  Bar, 
+  BarChart, 
+  ResponsiveContainer, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  Legend
+} from "recharts";
+
+const CHART_COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#475569"];
 
 export default function OverallReportPage() {
   const router = useRouter();
@@ -43,7 +55,7 @@ export default function OverallReportPage() {
   const db = useFirestore();
   const { isAdmin, isCommander, isLeader, isLoading: isAuthLoading } = useUserProfile();
 
-  const [targetDaySpan, setTargetDaySpan] = useState<number>(7);
+  const [targetDaySpan, setTargetDaySpan] = useState<number>(14);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerateConsolidatedReportOutput | null>(null);
   const [consolidatedImages, setConsolidatedImages] = useState<string[]>([]);
@@ -74,7 +86,6 @@ export default function OverallReportPage() {
         id: doc.id 
       }) as any);
 
-      // Unique chronological sequence based on reportDate
       const uniqueDates: string[] = [];
       allReports.forEach(r => {
         if (r.reportDate && !uniqueDates.includes(r.reportDate)) {
@@ -105,7 +116,6 @@ export default function OverallReportPage() {
         throw new Error("No textual SITREPs found in selection.");
       }
 
-      // Strategic AI Overall Report Generation
       const synthesis = await generateConsolidatedReport({
         targetDay: spanCount,
         reports: reportTexts
@@ -133,11 +143,11 @@ export default function OverallReportPage() {
   const handleExport = async () => {
     if (!result) return;
     
-    let docContent = `### EXECUTIVE STRATEGIC ANALYSIS\n${result.executiveSummary}\n\n`;
+    let docContent = `EXECUTIVE STRATEGIC ANALYSIS\n${result.executiveSummary}\n\n`;
     
-    docContent += `### CHRONOLOGICAL DAILY BRIEFINGS\n`;
+    docContent += `CHRONOLOGICAL DAILY BRIEFINGS\n`;
     result.dailyBriefings.forEach(day => {
-      docContent += `*${day.dayLabel.toUpperCase()}*\n`;
+      docContent += `--- ${day.dayLabel.toUpperCase()} ---\n`;
       docContent += `${day.summary}\n\n`;
       if (day.keyIncidents.length > 0) {
         docContent += `Significant Incidents & Actions:\n`;
@@ -148,18 +158,18 @@ export default function OverallReportPage() {
       }
     });
 
-    docContent += `### FORCE-WIDE ACHIEVEMENTS\n${result.forceWideAchievements.map(a => `• ${a}`).join('\n')}\n\n`;
-    docContent += `### OBSERVED OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `• ${t}`).join('\n')}\n\n`;
-    docContent += `### CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `• ${c}`).join('\n')}\n\n`;
-    docContent += `### STRATEGIC COMMAND RECOMMENDATIONS\n${result.strategicRecommendations.map(r => `• ${r}`).join('\n')}`;
+    docContent += `FORCE-WIDE ACHIEVEMENTS\n${result.forceWideAchievements.map(a => `• ${a}`).join('\n')}\n\n`;
+    docContent += `OBSERVED OPERATIONAL TRENDS\n${result.operationalTrends.map(t => `• ${t}`).join('\n')}\n\n`;
+    docContent += `CRITICAL CHALLENGES\n${result.criticalChallenges.map(c => `• ${c}`).join('\n')}\n\n`;
+    docContent += `STRATEGIC COMMAND RECOMMENDATIONS\n${result.strategicRecommendations.map(r => `• ${r}`).join('\n')}`;
 
     try {
       await exportReportToDocx({
         reportTitle: `OVERALL STRATEGIC COMMAND REPORT - DAY 1 TO ${targetDaySpan}`,
         reportDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase(),
-        unit: 'COMMAND REGISTRY OVERALL ANALYSIS',
+        unit: 'FIELD TRAINING EXERCISE COMMAND REGISTRY',
         fullText: docContent,
-        reportingCommanderName: 'Strategic AI Command Analyst',
+        reportingCommanderName: 'OFFICER CADET INTAKE 14/25-26',
         images: consolidatedImages
       });
       toast({ title: "Report Exported", description: "Overall Report downloaded successfully." });
@@ -199,7 +209,7 @@ export default function OverallReportPage() {
               <Zap className="h-3 w-3 text-blue-600 animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Command Intelligence</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-slate-900 leading-none uppercase">Overall Report Generator</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-slate-900 leading-none uppercase">Overall Strategic Report</h1>
           </div>
         </div>
       </header>
@@ -209,15 +219,15 @@ export default function OverallReportPage() {
           <CardHeader className="bg-slate-900 text-white p-10">
             <div className="flex items-center gap-4 mb-2">
               <FileSearch className="h-6 w-6 text-primary" />
-              <span className="text-xs font-black uppercase tracking-widest text-primary">Strategic Consolidation Engine</span>
+              <span className="text-xs font-black uppercase tracking-widest text-primary">Consolidation Terminal</span>
             </div>
-            <CardTitle className="text-2xl font-black">Generate Force-Wide Overall Report</CardTitle>
-            <CardDescription className="text-slate-400 font-bold max-w-2xl text-base">This terminal synthesizes all unit-level records into a single, high-fidelity daily chronological narrative.</CardDescription>
+            <CardTitle className="text-2xl font-black">Archive Force-Wide Narrative</CardTitle>
+            <CardDescription className="text-slate-400 font-bold max-w-2xl text-base">Synthesize all unit reports into a chronological tactical narrative with visual breakdowns.</CardDescription>
           </CardHeader>
           <CardContent className="p-10 space-y-10">
             <div className="flex flex-col md:flex-row items-end gap-8 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
               <div className="w-full md:w-72 space-y-3">
-                <Label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Period (Days)</Label>
+                <Label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Window (Days)</Label>
                 <div className="relative">
                   <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input 
@@ -236,7 +246,7 @@ export default function OverallReportPage() {
                   className="h-14 px-10 rounded-2xl font-black shadow-2xl shadow-blue-600/30 bg-blue-600 hover:bg-blue-700 text-base transition-all active:scale-95"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-3 h-6 w-6" /> : <Sparkles className="mr-3 h-6 w-6" />}
-                  GENERATE FOR PERIOD
+                  GENERATE RANGE
                 </Button>
                 <Button 
                   onClick={() => handleGenerate(true)} 
@@ -245,7 +255,7 @@ export default function OverallReportPage() {
                   className="h-14 px-10 rounded-2xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm text-base transition-all active:scale-95"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-3 h-6 w-6" /> : <Layers className="mr-3 h-6 w-6 text-blue-600" />}
-                  ALL TIME OVERALL REPORT
+                  CONSOLIDATE FULL HISTORY
                 </Button>
               </div>
             </div>
@@ -257,8 +267,8 @@ export default function OverallReportPage() {
                   <Loader2 className="h-24 w-24 animate-spin text-blue-600 relative z-10" />
                 </div>
                 <div className="text-center space-y-3">
-                  <p className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Command Synthesis in Progress</p>
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Aggregating Unit SITREPs and Operational Evidence...</p>
+                  <p className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Command Synthesis Active</p>
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Processing all chronological SITREPs into narrative intelligence...</p>
                 </div>
               </div>
             )}
@@ -270,16 +280,16 @@ export default function OverallReportPage() {
                     <h3 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter">Strategic Analysis</h3>
                     <div className="flex items-center gap-3">
                       <Badge className="bg-blue-600 text-white border-none font-black text-xs uppercase px-4 py-1.5 rounded-lg shadow-lg shadow-blue-600/20">
-                        Operational Span: 1 to {targetDaySpan} Days
+                        Operational Span: {targetDaySpan} Days
                       </Badge>
                       <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold text-xs uppercase px-4 py-1.5 rounded-lg">
-                        Overall Report Mode
+                        Total Registry Mode
                       </Badge>
                     </div>
                   </div>
                   <Button onClick={handleExport} className="rounded-2xl h-16 px-10 font-black bg-slate-900 hover:bg-slate-800 shadow-3xl shadow-slate-900/20 text-lg transition-all active:scale-95">
                     <FileDown className="h-6 w-6 mr-3" />
-                    DOWNLOAD OVERALL DOCX
+                    DOWNLOAD DOCX MEMO
                   </Button>
                 </div>
 
@@ -338,6 +348,59 @@ export default function OverallReportPage() {
                         </div>
                       </section>
 
+                      {/* BREAKDOWN & VISUALIZATION */}
+                      <section className="space-y-10 pt-10 border-t border-slate-100">
+                        <div className="flex items-center gap-4 px-2">
+                          <PieChart className="h-7 w-7 text-blue-600" />
+                          <h4 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Operational Breakdown</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <Card className="rounded-[2rem] p-8 bg-white border border-slate-100 shadow-xl">
+                            <h5 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                              <ShieldCheck className="h-4 w-4" /> Unit Activity Share
+                            </h5>
+                            <div className="h-[300px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                  <Pie
+                                    data={result.unitBreakdown}
+                                    dataKey="reportCount"
+                                    nameKey="unitName"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    label={({ unitName }) => unitName}
+                                  >
+                                    {result.unitBreakdown.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend />
+                                </RechartsPieChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </Card>
+
+                          <Card className="rounded-[2rem] p-8 bg-white border border-slate-100 shadow-xl">
+                            <h5 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                              <BarChart3 className="h-4 w-4" /> Incident Frequency by Day
+                            </h5>
+                            <div className="h-[300px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={result.dailyBriefings.map(d => ({ day: d.dayLabel.split('-')[0].trim(), count: d.incidentCount }))}>
+                                  <XAxis dataKey="day" fontSize={10} fontWeight="bold" />
+                                  <YAxis fontSize={10} fontWeight="bold" />
+                                  <Tooltip />
+                                  <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </Card>
+                        </div>
+                      </section>
+
                       {consolidatedImages.length > 0 && (
                         <section className="space-y-10 pt-10 border-t border-slate-100">
                           <div className="flex items-center gap-4 px-2">
@@ -356,13 +419,6 @@ export default function OverallReportPage() {
                               </div>
                             ))}
                           </div>
-                          {consolidatedImages.length > 20 && (
-                            <div className="text-center p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                              <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
-                                Plus {consolidatedImages.length - 20} additional tactical photos archived in the document.
-                              </p>
-                            </div>
-                          )}
                         </section>
                       )}
                    </div>
@@ -451,13 +507,13 @@ export default function OverallReportPage() {
                   <div className="space-y-4 text-center lg:text-left relative z-10">
                     <div className="flex items-center justify-center lg:justify-start gap-3">
                       <ShieldCheck className="h-7 w-7 text-primary" />
-                      <h4 className="text-3xl font-black uppercase tracking-tight">Authorize Document Export</h4>
+                      <h4 className="text-3xl font-black uppercase tracking-tight">Authorize Strategic Memo</h4>
                     </div>
-                    <p className="text-slate-400 font-bold max-w-xl text-lg leading-relaxed">Archive this Force Overall Report within the command registry, preserving all daily tactical summaries and media artifacts.</p>
+                    <p className="text-slate-400 font-bold max-w-xl text-lg leading-relaxed">Archive this Overall Command Briefing into the official registry with visual breakdown analytics.</p>
                   </div>
                   <Button onClick={handleExport} size="lg" className="h-20 px-16 rounded-[2rem] font-black bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-600/40 text-xl transition-all active:scale-95 relative z-10">
                     <Download className="mr-4 h-7 w-7" />
-                    EXPORT OVERALL REPORT
+                    EXPORT OVERALL MEMO
                   </Button>
                 </div>
               </div>

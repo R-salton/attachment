@@ -7,29 +7,33 @@ const DailyBriefingSchema = z.object({
   dayLabel: z.string().describe('The date or day number (e.g., "Day 1 - 18 FEB 26").'),
   summary: z.string().describe('A comprehensive narrative summary of all unit activities and the overall situation for this specific day.'),
   keyIncidents: z.array(z.string()).describe('Major incidents and the specific unit actions taken in response on this day.'),
+  incidentCount: z.number().describe('Total number of incidents tracked on this specific day.'),
+});
+
+const UnitActivitySchema = z.object({
+  unitName: z.string(),
+  reportCount: z.number(),
 });
 
 const GenerateConsolidatedReportInputSchema = z.object({
   targetDay: z.number().describe('The chronological day number up to which the reports are consolidated.'),
-  reports: z.array(z.string()).describe('An array of raw SITREP transcripts (HTML or plain text).'),
+  reports: z.array(z.string()).describe('An array of raw SITREP transcripts.'),
 });
 
 export type GenerateConsolidatedReportInput = z.infer<typeof GenerateConsolidatedReportInputSchema>;
 
 const GenerateConsolidatedReportOutputSchema = z.object({
-  executiveSummary: z.string().describe('A high-level, narrative-driven executive overview of progress and operational status for the entire period.'),
+  executiveSummary: z.string().describe('A high-level, narrative-driven executive overview of progress and operational status.'),
   dailyBriefings: z.array(DailyBriefingSchema).describe('A day-by-day detailed breakdown synthesizing all unit reports into a single daily command narrative.'),
-  forceWideAchievements: z.array(z.string()).describe('Specific major milestones, duties completed, or operational successes across all units.'),
+  forceWideAchievements: z.array(z.string()).describe('Specific major milestones or operational successes.'),
   operationalTrends: z.array(z.string()).describe('Observed patterns in performance, security stability, or personnel discipline.'),
-  criticalChallenges: z.array(z.string()).describe('Significant or persistent obstacles that impacted operations or morale.'),
-  strategicRecommendations: z.array(z.string()).describe('Actionable, professional guidance for Command based on the consolidated data.'),
+  criticalChallenges: z.array(z.string()).describe('Significant or persistent obstacles.'),
+  strategicRecommendations: z.array(z.string()).describe('Actionable guidance for Command.'),
+  unitBreakdown: z.array(UnitActivitySchema).describe('Statistics on which units contributed the most records for the period.'),
 });
 
 export type GenerateConsolidatedReportOutput = z.infer<typeof GenerateConsolidatedReportOutputSchema>;
 
-/**
- * Consolidates multiple operational reports into a detailed "Overall Report".
- */
 export async function generateConsolidatedReport(input: GenerateConsolidatedReportInput): Promise<GenerateConsolidatedReportOutput> {
   return generateConsolidatedReportFlow(input);
 }
@@ -38,9 +42,9 @@ const consolidatedPrompt = ai.definePrompt({
   name: 'generateConsolidatedReportPrompt',
   input: { schema: GenerateConsolidatedReportInputSchema },
   output: { schema: GenerateConsolidatedReportOutputSchema },
-  prompt: `You are an AI Senior Operational Analyst for a Police/Military Command Registry. Your mission is to synthesize multiple individual UNIT SITUATION REPORTS (SITREPs) into a single, high-fidelity OVERALL REPORT.
+  prompt: `You are a Senior Strategic Analyst for a Police Command Registry. Synthesize multiple UNIT SITUATION REPORTS (SITREPs) into a single high-fidelity OVERALL COMMAND REPORT.
 
-Analyze the following transcripts meticulously:
+Analyze the following transcripts:
 
 {{#each reports}}
 --- UNIT REPORT START ---
@@ -49,15 +53,14 @@ Analyze the following transcripts meticulously:
 {{/each}}
 
 ### CORE INSTRUCTIONS:
-1. **Aggregation Logic**: You must group information by DATE/DAY. If multiple units (e.g., Gasabo DPU and TRS) reported on the same day, merge their activities into one "Daily Briefing".
-2. **Executive Summary**: Provide a strategic narrative of the overall operational trajectory. Analyze how units performed collectively.
-3. **Daily Briefings**: For every unique day found in the transcripts, create a detailed entry. Summarize what all units did, list all major incidents across those units, and detail the actions taken.
-4. **Force-Wide Achievements**: List significant milestones met by the attachment as a whole.
-5. **Operational Trends**: Identify patterns in security, stability, and discipline across units.
-6. **Critical Challenges**: Highlight persistent structural or situational obstacles.
-7. **Strategic Recommendations**: Provide actionable, professional guidance for senior Command.
+1. **Aggregation Logic**: Group info by DATE/DAY. Merge overlapping unit reports into one "Daily Briefing".
+2. **Executive Summary**: Provide a strategic narrative of the operational trajectory. 
+3. **Daily Briefings**: Detail every day. List incidents and actions. Count the number of incidents mentioned per day.
+4. **Data Analytics**: Count how many reports each unit submitted.
+5. **Tone**: Authoritative, formal, tactical. 
+6. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags from the summary text. Return pure narrative strings.
 
-Ensure the tone is authoritative, formal, and tactical. Strip all HTML tags from your analysis. Your response MUST strictly follow the JSON schema provided.`,
+Your response MUST strictly follow the JSON schema provided.`,
 });
 
 const generateConsolidatedReportFlow = ai.defineFlow(
