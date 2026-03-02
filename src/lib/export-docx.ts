@@ -192,7 +192,7 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({
       children: [
         new TextRun({
-          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise reports for the period of ${report.reportDate}.`,
+          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise ${report.reportTitle.toLowerCase()}.`,
           size: 24,
           font: "Arial",
         }),
