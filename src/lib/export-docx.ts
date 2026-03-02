@@ -180,7 +180,7 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({
       children: [
         new TextRun({
-          text: report.reportTitle.toUpperCase(),
+          text: report.reportTitle.toUpperCase().replace(/###/g, ''),
           bold: true,
           size: 26,
           font: "Arial",
@@ -192,7 +192,7 @@ export async function exportReportToDocx(report: ReportData) {
     new Paragraph({
       children: [
         new TextRun({
-          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise ${report.reportTitle.toLowerCase()}.`,
+          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise ${report.reportTitle.toLowerCase().replace(/###/g, '')} report.`,
           size: 24,
           font: "Arial",
         }),
@@ -223,7 +223,7 @@ export async function exportReportToDocx(report: ReportData) {
 
   if (report.executiveSummary) {
     bodyParagraphs.push(createParagraph("EXECUTIVE STRATEGIC SUMMARY", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
-    bodyParagraphs.push(createParagraph(report.executiveSummary, { size: 24 }));
+    bodyParagraphs.push(createParagraph(cleanTextForExport(report.executiveSummary), { size: 24 }));
     bodyParagraphs.push(new Paragraph({ spacing: { after: 400 } }));
   }
 
@@ -231,20 +231,20 @@ export async function exportReportToDocx(report: ReportData) {
     bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
     
     report.dailyBriefings.forEach((day, index) => {
-      bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase(), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
-      bodyParagraphs.push(createParagraph(day.summary, { size: 24, italic: true }));
+      bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase().replace(/###/g, ''), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
+      bodyParagraphs.push(createParagraph(cleanTextForExport(day.summary), { size: 24, italic: true }));
       
       if (day.keyIncidents.length > 0) {
         bodyParagraphs.push(createParagraph("Significant Incidents & Responses:", { bold: true, size: 22, spacing: { before: 150, after: 100 } }));
         day.keyIncidents.forEach(inc => {
-          bodyParagraphs.push(createParagraph(inc, { size: 22, bullet: true }));
+          bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 22, bullet: true }));
         });
       }
 
       // Contextual Images for this day
       if (day.images && day.images.length > 0) {
         day.images.forEach((img, imgIdx) => {
-          const imgParagraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel} - Operational Photo ${imgIdx + 1}`);
+          const imgParagraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel.replace(/###/g, '')} - Operational Photo ${imgIdx + 1}`);
           if (imgParagraphs) bodyParagraphs.push(...imgParagraphs);
         });
       }
@@ -265,7 +265,7 @@ export async function exportReportToDocx(report: ReportData) {
   const addListSection = (title: string, list?: string[]) => {
     if (list && list.length > 0) {
       bodyParagraphs.push(createParagraph(title, { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
-      list.forEach(item => bodyParagraphs.push(createParagraph(item, { size: 24, bullet: true })));
+      list.forEach(item => bodyParagraphs.push(createParagraph(cleanTextForExport(item), { size: 24, bullet: true })));
     }
   };
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -68,7 +68,9 @@ export default function OverallReportPage() {
 
     try {
       const reportsRef = collection(db, 'reports');
-      const q = query(reportsRef, orderBy('createdAt', 'asc'));
+      // For Full History, we still limit to 150 latest to avoid payload crashes, 
+      // but chronological logic handles the rest.
+      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(150));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
@@ -81,10 +83,15 @@ export default function OverallReportPage() {
         return;
       }
 
+      // Convert to array and sort ASCENDING by creation date for logic
       const allReports = snapshot.docs.map(doc => ({ 
         ...doc.data(), 
         id: doc.id 
-      }) as any);
+      }) as any).sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeA - timeB;
+      });
 
       // Build a reliable mapping of Date String to Images
       const imgMap = new Map<string, string[]>();
@@ -120,12 +127,13 @@ export default function OverallReportPage() {
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
       
       const reportTexts = filteredReports.map(r => {
-        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, '').substring(0, 3000);
+        // Strip HTML and prune to 1500 chars to avoid exceeding payload limits
+        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, '').substring(0, 1500);
         return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
-      }).filter(Boolean);
+      }).filter(text => text.length > 20); // Avoid empty/too-short entries
       
       if (reportTexts.length === 0) {
-        throw new Error("No textual SITREPs found in selection.");
+        throw new Error("No sufficient textual SITREPs found in selection.");
       }
 
       const synthesis = await generateConsolidatedReport({
@@ -145,7 +153,7 @@ export default function OverallReportPage() {
       toast({ 
         variant: "destructive", 
         title: "Synthesis Error", 
-        description: error.message || "An unexpected response was received from the server." 
+        description: "Large volume consolidation requires aggressive data pruning. Retrying with shorter spans is recommended if this persists." 
       });
     } finally {
       setIsGenerating(false);
@@ -259,7 +267,7 @@ export default function OverallReportPage() {
                   className="h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm text-sm md:text-base transition-all active:scale-95"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Layers className="mr-2 h-5 w-5 text-blue-600" />}
-                  FULL HISTORY
+                  CONSOLIDATE FULL HISTORY
                 </Button>
               </div>
             </div>
@@ -348,7 +356,6 @@ export default function OverallReportPage() {
                                     </div>
                                   )}
 
-                                  {/* Contextual Media for this specific day */}
                                   {dayImages.length > 0 && (
                                     <div className="pt-6 border-t border-slate-50">
                                       <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
