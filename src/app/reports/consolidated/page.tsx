@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -68,8 +69,8 @@ export default function OverallReportPage() {
 
     try {
       const reportsRef = collection(db, 'reports');
-      // Safety limit reduced to 100 to ensure processing within server action limits
-      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(100));
+      // Fetch up to 200 reports for full history to ensure we get a comprehensive range
+      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(200));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
@@ -123,9 +124,11 @@ export default function OverallReportPage() {
 
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
       
+      // Aggressive pruning: reduce character limit per report as the total count increases
+      const pruneLimit = filteredReports.length > 50 ? 400 : 600;
+
       const reportTexts = filteredReports.map(r => {
-        // Reduced to 800 chars for extreme efficiency
-        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, '').substring(0, 800);
+        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, ' ').substring(0, pruneLimit);
         return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
       }).filter(text => text.length > 20);
       
@@ -150,7 +153,7 @@ export default function OverallReportPage() {
       toast({ 
         variant: "destructive", 
         title: "Synthesis Error", 
-        description: "The volume of history exceeds current synthesis limits. Try a specific day range." 
+        description: error.message || "The strategic synthesis protocol failed. Try a smaller day range." 
       });
     } finally {
       setIsGenerating(false);
