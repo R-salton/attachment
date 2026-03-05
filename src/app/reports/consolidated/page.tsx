@@ -73,7 +73,7 @@ export default function OverallReportPage() {
 
     try {
       const reportsRef = collection(db, 'reports');
-      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(150));
+      const q = query(reportsRef, orderBy('createdAt', 'desc'), limit(100)); // Cap to ensure prompt window safety
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
@@ -120,17 +120,25 @@ export default function OverallReportPage() {
 
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
       
-      // Prune reports per date to avoid massive payloads while keeping core tactical data
-      const reportTexts = filteredReports.map(r => {
-        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, ' ').substring(0, 800);
-        return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
-      }).filter(text => text.length > 20);
+      // Grouping by date before sending to AI to improve synthesis coherence and reduce token overhead
+      const groupedByDate = new Map<string, string[]>();
+      filteredReports.forEach(r => {
+        const dateKey = r.reportDate || 'UNKNOWN';
+        const existing = groupedByDate.get(dateKey) || [];
+        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, ' ').substring(0, 500); // Aggressive pruning for stability
+        existing.push(`[UNIT: ${r.unit}] ${cleanedText}`);
+        groupedByDate.set(dateKey, existing);
+      });
+
+      const reportClusters = Array.from(groupedByDate.entries()).map(([date, items]) => {
+        return `[DATE: ${date}]\n${items.join('\n\n')}`;
+      });
       
-      if (reportTexts.length === 0) throw new Error("No textual SITREPs found.");
+      if (reportClusters.length === 0) throw new Error("No textual records available for consolidation.");
 
       const synthesis = await generateConsolidatedReport({
         targetDay: spanCount,
-        reports: reportTexts,
+        reports: reportClusters,
         reportMode: mode
       });
 
@@ -139,11 +147,11 @@ export default function OverallReportPage() {
       
       toast({ 
         title: mode === 'OPERATION_SUMMARY' ? "Operation Report Ready" : "Chronological Report Ready", 
-        description: `Synthesized ${filteredReports.length} unit records.` 
+        description: `Consolidated ${filteredReports.length} unit records.` 
       });
     } catch (error: any) {
       console.error("Overall Report Error:", error);
-      toast({ variant: "destructive", title: "Synthesis Error", description: error.message || "Strategic synthesis failed." });
+      toast({ variant: "destructive", title: "Consolidation Error", description: error.message || "Strategic synthesis failed." });
     } finally {
       setIsGenerating(false);
     }
@@ -171,9 +179,10 @@ export default function OverallReportPage() {
         forceWideAchievements: result.forceWideAchievements,
         operationalTrends: result.operationalTrends,
         criticalChallenges: result.criticalChallenges,
-        strategicRecommendations: result.strategicRecommendations
+        strategicRecommendations: result.strategicRecommendations,
+        unitBreakdown: result.unitBreakdown
       });
-      toast({ title: "Report Exported", description: "Professional DOCX downloaded successfully." });
+      toast({ title: "Report Exported", description: "Professional registry memo downloaded." });
     } catch (e) {
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate DOCX." });
     }
@@ -216,7 +225,7 @@ export default function OverallReportPage() {
               <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-primary">Consolidation Terminal</span>
             </div>
             <CardTitle className="text-xl md:text-2xl font-black">Strategic Archive Generator</CardTitle>
-            <CardDescription className="text-slate-400 font-bold max-w-2xl text-xs md:text-base">Synthesize all situational data into a high-level command transcript.</CardDescription>
+            <CardDescription className="text-slate-400 font-bold max-w-2xl text-xs md:text-base">Synthesize force-wide situational data into a professional command memo.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 md:p-10 space-y-8 md:space-y-10">
             
@@ -262,8 +271,8 @@ export default function OverallReportPage() {
                   <Loader2 className="h-16 w-16 md:h-24 md:w-24 animate-spin text-blue-600 relative z-10" />
                 </div>
                 <div className="text-center space-y-2 px-4">
-                  <p className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">Strategic Synthesis Active</p>
-                  <p className="text-[10px] md:text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Analyzing force-wide SITREPs into narrative intelligence...</p>
+                  <p className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">Consolidating Tactical Registry</p>
+                  <p className="text-[10px] md:text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">This high-volume operation may take up to 60 seconds. Please remain connected...</p>
                 </div>
               </div>
             )}
@@ -300,39 +309,39 @@ export default function OverallReportPage() {
                         </div>
                       </section>
 
-                      {reportMode === 'OPERATION_SUMMARY' ? (
-                        <section className="space-y-10">
-                          <div className="flex items-center gap-3 md:gap-4 px-2">
-                            <ListChecks className="h-6 w-6 md:h-7 md:w-7 text-blue-600" />
-                            <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Tactical Case & Resolution Registry</h4>
-                          </div>
-                          <div className="grid grid-cols-1 gap-6">
-                            {result.tacticalLog.map((log, i) => (
-                              <Card key={i} className="rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl space-y-6 group hover:border-blue-400 transition-all duration-300">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                  <h5 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                      <ShieldAlert className="h-5 w-5" />
-                                    </div>
-                                    {log.caseType}
-                                  </h5>
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest rounded-lg">Tactical Resolution: Verified</Badge>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-50">
-                                  <div className="space-y-3">
-                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><AlertCircle className="h-3 w-3" /> Incident Details</p>
-                                    <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed italic">{log.occurrences}</p>
+                      <section className="space-y-10">
+                        <div className="flex items-center gap-3 md:gap-4 px-2">
+                          <ListChecks className="h-6 w-6 md:h-7 md:w-7 text-blue-600" />
+                          <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Tactical Case & Resolution Registry</h4>
+                        </div>
+                        <div className="grid grid-cols-1 gap-6">
+                          {result.tacticalLog.map((log, i) => (
+                            <Card key={i} className="rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl space-y-6 group hover:border-blue-400 transition-all duration-300">
+                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <h5 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <ShieldAlert className="h-5 w-5" />
                                   </div>
-                                  <div className="space-y-3">
-                                    <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-2"><Zap className="h-3 w-3" /> Command Action Taken</p>
-                                    <p className="text-sm md:text-base font-black text-slate-900 leading-relaxed">{log.actionTaken}</p>
-                                  </div>
+                                  {log.caseType}
+                                </h5>
+                                <Badge className="bg-emerald-100 text-emerald-700 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest rounded-lg">Tactical Resolution: Verified</Badge>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-50">
+                                <div className="space-y-3">
+                                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><AlertCircle className="h-3 w-3" /> Incident Details</p>
+                                  <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed italic">{log.occurrences}</p>
                                 </div>
-                              </Card>
-                            ))}
-                          </div>
-                        </section>
-                      ) : (
+                                <div className="space-y-3">
+                                  <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-2"><Zap className="h-3 w-3" /> Command Action Taken</p>
+                                  <p className="text-sm md:text-base font-black text-slate-900 leading-relaxed">{log.actionTaken}</p>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </section>
+
+                      {reportMode === 'CHRONOLOGICAL' && (
                         <section className="space-y-8 md:space-y-10">
                           <div className="flex items-center gap-3 md:gap-4 px-2">
                             <BookOpen className="h-6 w-6 md:h-7 md:w-7 text-blue-600" />

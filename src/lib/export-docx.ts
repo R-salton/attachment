@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface BriefingDay {
@@ -14,6 +14,11 @@ interface TacticalLogEntry {
   caseType: string;
   occurrences: string;
   actionTaken: string;
+}
+
+interface UnitStats {
+  unitName: string;
+  reportCount: number;
 }
 
 interface ReportData {
@@ -31,6 +36,7 @@ interface ReportData {
   operationalTrends?: string[];
   criticalChallenges?: string[];
   strategicRecommendations?: string[];
+  unitBreakdown?: UnitStats[];
 }
 
 function cleanTextForExport(text: string): string {
@@ -106,7 +112,7 @@ function createImageParagraph(imgUri: string, title: string) {
 }
 
 export async function exportReportToDocx(report: ReportData) {
-  const isOperationSummary = !!report.operationalNarrative;
+  const isOperationSummary = !report.dailyBriefings || report.dailyBriefings.length === 0;
 
   const coverPage = [
     new Paragraph({
@@ -178,27 +184,26 @@ export async function exportReportToDocx(report: ReportData) {
     bodyParagraphs.push(new Paragraph({ spacing: { after: 400 } }));
   }
 
-  if (isOperationSummary && report.tacticalLog) {
+  if (report.tacticalLog && report.tacticalLog.length > 0) {
     bodyParagraphs.push(createParagraph("TACTICAL CASE & RESOLUTION REGISTRY", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
     
     report.tacticalLog.forEach(log => {
       bodyParagraphs.push(createParagraph(log.caseType.toUpperCase(), { bold: true, size: 26, color: "2563eb", spacing: { before: 300, after: 100 } }));
-      bodyParagraphs.push(createParagraph(`Details: ${cleanTextForExport(log.occurrences)}`, { size: 24, italic: true }));
-      bodyParagraphs.push(createParagraph(`Tactical Action: ${cleanTextForExport(log.actionTaken)}`, { size: 24, bold: true, spacing: { after: 300 } }));
+      bodyParagraphs.push(createParagraph(`Incident Details: ${cleanTextForExport(log.occurrences)}`, { size: 24, italic: true }));
+      bodyParagraphs.push(createParagraph(`Command Resolution: ${cleanTextForExport(log.actionTaken)}`, { size: 24, bold: true, spacing: { after: 300 } }));
       bodyParagraphs.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 200 } }));
     });
-  } else if (report.dailyBriefings && report.dailyBriefings.length > 0) {
-    bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
+  }
+
+  if (report.dailyBriefings && report.dailyBriefings.length > 0) {
+    bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY COMMAND BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
     report.dailyBriefings.forEach((day) => {
       bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase(), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
       bodyParagraphs.push(createParagraph(cleanTextForExport(day.summary), { size: 24, italic: true }));
-      if (day.keyIncidents.length > 0) {
-        bodyParagraphs.push(createParagraph("Significant Incidents & Responses:", { bold: true, size: 22 }));
-        day.keyIncidents.forEach(inc => bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 22, bullet: true })));
-      }
+      
       if (day.images && day.images.length > 0) {
         day.images.forEach((img, idx) => {
-          const paragraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel} - Photo ${idx + 1}`);
+          const paragraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel} - Tactical Media Photo ${idx + 1}`);
           if (paragraphs) bodyParagraphs.push(...paragraphs);
         });
       }
@@ -217,6 +222,32 @@ export async function exportReportToDocx(report: ReportData) {
   addListSection("OBSERVED OPERATIONAL TRENDS", report.operationalTrends);
   addListSection("CRITICAL CHALLENGES ENCOUNTERED", report.criticalChallenges);
   addListSection("STRATEGIC COMMAND RECOMMENDATIONS", report.strategicRecommendations);
+
+  // Breakdown Statistics Table
+  if (report.unitBreakdown && report.unitBreakdown.length > 0) {
+    bodyParagraphs.push(new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }));
+    bodyParagraphs.push(createParagraph("COMMAND STATISTICS REGISTRY", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
+    
+    const rows = [
+      new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "DEPLOYMENT UNIT", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "SITREP COUNT", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
+        ],
+      }),
+      ...report.unitBreakdown.map(stat => new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: stat.unitName, size: 22 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: stat.reportCount.toString(), size: 22 })], alignment: AlignmentType.CENTER })] }),
+        ],
+      }))
+    ];
+
+    bodyParagraphs.push(new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: rows
+    }));
+  }
 
   const doc = new Document({
     sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children: [...coverPage, ...bodyParagraphs] }],

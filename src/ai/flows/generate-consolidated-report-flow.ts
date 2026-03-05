@@ -3,6 +3,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
+export const maxDuration = 120; // Increase timeout for heavy consolidation
+
 const DailyBriefingSchema = z.object({
   dayLabel: z.string().describe('The date or day number (e.g., "Day 1 - 18 FEB 26").'),
   summary: z.string().describe('A comprehensive narrative summary of all unit activities and the overall situation for this specific day. DO NOT use markdown headers like ###.'),
@@ -23,7 +25,7 @@ const UnitActivitySchema = z.object({
 
 const GenerateConsolidatedReportInputSchema = z.object({
   targetDay: z.number().describe('The chronological day number up to which the reports are consolidated.'),
-  reports: z.array(z.string()).describe('An array of raw SITREP transcripts.'),
+  reports: z.array(z.string()).describe('An array of structured unit transcripts grouped by date.'),
   reportMode: z.enum(['CHRONOLOGICAL', 'OPERATION_SUMMARY']).default('CHRONOLOGICAL').describe('Whether to group by day or synthesize into a single operation-wide narrative.'),
 });
 
@@ -56,23 +58,22 @@ const consolidatedPrompt = ai.definePrompt({
 Analyze the following transcripts:
 
 {{#each reports}}
---- UNIT REPORT START ---
+--- REGISTRY DATA START ---
 {{{this}}}
---- UNIT REPORT END ---
+--- REGISTRY DATA END ---
 {{/each}}
 
 ### CURRENT MODE: {{{reportMode}}}
 
 ### CORE INSTRUCTIONS FOR TACTICAL LOG:
-1. **SPECIFICITY**: DO NOT use generic summaries like "39 cases recorded" or "unspecified traffic incidents". 
-2. **PAIRING**: For every case type (e.g., Theft, Abortion, Assault, Kanyanga Production), you MUST pair it with the specific Action Taken to resolve it.
-3. **EXCLUSIONS**: DO NOT include administrative tasks (Briefings, JOC planning, Station duties, Inductions) as incidents. These belong in the Narrative summary.
-4. **CATEGORIZATION**: Group multiple reports of the same case type (e.g., all Kanyanga production raids across different DPUs) into one entry but detail the specific outcomes and actions for each.
+1. **SPECIFICITY & PAIRING**: DO NOT use generic summaries like "39 cases recorded" or "unspecified traffic incidents". For every case type (e.g., Theft, Abortion, Assault, Kanyanga Production, Public Disturbance), you MUST pair it with the specific Tactical Action Taken to resolve it.
+2. **CATEGORY GROUPING**: Group multiple reports of the same case type into one entry but detail the specific outcomes and actions for each occurrence.
+3. **EXCLUSIONS**: DO NOT include administrative tasks (Briefings, JOC planning, Station duties, Inductions, Sentry duties) as incidents. These belong in the "Operational Narrative" or "Executive Summary".
 
 ### CORE INSTRUCTIONS FOR NARRATIVE:
-1. **Executive Summary**: Provide a strategic narrative of the operational trajectory.
-2. **Operational Narrative**: Create a comprehensive, formal story of the entire attachment. Include administrative duties, inductions, and skill acquisition here.
-3. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags. Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
+1. **Executive Summary**: Provide a high-level strategic narrative of the operational trajectory.
+2. **Operational Narrative**: Create a comprehensive, formal story of the entire attachment. Focus on skills acquired, training objectives met, and general situational awareness. Include administrative duties here.
+3. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and bolding symbols (*). Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
 
 Your response MUST strictly follow the JSON schema provided.`,
 });
