@@ -29,7 +29,9 @@ import {
   ListChecks,
   AlertCircle,
   Lightbulb,
-  FileText
+  FileText,
+  ShieldAlert,
+  Search
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -117,10 +119,10 @@ export default function OverallReportPage() {
       const selectedDates = all ? uniqueDates : uniqueDates.slice(-spanCount);
 
       const filteredReports = allReports.filter(r => selectedDates.includes(r.reportDate));
-      const pruneLimit = filteredReports.length > 50 ? 400 : 800;
-
+      
+      // Prune reports per date to avoid massive payloads while keeping core tactical data
       const reportTexts = filteredReports.map(r => {
-        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, ' ').substring(0, pruneLimit);
+        const cleanedText = (r.fullText || "").replace(/<[^>]+>/g, ' ').substring(0, 800);
         return `[UNIT: ${r.unit}] [DATE: ${r.reportDate}]\n${cleanedText}`;
       }).filter(text => text.length > 20);
       
@@ -141,7 +143,7 @@ export default function OverallReportPage() {
       });
     } catch (error: any) {
       console.error("Overall Report Error:", error);
-      toast({ variant: "destructive", title: "Synthesis Error", description: error.message || "Protocol failed. Try fewer records." });
+      toast({ variant: "destructive", title: "Synthesis Error", description: error.message || "Strategic synthesis failed." });
     } finally {
       setIsGenerating(false);
     }
@@ -160,8 +162,7 @@ export default function OverallReportPage() {
         reportingCommanderName: 'OFFICER CADET INTAKE 14/25-26',
         executiveSummary: result.executiveSummary,
         operationalNarrative: result.operationalNarrative,
-        consolidatedIncidents: result.consolidatedIncidents,
-        consolidatedActions: result.consolidatedActions,
+        tacticalLog: result.tacticalLog,
         dailyBriefings: result.dailyBriefings?.map(day => {
           const dateParts = day.dayLabel.split('-');
           const rawDate = dateParts.length > 1 ? dateParts[1].trim().toUpperCase() : day.dayLabel.trim().toUpperCase();
@@ -221,7 +222,7 @@ export default function OverallReportPage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100">
               <div className="space-y-4">
-                <Label className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Window</Label>
+                <Label className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Reporting Window (Last X Days)</Label>
                 <div className="relative">
                   <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input 
@@ -233,23 +234,23 @@ export default function OverallReportPage() {
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-3 justify-end">
+              <div className="flex flex-col sm:flex-row gap-3 justify-end items-end">
                 <Button 
                   onClick={() => handleGenerate(false, 'CHRONOLOGICAL')} 
                   disabled={isGenerating}
-                  className="h-12 md:h-14 rounded-xl md:rounded-2xl font-black shadow-xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700"
+                  className="h-12 md:h-14 rounded-xl md:rounded-2xl font-black shadow-xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700 flex-1 w-full"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Layers className="mr-2 h-5 w-5" />}
-                  DAILY BREAKDOWN REPORT
+                  GENERATE RANGE
                 </Button>
                 <Button 
                   onClick={() => handleGenerate(true, 'OPERATION_SUMMARY')} 
                   disabled={isGenerating}
                   variant="outline"
-                  className="h-12 md:h-14 rounded-xl md:rounded-2xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
+                  className="h-12 md:h-14 rounded-xl md:rounded-2xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm flex-1 w-full"
                 >
                   {isGenerating ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5 text-blue-600" />}
-                  FULL OPERATION REPORT
+                  CONSOLIDATE FULL HISTORY
                 </Button>
               </div>
             </div>
@@ -301,33 +302,34 @@ export default function OverallReportPage() {
 
                       {reportMode === 'OPERATION_SUMMARY' ? (
                         <section className="space-y-10">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl space-y-6">
-                              <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4" /> Consolidated Incident Log
-                              </h4>
-                              <ul className="space-y-4">
-                                {result.consolidatedIncidents.map((inc, i) => (
-                                  <li key={i} className="text-sm font-bold text-slate-700 leading-relaxed flex gap-3">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0 mt-2" />
-                                    {inc}
-                                  </li>
-                                ))}
-                              </ul>
-                            </Card>
-                            <Card className="rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl space-y-6">
-                              <h4 className="text-sm font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
-                                <ShieldCheck className="h-4 w-4" /> Tactical Actions Taken
-                              </h4>
-                              <ul className="space-y-4">
-                                {result.consolidatedActions.map((act, i) => (
-                                  <li key={i} className="text-sm font-bold text-slate-700 leading-relaxed flex gap-3">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-2" />
-                                    {act}
-                                  </li>
-                                ))}
-                              </ul>
-                            </Card>
+                          <div className="flex items-center gap-3 md:gap-4 px-2">
+                            <ListChecks className="h-6 w-6 md:h-7 md:w-7 text-blue-600" />
+                            <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Tactical Case & Resolution Registry</h4>
+                          </div>
+                          <div className="grid grid-cols-1 gap-6">
+                            {result.tacticalLog.map((log, i) => (
+                              <Card key={i} className="rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl space-y-6 group hover:border-blue-400 transition-all duration-300">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                  <h5 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                      <ShieldAlert className="h-5 w-5" />
+                                    </div>
+                                    {log.caseType}
+                                  </h5>
+                                  <Badge className="bg-emerald-100 text-emerald-700 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest rounded-lg">Tactical Resolution: Verified</Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-50">
+                                  <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><AlertCircle className="h-3 w-3" /> Incident Details</p>
+                                    <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed italic">{log.occurrences}</p>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-2"><Zap className="h-3 w-3" /> Command Action Taken</p>
+                                    <p className="text-sm md:text-base font-black text-slate-900 leading-relaxed">{log.actionTaken}</p>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
                           </div>
                         </section>
                       ) : (
@@ -346,7 +348,7 @@ export default function OverallReportPage() {
                                   <div className="bg-slate-900 px-6 md:px-8 py-4 md:py-5 flex items-center justify-between">
                                     <div className="flex items-center gap-2 md:gap-3">
                                       <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                                      <span className="text-xs md:text-sm font-black text-white uppercase tracking-widest">{day.dayLabel}</span>
+                                      <span className="text-xs md:sm font-black text-white uppercase tracking-widest">{day.dayLabel}</span>
                                     </div>
                                     <Badge variant="outline" className="text-[8px] border-primary/20 text-primary uppercase font-black">SITREP</Badge>
                                   </div>

@@ -10,6 +10,12 @@ interface BriefingDay {
   images?: string[];
 }
 
+interface TacticalLogEntry {
+  caseType: string;
+  occurrences: string;
+  actionTaken: string;
+}
+
 interface ReportData {
   reportTitle: string;
   reportDate: string;
@@ -19,8 +25,7 @@ interface ReportData {
   images?: string[];
   executiveSummary?: string;
   operationalNarrative?: string;
-  consolidatedIncidents?: string[];
-  consolidatedActions?: string[];
+  tacticalLog?: TacticalLogEntry[];
   dailyBriefings?: BriefingDay[];
   forceWideAchievements?: string[];
   operationalTrends?: string[];
@@ -173,15 +178,15 @@ export async function exportReportToDocx(report: ReportData) {
     bodyParagraphs.push(new Paragraph({ spacing: { after: 400 } }));
   }
 
-  if (isOperationSummary) {
-    if (report.consolidatedIncidents && report.consolidatedIncidents.length > 0) {
-      bodyParagraphs.push(createParagraph("CONSOLIDATED INCIDENT LOG (CASES)", { bold: true, size: 26, spacing: { before: 400, after: 200 }, underline: true }));
-      report.consolidatedIncidents.forEach(inc => bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 24, bullet: true })));
-    }
-    if (report.consolidatedActions && report.consolidatedActions.length > 0) {
-      bodyParagraphs.push(createParagraph("CONSOLIDATED ACTIONS TAKEN", { bold: true, size: 26, spacing: { before: 400, after: 200 }, underline: true }));
-      report.consolidatedActions.forEach(act => bodyParagraphs.push(createParagraph(cleanTextForExport(act), { size: 24, bullet: true })));
-    }
+  if (isOperationSummary && report.tacticalLog) {
+    bodyParagraphs.push(createParagraph("TACTICAL CASE & RESOLUTION REGISTRY", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
+    
+    report.tacticalLog.forEach(log => {
+      bodyParagraphs.push(createParagraph(log.caseType.toUpperCase(), { bold: true, size: 26, color: "2563eb", spacing: { before: 300, after: 100 } }));
+      bodyParagraphs.push(createParagraph(`Details: ${cleanTextForExport(log.occurrences)}`, { size: 24, italic: true }));
+      bodyParagraphs.push(createParagraph(`Tactical Action: ${cleanTextForExport(log.actionTaken)}`, { size: 24, bold: true, spacing: { after: 300 } }));
+      bodyParagraphs.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 200 } }));
+    });
   } else if (report.dailyBriefings && report.dailyBriefings.length > 0) {
     bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
     report.dailyBriefings.forEach((day) => {

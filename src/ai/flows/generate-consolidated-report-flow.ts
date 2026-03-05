@@ -10,6 +10,12 @@ const DailyBriefingSchema = z.object({
   incidentCount: z.number().describe('Total number of incidents tracked on this specific day.'),
 });
 
+const TacticalLogEntrySchema = z.object({
+  caseType: z.string().describe('The specific category of the case (e.g., "Theft", "Assault", "Illegal Kanyanga Production").'),
+  occurrences: z.string().describe('Specific details of where and what happened across units. Avoid generic counts like "39 cases".'),
+  actionTaken: z.string().describe('The specific tactical actions and resolutions implemented for these cases.'),
+});
+
 const UnitActivitySchema = z.object({
   unitName: z.string(),
   reportCount: z.number(),
@@ -27,8 +33,7 @@ const GenerateConsolidatedReportOutputSchema = z.object({
   executiveSummary: z.string().describe('A high-level, narrative-driven executive overview of progress and operational status. DO NOT use markdown headers like ###.'),
   dailyBriefings: z.array(DailyBriefingSchema).optional().describe('A day-by-day detailed breakdown synthesizing all unit reports into a single daily command narrative.'),
   operationalNarrative: z.string().describe('A detailed, cohesive narrative of the entire attachment period, focusing on skills, objectives, and progress. No mention of specific days in headers. DO NOT use markdown headers like ###.'),
-  consolidatedIncidents: z.array(z.string()).describe('A merged list of all tactical cases and incidents encountered during the entire operation.'),
-  consolidatedActions: z.array(z.string()).describe('A merged list of all tactical actions taken in response to incidents across the entire operation.'),
+  tacticalLog: z.array(TacticalLogEntrySchema).describe('A merged list of specific tactical cases paired with their specific resolutions across the entire operation.'),
   forceWideAchievements: z.array(z.string()).describe('Specific major milestones or operational successes.'),
   operationalTrends: z.array(z.string()).describe('Observed patterns in performance, security stability, or personnel discipline.'),
   criticalChallenges: z.array(z.string()).describe('Significant or persistent obstacles.'),
@@ -58,14 +63,16 @@ Analyze the following transcripts:
 
 ### CURRENT MODE: {{{reportMode}}}
 
-### CORE INSTRUCTIONS:
+### CORE INSTRUCTIONS FOR TACTICAL LOG:
+1. **SPECIFICITY**: DO NOT use generic summaries like "39 cases recorded" or "unspecified traffic incidents". 
+2. **PAIRING**: For every case type (e.g., Theft, Abortion, Assault, Kanyanga Production), you MUST pair it with the specific Action Taken to resolve it.
+3. **EXCLUSIONS**: DO NOT include administrative tasks (Briefings, JOC planning, Station duties, Inductions) as incidents. These belong in the Narrative summary.
+4. **CATEGORIZATION**: Group multiple reports of the same case type (e.g., all Kanyanga production raids across different DPUs) into one entry but detail the specific outcomes and actions for each.
+
+### CORE INSTRUCTIONS FOR NARRATIVE:
 1. **Executive Summary**: Provide a strategic narrative of the operational trajectory.
-2. **Operational Narrative**: Create a comprehensive, formal story of the entire attachment. Focus on cadet skills, field training objectives, and operational evolution. 
-3. **If Mode is CHRONOLOGICAL**: Group info by DATE/DAY. Merge overlapping unit reports into "Daily Briefings".
-4. **If Mode is OPERATION_SUMMARY**: DO NOT group by days. Instead, synthesize all events into a unified narrative. Consolidate ALL cases/incidents and ALL actions taken into themed lists.
-5. **Data Analytics**: Count incidents and unit activity based on tags in text.
-6. **Tone**: Authoritative, formal, tactical.
-7. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags. Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
+2. **Operational Narrative**: Create a comprehensive, formal story of the entire attachment. Include administrative duties, inductions, and skill acquisition here.
+3. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags. Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
 
 Your response MUST strictly follow the JSON schema provided.`,
 });
