@@ -5,16 +5,10 @@ import {
   Packer, 
   Paragraph, 
   TextRun, 
-  HeadingLevel, 
   AlignmentType, 
   ImageRun, 
   SectionType,
-  PageBreak,
   BorderStyle,
-  WidthType,
-  Table,
-  TableRow,
-  TableCell
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -29,7 +23,7 @@ interface ArticleData {
 
 /**
  * Exports multiple articles to a modern, magazine-style .docx file.
- * Each article is presented on its own page with a professional layout.
+ * Each article is presented with a professional two-column layout.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
@@ -86,9 +80,48 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     if (companyArticles.length === 0) continue;
 
     for (const article of companyArticles) {
-      const articleChildren: any[] = [];
+      // 1. Header Children (Full Width)
+      const headerChildren: any[] = [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: article.cadetName.toUpperCase(),
+              bold: true,
+              size: 36,
+              font: "Arial",
+            }),
+          ],
+          spacing: { before: 200, after: 100 },
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${article.company} Company | Platoon ${article.platoon}`,
+              italic: true,
+              size: 20,
+              font: "Arial",
+              color: "666666",
+            }),
+          ],
+          spacing: { after: 400 },
+        }),
+        new Paragraph({
+          border: {
+            bottom: {
+              color: "333333",
+              space: 1,
+              style: BorderStyle.SINGLE,
+              size: 6,
+            },
+          },
+          spacing: { after: 400 },
+        }),
+      ];
 
-      // Article Profile Image
+      // 2. Body Children (Two Columns)
+      const bodyChildren: any[] = [];
+
+      // Article Profile Image (placed at start of content)
       if (article.imageUrl) {
         try {
           const base64Data = article.imageUrl.split(',')[1].replace(/\s/g, '');
@@ -98,18 +131,18 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             bytes[i] = binaryString.charCodeAt(i);
           }
 
-          articleChildren.push(
+          bodyChildren.push(
             new Paragraph({
               children: [
                 new ImageRun({
                   data: bytes,
                   transformation: {
-                    width: 150,
-                    height: 150,
+                    width: 180,
+                    height: 180,
                   },
                 }),
               ],
-              spacing: { before: 400, after: 400 },
+              spacing: { after: 300 },
               alignment: AlignmentType.LEFT,
             })
           );
@@ -118,105 +151,81 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         }
       }
 
-      // Main Heading
-      articleChildren.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: article.cadetName.toUpperCase(),
-              bold: true,
-              size: 32,
-              font: "Arial",
-            }),
-          ],
-          spacing: { after: 100 },
-        })
-      );
-
-      // Metadata / Subheading
-      articleChildren.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `${article.company} Company | Platoon ${article.platoon}`,
-              italic: true,
-              size: 20,
-              font: "Arial",
-              color: "444444",
-            }),
-          ],
-          spacing: { after: 600 },
-        })
-      );
-
-      // Separator Line
-      articleChildren.push(
-        new Paragraph({
-          border: {
-            bottom: {
-              color: "EEEEEE",
-              space: 1,
-              style: BorderStyle.SINGLE,
-              size: 6,
-            },
-          },
-          spacing: { after: 600 },
-        })
-      );
-
       // Content Body
       const contentLines = article.content.split('\n');
       for (const line of contentLines) {
         if (!line.trim()) {
-          articleChildren.push(new Paragraph({ spacing: { after: 200 } }));
+          bodyChildren.push(new Paragraph({ spacing: { after: 100 } }));
           continue;
         }
         
-        articleChildren.push(
+        bodyChildren.push(
           new Paragraph({
             children: [
               new TextRun({
                 text: line.trim(),
-                size: 24,
+                size: 22,
                 font: "Arial",
               }),
             ],
             spacing: { after: 150 },
-            alignment: AlignmentType.LEFT,
+            alignment: AlignmentType.JUSTIFIED,
           })
         );
       }
 
       // Footer Note
-      articleChildren.push(
+      bodyChildren.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `Filed on: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Official Registry'}`,
+              text: `Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Official Registry'}`,
               size: 16,
               font: "Arial",
               color: "999999",
+              italic: true,
             }),
           ],
-          spacing: { before: 1000 },
+          spacing: { before: 600 },
           alignment: AlignmentType.RIGHT,
         })
       );
 
-      // Add as a new section (New Page)
+      // Create Sections for this article
+      // Header Section (1 column, starts on new page)
       sections.push({
         properties: {
           type: SectionType.NEXT_PAGE,
           page: {
             margin: {
-              top: 1440, // 1 inch
+              top: 1440,
+              right: 1440,
+              bottom: 400, // Reduced bottom to allow continuous flow
+              left: 1440,
+            },
+          },
+        },
+        children: headerChildren,
+      });
+
+      // Body Section (2 columns, continues on same page)
+      sections.push({
+        properties: {
+          type: SectionType.CONTINUOUS,
+          column: {
+            count: 2,
+            space: 720, // 0.5 inch gap between columns
+          },
+          page: {
+            margin: {
+              top: 400,
               right: 1440,
               bottom: 1440,
               left: 1440,
             },
           },
         },
-        children: articleChildren,
+        children: bodyChildren,
       });
     }
   }
