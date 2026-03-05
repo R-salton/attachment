@@ -18,13 +18,17 @@ const UnitActivitySchema = z.object({
 const GenerateConsolidatedReportInputSchema = z.object({
   targetDay: z.number().describe('The chronological day number up to which the reports are consolidated.'),
   reports: z.array(z.string()).describe('An array of raw SITREP transcripts.'),
+  reportMode: z.enum(['CHRONOLOGICAL', 'OPERATION_SUMMARY']).default('CHRONOLOGICAL').describe('Whether to group by day or synthesize into a single operation-wide narrative.'),
 });
 
 export type GenerateConsolidatedReportInput = z.infer<typeof GenerateConsolidatedReportInputSchema>;
 
 const GenerateConsolidatedReportOutputSchema = z.object({
   executiveSummary: z.string().describe('A high-level, narrative-driven executive overview of progress and operational status. DO NOT use markdown headers like ###.'),
-  dailyBriefings: z.array(DailyBriefingSchema).describe('A day-by-day detailed breakdown synthesizing all unit reports into a single daily command narrative.'),
+  dailyBriefings: z.array(DailyBriefingSchema).optional().describe('A day-by-day detailed breakdown synthesizing all unit reports into a single daily command narrative.'),
+  operationalNarrative: z.string().describe('A detailed, cohesive narrative of the entire attachment period, focusing on skills, objectives, and progress. No mention of specific days in headers. DO NOT use markdown headers like ###.'),
+  consolidatedIncidents: z.array(z.string()).describe('A merged list of all tactical cases and incidents encountered during the entire operation.'),
+  consolidatedActions: z.array(z.string()).describe('A merged list of all tactical actions taken in response to incidents across the entire operation.'),
   forceWideAchievements: z.array(z.string()).describe('Specific major milestones or operational successes.'),
   operationalTrends: z.array(z.string()).describe('Observed patterns in performance, security stability, or personnel discipline.'),
   criticalChallenges: z.array(z.string()).describe('Significant or persistent obstacles.'),
@@ -42,7 +46,7 @@ const consolidatedPrompt = ai.definePrompt({
   name: 'generateConsolidatedReportPrompt',
   input: { schema: GenerateConsolidatedReportInputSchema },
   output: { schema: GenerateConsolidatedReportOutputSchema },
-  prompt: `You are a Senior Strategic Analyst for a Police Command Registry. Synthesize multiple UNIT SITUATION REPORTS (SITREPs) into a single high-fidelity OVERALL COMMAND REPORT.
+  prompt: `You are a Senior Strategic Analyst for a Police Command Registry. Synthesize multiple UNIT SITUATION REPORTS (SITREPs) into a single high-fidelity COMMAND REPORT for the "Officer Cadet Intake 14/25-26 Field Training Exercise".
 
 Analyze the following transcripts:
 
@@ -52,13 +56,16 @@ Analyze the following transcripts:
 --- UNIT REPORT END ---
 {{/each}}
 
+### CURRENT MODE: {{{reportMode}}}
+
 ### CORE INSTRUCTIONS:
-1. **Aggregation Logic**: Group info by DATE/DAY. Merge overlapping unit reports into one "Daily Briefing".
-2. **Executive Summary**: Provide a strategic narrative of the operational trajectory. 
-3. **Daily Briefings**: Detail every day. List incidents and actions. Count the number of incidents mentioned per day.
-4. **Data Analytics**: Count how many reports each unit submitted based on the [UNIT: ...] tags in the text.
-5. **Tone**: Authoritative, formal, tactical. 
-6. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags from the summary text. Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
+1. **Executive Summary**: Provide a strategic narrative of the operational trajectory.
+2. **Operational Narrative**: Create a comprehensive, formal story of the entire attachment. Focus on cadet skills, field training objectives, and operational evolution. 
+3. **If Mode is CHRONOLOGICAL**: Group info by DATE/DAY. Merge overlapping unit reports into "Daily Briefings".
+4. **If Mode is OPERATION_SUMMARY**: DO NOT group by days. Instead, synthesize all events into a unified narrative. Consolidate ALL cases/incidents and ALL actions taken into themed lists.
+5. **Data Analytics**: Count incidents and unit activity based on tags in text.
+6. **Tone**: Authoritative, formal, tactical.
+7. **Formatting**: STRIP ALL MARKDOWN HEADERS (###) and HTML tags. Return pure narrative strings. DO NOT USE ANY MARKDOWN FOR HEADERS.
 
 Your response MUST strictly follow the JSON schema provided.`,
 });
@@ -78,20 +85,19 @@ const generateConsolidatedReportFlow = ai.defineFlow(
       const { output } = await consolidatedPrompt(input);
       if (!output) throw new Error("AI failed to generate a valid overall report object.");
       
-      // Secondary sanitization to ensure no ### exist in the strings
       const sanitize = (text: string) => text.replace(/###/g, '').replace(/\*/g, '').trim();
       
       return {
         ...output,
         executiveSummary: sanitize(output.executiveSummary),
-        dailyBriefings: output.dailyBriefings.map(d => ({
+        operationalNarrative: sanitize(output.operationalNarrative),
+        dailyBriefings: output.dailyBriefings?.map(d => ({
           ...d,
           summary: sanitize(d.summary)
         }))
       };
     } catch (error: any) {
       console.error("AI Overall Report Error:", error);
-      // Return a plain error message to the client to avoid serialization issues
       throw new Error(`Strategic synthesis failed: ${error.message || 'Unknown AI error'}`);
     }
   }

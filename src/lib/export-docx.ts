@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface BriefingDay {
@@ -18,6 +18,9 @@ interface ReportData {
   reportingCommanderName: string;
   images?: string[];
   executiveSummary?: string;
+  operationalNarrative?: string;
+  consolidatedIncidents?: string[];
+  consolidatedActions?: string[];
   dailyBriefings?: BriefingDay[];
   forceWideAchievements?: string[];
   operationalTrends?: string[];
@@ -46,7 +49,7 @@ function cleanTextForExport(text: string): string {
   return cleaned.trim();
 }
 
-function createParagraph(text: string, options: { bold?: boolean, size?: number, italic?: boolean, bullet?: boolean, color?: string, alignment?: any, spacing?: any } = {}) {
+function createParagraph(text: string, options: { bold?: boolean, size?: number, italic?: boolean, bullet?: boolean, color?: string, alignment?: any, spacing?: any, underline?: boolean } = {}) {
   return new Paragraph({
     children: [
       new TextRun({
@@ -56,6 +59,7 @@ function createParagraph(text: string, options: { bold?: boolean, size?: number,
         size: options.size || 24,
         font: "Arial",
         color: options.color || "000000",
+        underline: options.underline ? {} : undefined,
       }),
     ],
     bullet: options.bullet ? { level: 0 } : undefined,
@@ -97,30 +101,16 @@ function createImageParagraph(imgUri: string, title: string) {
 }
 
 export async function exportReportToDocx(report: ReportData) {
+  const isOperationSummary = !!report.operationalNarrative;
+
   const coverPage = [
     new Paragraph({
-      children: [
-        new TextRun({
-          text: "OFFICE OF RWAMAGANA DPU",
-          bold: true,
-          size: 36,
-          font: "Arial",
-          color: "000000",
-        }),
-      ],
+      children: [new TextRun({ text: "OFFICE OF RWAMAGANA DPU", bold: true, size: 36, font: "Arial" })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
     }),
     new Paragraph({
-      children: [
-        new TextRun({
-          text: "MEMO",
-          bold: true,
-          size: 28,
-          font: "Arial",
-          underline: {},
-        }),
-      ],
+      children: [new TextRun({ text: "MEMO", bold: true, size: 28, font: "Arial", underline: {} })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 600 },
     }),
@@ -138,24 +128,13 @@ export async function exportReportToDocx(report: ReportData) {
         new TableRow({
           children: [
             new TableCell({
-              children: [
-                new Paragraph({
-                  children: [new TextRun({ text: "To: OIC CADET", bold: true, size: 24, font: "Arial" })],
-                  spacing: { before: 200, after: 200 },
-                }),
-              ],
+              children: [new Paragraph({ children: [new TextRun({ text: "To: OIC CADET", bold: true, size: 24, font: "Arial" })], spacing: { before: 200, after: 200 } })],
               width: { size: 50, type: WidthType.PERCENTAGE },
             }),
             new TableCell({
               children: [
-                new Paragraph({
-                  children: [new TextRun({ text: "From: OIC ATTACHMENT", bold: true, size: 24, font: "Arial" })],
-                  spacing: { before: 200, after: 100 },
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `Date: ${report.reportDate}`, bold: true, size: 24, font: "Arial" })],
-                  spacing: { after: 200 },
-                }),
+                new Paragraph({ children: [new TextRun({ text: "From: OIC ATTACHMENT", bold: true, size: 24, font: "Arial" })], spacing: { before: 200, after: 100 } }),
+                new Paragraph({ children: [new TextRun({ text: `Date: ${report.reportDate}`, bold: true, size: 24, font: "Arial" })], spacing: { after: 200 } }),
               ],
               width: { size: 50, type: WidthType.PERCENTAGE },
             }),
@@ -163,44 +142,18 @@ export async function exportReportToDocx(report: ReportData) {
         }),
       ],
     }),
+    new Paragraph({ border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } }, spacing: { after: 400 } }),
+    new Paragraph({ children: [new TextRun({ text: "Sir,", size: 24, font: "Arial" })], spacing: { before: 400, after: 200 } }),
     new Paragraph({
-      border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+      children: [new TextRun({ text: report.reportTitle.toUpperCase(), bold: true, size: 26, font: "Arial", underline: {} })],
       spacing: { after: 400 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: "Sir,", size: 24, font: "Arial" })],
-      spacing: { before: 400, after: 200 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: report.reportTitle.toUpperCase().replace(/###/g, ''),
-          bold: true,
-          size: 26,
-          font: "Arial",
-          underline: {},
-        }),
-      ],
-      spacing: { after: 400 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise report for the specified period.`,
-          size: 24,
-          font: "Arial",
-        }),
-      ],
+      children: [new TextRun({ text: `1. This serves to submit to your office, cadet course intake 14/25-26 Field Training Exercise report for the specified period.`, size: 24, font: "Arial" })],
       spacing: { after: 200 },
     }),
-    new Paragraph({
-      children: [new TextRun({ text: "2. Forwarded for your consideration and further guidance.", size: 24, font: "Arial" })],
-      spacing: { after: 200 },
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "3. Respectfully,", size: 24, font: "Arial" })],
-      spacing: { after: 800 },
-    }),
+    new Paragraph({ children: [new TextRun({ text: "2. Forwarded for your consideration and further guidance.", size: 24, font: "Arial" })], spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: "3. Respectfully,", size: 24, font: "Arial" })], spacing: { after: 800 } }),
     new Paragraph({
       children: [
         new TextRun({ text: "RANK: OC    NAMES: ", bold: true, size: 24, font: "Arial" }),
@@ -214,76 +167,59 @@ export async function exportReportToDocx(report: ReportData) {
 
   let bodyParagraphs: any[] = [];
 
-  if (report.executiveSummary) {
-    bodyParagraphs.push(createParagraph("EXECUTIVE STRATEGIC SUMMARY", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
-    bodyParagraphs.push(createParagraph(cleanTextForExport(report.executiveSummary), { size: 24 }));
+  if (report.operationalNarrative || report.executiveSummary) {
+    bodyParagraphs.push(createParagraph(isOperationSummary ? "OPERATIONAL ATTACHMENT NARRATIVE" : "EXECUTIVE STRATEGIC SUMMARY", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
+    bodyParagraphs.push(createParagraph(cleanTextForExport(report.operationalNarrative || report.executiveSummary || ""), { size: 24 }));
     bodyParagraphs.push(new Paragraph({ spacing: { after: 400 } }));
   }
 
-  if (report.dailyBriefings && report.dailyBriefings.length > 0) {
-    bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 } }));
-    
+  if (isOperationSummary) {
+    if (report.consolidatedIncidents && report.consolidatedIncidents.length > 0) {
+      bodyParagraphs.push(createParagraph("CONSOLIDATED INCIDENT LOG (CASES)", { bold: true, size: 26, spacing: { before: 400, after: 200 }, underline: true }));
+      report.consolidatedIncidents.forEach(inc => bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 24, bullet: true })));
+    }
+    if (report.consolidatedActions && report.consolidatedActions.length > 0) {
+      bodyParagraphs.push(createParagraph("CONSOLIDATED ACTIONS TAKEN", { bold: true, size: 26, spacing: { before: 400, after: 200 }, underline: true }));
+      report.consolidatedActions.forEach(act => bodyParagraphs.push(createParagraph(cleanTextForExport(act), { size: 24, bullet: true })));
+    }
+  } else if (report.dailyBriefings && report.dailyBriefings.length > 0) {
+    bodyParagraphs.push(createParagraph("CHRONOLOGICAL DAILY BRIEFINGS", { bold: true, size: 28, spacing: { before: 400, after: 200 }, underline: true }));
     report.dailyBriefings.forEach((day) => {
-      bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase().replace(/###/g, ''), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
+      bodyParagraphs.push(createParagraph(day.dayLabel.toUpperCase(), { bold: true, size: 26, spacing: { before: 300, after: 150 }, color: "2563eb" }));
       bodyParagraphs.push(createParagraph(cleanTextForExport(day.summary), { size: 24, italic: true }));
-      
       if (day.keyIncidents.length > 0) {
-        bodyParagraphs.push(createParagraph("Significant Incidents & Responses:", { bold: true, size: 22, spacing: { before: 150, after: 100 } }));
-        day.keyIncidents.forEach(inc => {
-          bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 22, bullet: true }));
-        });
+        bodyParagraphs.push(createParagraph("Significant Incidents & Responses:", { bold: true, size: 22 }));
+        day.keyIncidents.forEach(inc => bodyParagraphs.push(createParagraph(cleanTextForExport(inc), { size: 22, bullet: true })));
       }
-
       if (day.images && day.images.length > 0) {
-        day.images.forEach((img, imgIdx) => {
-          const imgParagraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel.replace(/###/g, '')} - Operational Photo ${imgIdx + 1}`);
-          if (imgParagraphs) bodyParagraphs.push(...imgParagraphs);
+        day.images.forEach((img, idx) => {
+          const paragraphs = createImageParagraph(img, `EXHIBIT: ${day.dayLabel} - Photo ${idx + 1}`);
+          if (paragraphs) bodyParagraphs.push(...paragraphs);
         });
       }
-      
       bodyParagraphs.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 300 } }));
-    });
-  }
-
-  if (report.fullText && !report.dailyBriefings) {
-    const processedText = cleanTextForExport(report.fullText);
-    processedText.split('\n').forEach(line => {
-      if (line.trim()) bodyParagraphs.push(createParagraph(line.trim()));
     });
   }
 
   const addListSection = (title: string, list?: string[]) => {
     if (list && list.length > 0) {
-      bodyParagraphs.push(createParagraph(title, { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
+      bodyParagraphs.push(createParagraph(title, { bold: true, size: 26, spacing: { before: 400, after: 200 }, underline: true }));
       list.forEach(item => bodyParagraphs.push(createParagraph(cleanTextForExport(item), { size: 24, bullet: true })));
     }
   };
 
   addListSection("FORCE-WIDE ACHIEVEMENTS", report.forceWideAchievements);
   addListSection("OBSERVED OPERATIONAL TRENDS", report.operationalTrends);
-  addListSection("CRITICAL CHALLENGES", report.criticalChallenges);
+  addListSection("CRITICAL CHALLENGES ENCOUNTERED", report.criticalChallenges);
   addListSection("STRATEGIC COMMAND RECOMMENDATIONS", report.strategicRecommendations);
 
-  if (report.images && report.images.length > 0 && !report.dailyBriefings) {
-    bodyParagraphs.push(createParagraph("ATTACHED OPERATIONAL EVIDENCE", { bold: true, size: 26, spacing: { before: 400, after: 200 } }));
-    report.images.forEach((img, idx) => {
-      const imgParagraphs = createImageParagraph(img, `EXHIBIT: Operational Photo ${idx + 1}`);
-      if (imgParagraphs) bodyParagraphs.push(...imgParagraphs);
-    });
-  }
-
   const doc = new Document({
-    sections: [
-      {
-        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
-        children: [...coverPage, ...bodyParagraphs],
-      },
-    ],
+    sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children: [...coverPage, ...bodyParagraphs] }],
   });
 
   try {
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${report.reportTitle.replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
+    saveAs(blob, `${report.reportTitle.substring(0, 50).replace(/[/\\?%*:|"<>]/g, '-')}.docx`);
   } catch (error) {
     console.error("DOCX Packing Error:", error);
     throw error;
