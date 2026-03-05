@@ -1,9 +1,14 @@
 'use server';
+/**
+ * @fileOverview A strategic analyst flow for synthesizing unit SITREPs into command-level reports.
+ * 
+ * - generateConsolidatedReport - Synthesizes multiple reports into a high-fidelity overall report.
+ * - GenerateConsolidatedReportInput - Input schema for the consolidation process.
+ * - GenerateConsolidatedReportOutput - Return schema containing strategic narrative and tactical logs.
+ */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-
-export const maxDuration = 120; // Increase timeout for heavy consolidation
 
 const DailyBriefingSchema = z.object({
   dayLabel: z.string().describe('The date or day number (e.g., "Day 1 - 18 FEB 26").'),
