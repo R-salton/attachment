@@ -246,75 +246,133 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 }
 
 /**
- * Generates a professional Nominal Roll / Contribution List
+ * Generates a professional Nominal Roll / Contribution List organized by Platoon
  */
 export async function exportContributionRegistry(articles: ArticleData[]) {
-  // Sort articles: Company (Alpha -> Bravo -> Charlie), then Platoon (1 -> 2 -> 3), then Name
-  const sortedArticles = [...articles].sort((a, b) => {
-    const companyOrder = { 'Alpha': 1, 'Bravo': 2, 'Charlie': 3 };
-    const compA = companyOrder[a.company as keyof typeof companyOrder] || 99;
-    const compB = companyOrder[b.company as keyof typeof companyOrder] || 99;
-    
-    if (compA !== compB) return compA - compB;
-    
-    const platA = parseInt(a.platoon) || 0;
-    const platB = parseInt(b.platoon) || 0;
-    
-    if (platA !== platB) return platA - platB;
-    
-    return a.cadetName.localeCompare(b.cadetName);
+  // Aggregate articles by Cadet (Name cleaning + Duplicate detection)
+  const cadetRegistry = new Map<string, { 
+    name: string, 
+    company: string, 
+    platoon: string, 
+    articleCount: number 
+  }>();
+
+  articles.forEach(article => {
+    // Remove "OC" from the name (case-insensitive, beginning or end)
+    const cleanName = article.cadetName
+      .replace(/\bOC\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+
+    const key = `${article.company}-${article.platoon}-${cleanName}`;
+    const existing = cadetRegistry.get(key);
+
+    if (existing) {
+      existing.articleCount += 1;
+    } else {
+      cadetRegistry.set(key, {
+        name: cleanName,
+        company: article.company,
+        platoon: article.platoon,
+        articleCount: 1
+      });
+    }
   });
 
-  const headerRow = new TableRow({
-    children: [
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "COMPANY", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "PLATOON", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-    ],
-  });
+  const uniqueCadets = Array.from(cadetRegistry.values());
 
-  const dataRows = sortedArticles.map((article, index) => {
-    return new TableRow({
-      children: [
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "OC", size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.cadetName.toUpperCase(), size: 20 })] })], verticalAlign: VerticalAlign.CENTER }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.company, size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.platoon, size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-      ],
-    });
-  });
+  const companies = ['Alpha', 'Bravo', 'Charlie'];
+  const platoons = ['1', '2', '3'];
 
-  const table = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [headerRow, ...dataRows],
-  });
+  const docChildren: any[] = [
+    new Paragraph({
+      children: [new TextRun({ text: "OFFICER CADET INTAKE 14/25-26", bold: true, size: 28 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "LITERARY MAGAZINE CONTRIBUTION REGISTRY", bold: true, size: 24, underline: {} })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+    }),
+  ];
+
+  let serialNumber = 1;
+
+  for (const company of companies) {
+    for (const platoon of platoons) {
+      const platoonCadets = uniqueCadets
+        .filter(c => c.company === company && c.platoon === platoon)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (platoonCadets.length === 0) continue;
+
+      // Add Platoon Header
+      docChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({ 
+              text: `${company.toUpperCase()} COMPANY - PLATOON ${platoon}`, 
+              bold: true, 
+              size: 22,
+              color: "2563eb"
+            })
+          ],
+          spacing: { before: 400, after: 200 },
+        })
+      );
+
+      // Create Platoon Table
+      const headerRow = new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "NBR OF ARTICLES", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+        ],
+      });
+
+      const dataRows = platoonCadets.map((cadet, idx) => {
+        return new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (idx + 1).toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "OC", size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.name, size: 20 })] })], verticalAlign: VerticalAlign.CENTER }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.articleCount.toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+          ],
+        });
+      });
+
+      docChildren.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [headerRow, ...dataRows],
+          spacing: { after: 400 }
+        })
+      );
+    }
+  }
+
+  docChildren.push(
+    new Paragraph({
+      children: [new TextRun({ text: `\nRegistry Summary: ${uniqueCadets.length} Unique Contributors`, bold: true, size: 18 })],
+      alignment: AlignmentType.LEFT,
+      spacing: { before: 400 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `Report Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16 })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 1000 },
+    })
+  );
 
   const doc = new Document({
     sections: [{
       properties: {
         page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
       },
-      children: [
-        new Paragraph({
-          children: [new TextRun({ text: "OFFICER CADET INTAKE 14/25-26", bold: true, size: 28 })],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
-        }),
-        new Paragraph({
-          children: [new TextRun({ text: "LITERARY MAGAZINE CONTRIBUTION REGISTRY", bold: true, size: 24, underline: {} })],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 600 },
-        }),
-        table,
-        new Paragraph({
-          children: [new TextRun({ text: `\nReport Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16 })],
-          alignment: AlignmentType.RIGHT,
-          spacing: { before: 1000 },
-        }),
-      ],
+      children: docChildren,
     }],
   });
 
