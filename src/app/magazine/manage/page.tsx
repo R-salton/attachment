@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -23,11 +22,12 @@ import {
   ArrowUpRight,
   Eye,
   ChevronRight,
-  Building2
+  Building2,
+  ListOrdered
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { exportMagazineToDocx } from '@/lib/magazine-export';
+import { exportMagazineToDocx, exportContributionRegistry } from '@/lib/magazine-export';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -49,6 +49,7 @@ export default function MagazineManagementPortal() {
   const { isMasterAdmin, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingRoll, setIsExportingRoll] = useState(false);
 
   const articlesQuery = useMemoFirebase(() => {
     if (!db || !isMasterAdmin) return null;
@@ -78,6 +79,19 @@ export default function MagazineManagementPortal() {
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate DOCX file." });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportNominalRoll = async () => {
+    if (!articles || articles.length === 0) return;
+    setIsExportingRoll(true);
+    try {
+      await exportContributionRegistry(articles);
+      toast({ title: "Registry Exported", description: "Nominal roll contribution list is ready." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate registry document." });
+    } finally {
+      setIsExportingRoll(false);
     }
   };
 
@@ -132,14 +146,25 @@ export default function MagazineManagementPortal() {
             <h1 className="text-2xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase truncate">Magazine Registry</h1>
           </div>
         </div>
-        <Button 
-          onClick={handleExport} 
-          disabled={isExporting || stats.total === 0} 
-          className="w-full md:w-auto rounded-2xl h-14 md:h-16 px-8 md:px-10 font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-sm md:text-lg transition-all active:scale-95"
-        >
-          {isExporting ? <Loader2 className="animate-spin mr-3 h-5 w-5 md:h-6 md:w-6" /> : <FileDown className="mr-3 h-5 w-5 md:h-6 md:w-6" />}
-          GENERATE MAG DRAFT
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <Button 
+            variant="outline"
+            onClick={handleExportNominalRoll} 
+            disabled={isExportingRoll || stats.total === 0} 
+            className="w-full md:w-auto rounded-2xl h-14 px-6 font-bold border-slate-200 shadow-sm text-xs md:text-sm"
+          >
+            {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ListOrdered className="mr-2 h-4 w-4" />}
+            NOMINAL ROLL
+          </Button>
+          <Button 
+            onClick={handleExport} 
+            disabled={isExporting || stats.total === 0} 
+            className="w-full md:w-auto rounded-2xl h-14 md:h-16 px-8 md:px-10 font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-sm md:text-lg transition-all active:scale-95"
+          >
+            {isExporting ? <Loader2 className="animate-spin mr-3 h-5 w-5 md:h-6 md:w-6" /> : <FileDown className="mr-3 h-5 w-5 md:h-6 md:w-6" />}
+            GENERATE MAG DRAFT
+          </Button>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto mt-8 md:mt-16 px-4 md:px-12 space-y-10 md:space-y-16">
@@ -210,7 +235,6 @@ export default function MagazineManagementPortal() {
                 >
                   <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
                   
-                  {/* Left Side: Avatar Container - Top Aligned */}
                   <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 mt-1">
                     {article.imageUrl ? (
                       <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
@@ -219,7 +243,6 @@ export default function MagazineManagementPortal() {
                     )}
                   </div>
 
-                  {/* Right Side: Content Area */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between h-full pt-1">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
@@ -289,7 +312,7 @@ export default function MagazineManagementPortal() {
               </div>
               <div className="space-y-3">
                 <h3 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
-                <p className="text-[10px] md:text-sm text-slate-400 font-bold uppercase tracking-[0.3em] max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
+                <p className="text-[10px] md:sm text-slate-400 font-bold uppercase tracking-[0.3em] max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
               </div>
             </div>
           )}

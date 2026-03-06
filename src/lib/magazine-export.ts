@@ -9,6 +9,11 @@ import {
   ImageRun, 
   SectionType,
   BorderStyle,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -23,7 +28,6 @@ interface ArticleData {
 
 /**
  * Exports multiple articles to a modern, magazine-style .docx file.
- * Each article is presented with a professional two-column layout.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
@@ -121,7 +125,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       // 2. Body Children (Two Columns)
       const bodyChildren: any[] = [];
 
-      // Article Profile Image (placed at start of content)
+      // Article Profile Image
       if (article.imageUrl) {
         try {
           const base64Data = article.imageUrl.split(',')[1].replace(/\s/g, '');
@@ -191,8 +195,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         })
       );
 
-      // Create Sections for this article
-      // Header Section (1 column, starts on new page)
+      // Create Sections
       sections.push({
         properties: {
           type: SectionType.NEXT_PAGE,
@@ -200,7 +203,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             margin: {
               top: 1440,
               right: 1440,
-              bottom: 400, // Reduced bottom to allow continuous flow
+              bottom: 400,
               left: 1440,
             },
           },
@@ -208,13 +211,12 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         children: headerChildren,
       });
 
-      // Body Section (2 columns, continues on same page)
       sections.push({
         properties: {
           type: SectionType.CONTINUOUS,
           column: {
             count: 2,
-            space: 720, // 0.5 inch gap between columns
+            space: 720,
           },
           page: {
             margin: {
@@ -239,6 +241,88 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     saveAs(blob, `CADET_MAGAZINE_DRAFT_${new Date().toISOString().split('T')[0]}.docx`);
   } catch (error) {
     console.error("DOCX Packing Error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Generates a professional Nominal Roll / Contribution List
+ */
+export async function exportContributionRegistry(articles: ArticleData[]) {
+  // Sort articles: Company (Alpha -> Bravo -> Charlie), then Platoon (1 -> 2 -> 3), then Name
+  const sortedArticles = [...articles].sort((a, b) => {
+    const companyOrder = { 'Alpha': 1, 'Bravo': 2, 'Charlie': 3 };
+    const compA = companyOrder[a.company as keyof typeof companyOrder] || 99;
+    const compB = companyOrder[b.company as keyof typeof companyOrder] || 99;
+    
+    if (compA !== compB) return compA - compB;
+    
+    const platA = parseInt(a.platoon) || 0;
+    const platB = parseInt(b.platoon) || 0;
+    
+    if (platA !== platB) return platA - platB;
+    
+    return a.cadetName.localeCompare(b.cadetName);
+  });
+
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "COMPANY", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "PLATOON", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+    ],
+  });
+
+  const dataRows = sortedArticles.map((article, index) => {
+    return new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "OC", size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.cadetName.toUpperCase(), size: 20 })] })], verticalAlign: VerticalAlign.CENTER }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.company, size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: article.platoon, size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+      ],
+    });
+  });
+
+  const table = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [headerRow, ...dataRows],
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
+      },
+      children: [
+        new Paragraph({
+          children: [new TextRun({ text: "OFFICER CADET INTAKE 14/25-26", bold: true, size: 28 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: "LITERARY MAGAZINE CONTRIBUTION REGISTRY", bold: true, size: 24, underline: {} })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 600 },
+        }),
+        table,
+        new Paragraph({
+          children: [new TextRun({ text: `\nReport Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16 })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 1000 },
+        }),
+      ],
+    }],
+  });
+
+  try {
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `CADET_CONTRIBUTION_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
+  } catch (error) {
+    console.error("Nominal Roll Export Error:", error);
     throw error;
   }
 }
