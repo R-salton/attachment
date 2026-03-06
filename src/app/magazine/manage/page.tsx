@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -23,11 +24,12 @@ import {
   Eye,
   ChevronRight,
   Building2,
-  ListOrdered
+  ListOrdered,
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { exportMagazineToDocx, exportContributionRegistry } from '@/lib/magazine-export';
+import { exportMagazineToDocx, exportContributionRegistry, exportContributionRegistryPDF } from '@/lib/magazine-export';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -41,6 +43,14 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function MagazineManagementPortal() {
   const router = useRouter();
@@ -82,12 +92,16 @@ export default function MagazineManagementPortal() {
     }
   };
 
-  const handleExportNominalRoll = async () => {
+  const handleExportNominalRoll = async (format: 'DOCX' | 'PDF') => {
     if (!articles || articles.length === 0) return;
     setIsExportingRoll(true);
     try {
-      await exportContributionRegistry(articles);
-      toast({ title: "Registry Exported", description: "Nominal roll contribution list is ready." });
+      if (format === 'DOCX') {
+        await exportContributionRegistry(articles);
+      } else {
+        await exportContributionRegistryPDF(articles);
+      }
+      toast({ title: "Registry Exported", description: `Nominal roll (${format}) is ready.` });
     } catch (e) {
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate registry document." });
     } finally {
@@ -147,15 +161,29 @@ export default function MagazineManagementPortal() {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 md:gap-3 w-full lg:w-auto">
-          <Button 
-            variant="outline"
-            onClick={handleExportNominalRoll} 
-            disabled={isExportingRoll || stats.total === 0} 
-            className="w-full sm:w-auto rounded-xl md:rounded-2xl h-11 md:h-14 px-4 md:px-6 font-bold border-slate-200 shadow-sm text-[10px] md:text-sm"
-          >
-            {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ListOrdered className="mr-2 h-4 w-4" />}
-            NOMINAL ROLL
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                disabled={isExportingRoll || stats.total === 0} 
+                className="w-full sm:w-auto rounded-xl md:rounded-2xl h-11 md:h-14 px-4 md:px-6 font-bold border-slate-200 shadow-sm text-[10px] md:text-sm"
+              >
+                {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ListOrdered className="mr-2 h-4 w-4" />}
+                NOMINAL ROLL
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-xl p-2 w-48">
+              <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400">Select Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('PDF')} className="cursor-pointer gap-2 py-3 rounded-lg font-bold">
+                <FileText className="h-4 w-4 text-red-500" /> Mobile PDF Archive
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('DOCX')} className="cursor-pointer gap-2 py-3 rounded-lg font-bold">
+                <FileDown className="h-4 w-4 text-blue-500" /> Word Registry (DOCX)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button 
             onClick={handleExport} 
             disabled={isExporting || stats.total === 0} 
@@ -168,7 +196,6 @@ export default function MagazineManagementPortal() {
       </header>
 
       <main className="max-w-7xl mx-auto mt-6 md:mt-16 px-4 md:px-12 space-y-8 md:space-y-16">
-        {/* Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
           <Card className="border-none shadow-2xl rounded-[1.5rem] md:rounded-[2rem] bg-slate-900 text-white p-6 md:p-10 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
@@ -198,7 +225,6 @@ export default function MagazineManagementPortal() {
         </div>
 
         <div className="space-y-6 md:space-y-8">
-          {/* Filter Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 px-2">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary">

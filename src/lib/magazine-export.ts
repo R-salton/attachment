@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -16,6 +17,8 @@ import {
   VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ArticleData {
   cadetName: string;
@@ -27,12 +30,47 @@ interface ArticleData {
 }
 
 /**
+ * Shared utility to clean names and aggregate contribution counts
+ */
+function getProcessedCadetRegistry(articles: ArticleData[]) {
+  const cadetRegistry = new Map<string, { 
+    name: string, 
+    company: string, 
+    platoon: string, 
+    articleCount: number 
+  }>();
+
+  articles.forEach(article => {
+    const cleanName = article.cadetName
+      .replace(/\bOC\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+
+    const key = `${article.company}-${article.platoon}-${cleanName}`;
+    const existing = cadetRegistry.get(key);
+
+    if (existing) {
+      existing.articleCount += 1;
+    } else {
+      cadetRegistry.set(key, {
+        name: cleanName,
+        company: article.company,
+        platoon: article.platoon,
+        articleCount: 1
+      });
+    }
+  });
+
+  return Array.from(cadetRegistry.values());
+}
+
+/**
  * Exports multiple articles to a modern, magazine-style .docx file.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
 
-  // 1. Cover / Intro Section
   sections.push({
     properties: {
       type: SectionType.CONTINUOUS,
@@ -84,7 +122,6 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     if (companyArticles.length === 0) continue;
 
     for (const article of companyArticles) {
-      // 1. Header Children (Full Width)
       const headerChildren: any[] = [
         new Paragraph({
           children: [
@@ -122,10 +159,8 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         }),
       ];
 
-      // 2. Body Children (Two Columns)
       const bodyChildren: any[] = [];
 
-      // Article Profile Image
       if (article.imageUrl) {
         try {
           const base64Data = article.imageUrl.split(',')[1].replace(/\s/g, '');
@@ -155,7 +190,6 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         }
       }
 
-      // Content Body
       const contentLines = article.content.split('\n');
       for (const line of contentLines) {
         if (!line.trim()) {
@@ -178,7 +212,6 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         );
       }
 
-      // Footer Note
       bodyChildren.push(
         new Paragraph({
           children: [
@@ -195,7 +228,6 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         })
       );
 
-      // Create Sections
       sections.push({
         properties: {
           type: SectionType.NEXT_PAGE,
@@ -246,42 +278,10 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 }
 
 /**
- * Generates a professional Nominal Roll / Contribution List organized by Platoon
+ * Generates a professional Nominal Roll / Contribution List organized by Platoon (DOCX)
  */
 export async function exportContributionRegistry(articles: ArticleData[]) {
-  // Aggregate articles by Cadet (Name cleaning + Duplicate detection)
-  const cadetRegistry = new Map<string, { 
-    name: string, 
-    company: string, 
-    platoon: string, 
-    articleCount: number 
-  }>();
-
-  articles.forEach(article => {
-    // Remove "OC" from the name (case-insensitive, beginning or end)
-    const cleanName = article.cadetName
-      .replace(/\bOC\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toUpperCase();
-
-    const key = `${article.company}-${article.platoon}-${cleanName}`;
-    const existing = cadetRegistry.get(key);
-
-    if (existing) {
-      existing.articleCount += 1;
-    } else {
-      cadetRegistry.set(key, {
-        name: cleanName,
-        company: article.company,
-        platoon: article.platoon,
-        articleCount: 1
-      });
-    }
-  });
-
-  const uniqueCadets = Array.from(cadetRegistry.values());
-
+  const uniqueCadets = getProcessedCadetRegistry(articles);
   const companies = ['Alpha', 'Bravo', 'Charlie'];
   const platoons = ['1', '2', '3'];
 
@@ -298,8 +298,6 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
     }),
   ];
 
-  let serialNumber = 1;
-
   for (const company of companies) {
     for (const platoon of platoons) {
       const platoonCadets = uniqueCadets
@@ -308,7 +306,6 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
 
       if (platoonCadets.length === 0) continue;
 
-      // Add Platoon Header
       docChildren.push(
         new Paragraph({
           children: [
@@ -323,7 +320,6 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
         })
       );
 
-      // Create Platoon Table
       const headerRow = new TableRow({
         children: [
           new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
@@ -370,7 +366,7 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
+        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // Reduced margins for better mobile fit
       },
       children: docChildren,
     }],
@@ -383,4 +379,87 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
     console.error("Nominal Roll Export Error:", error);
     throw error;
   }
+}
+
+/**
+ * Generates a mobile-friendly PDF Nominal Roll
+ */
+export async function exportContributionRegistryPDF(articles: ArticleData[]) {
+  const uniqueCadets = getProcessedCadetRegistry(articles);
+  const doc = new jsPDF();
+  const companies = ['Alpha', 'Bravo', 'Charlie'];
+  const platoons = ['1', '2', '3'];
+
+  // Title Section
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('OFFICER CADET INTAKE 14/25-26', 105, 15, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text('LITERARY MAGAZINE CONTRIBUTION REGISTRY', 105, 22, { align: 'center' });
+  doc.setLineWidth(0.5);
+  doc.line(40, 24, 170, 24);
+
+  let currentY = 35;
+
+  for (const company of companies) {
+    for (const platoon of platoons) {
+      const platoonCadets = uniqueCadets
+        .filter(c => c.company === company && c.platoon === platoon)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (platoonCadets.length === 0) continue;
+
+      // Check if we need a new page
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.setFontSize(11);
+      doc.setTextColor(37, 99, 235); // Primary Blue
+      doc.text(`${company.toUpperCase()} COMPANY - PLATOON ${platoon}`, 14, currentY);
+      doc.setTextColor(0, 0, 0);
+      currentY += 5;
+
+      const tableData = platoonCadets.map((c, i) => [
+        (i + 1).toString(),
+        'OC',
+        c.name,
+        c.articleCount.toString()
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [['S/N', 'RANK', 'CADET FULL NAME', 'NBR OF ARTICLES']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 35, halign: 'center' }
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: (data) => {
+          currentY = data.cursor?.y || 20;
+        }
+      });
+
+      currentY += 15;
+    }
+  }
+
+  // Footer Summary
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`Page ${i} of ${pageCount} | Registry Summary: ${uniqueCadets.length} Unique Contributors`, 14, 285);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, 196, 285, { align: 'right' });
+  }
+
+  doc.save(`CADET_CONTRIBUTION_REGISTRY_${new Date().toISOString().split('T')[0]}.pdf`);
 }
