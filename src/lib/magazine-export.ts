@@ -30,6 +30,49 @@ interface ArticleData {
 }
 
 /**
+ * Utility to convert an image base64 string to a circular avatar using Canvas
+ */
+async function createCircularAvatar(base64Str: string): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = base64Str;
+    img.onload = () => {
+      const size = Math.min(img.width, img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error("Could not create canvas context"));
+        return;
+      }
+
+      // Draw circular clip
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Draw image centered
+      const xOffset = (img.width - size) / 2;
+      const yOffset = (img.height - size) / 2;
+      ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
+
+      // Convert to bytes for docx
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64Data = dataUrl.split(',')[1];
+      const binaryString = window.atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      resolve(bytes);
+    };
+    img.onerror = () => reject(new Error("Image load failed"));
+  });
+}
+
+/**
  * Shared utility to clean names and aggregate contribution counts
  */
 function getProcessedCadetRegistry(articles: ArticleData[]) {
@@ -66,11 +109,13 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
 }
 
 /**
- * Exports multiple articles to a modern, magazine-style .docx file.
+ * Exports multiple articles to a professional, two-column magazine document.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
+  const uniqueContributors = new Set(articles.map(a => a.cadetName.toUpperCase())).size;
 
+  // Title Section
   sections.push({
     properties: {
       type: SectionType.CONTINUOUS,
@@ -92,7 +137,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       new Paragraph({
         children: [
           new TextRun({
-            text: "LITERARY MAGAZINE CONTRIBUTIONS",
+            text: "OFFICIAL LITERARY ARCHIVE",
             bold: true,
             size: 48,
             font: "Arial",
@@ -128,7 +173,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             new TextRun({
               text: article.cadetName.toUpperCase(),
               bold: true,
-              size: 36,
+              size: 32,
               font: "Arial",
             }),
           ],
@@ -139,7 +184,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             new TextRun({
               text: `${article.company} Company | Platoon ${article.platoon}`,
               italic: true,
-              size: 20,
+              size: 18,
               font: "Arial",
               color: "666666",
             }),
@@ -161,23 +206,18 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 
       const bodyChildren: any[] = [];
 
+      // Circular Avatar Handling
       if (article.imageUrl) {
         try {
-          const base64Data = article.imageUrl.split(',')[1].replace(/\s/g, '');
-          const binaryString = window.atob(base64Data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
+          const avatarBytes = await createCircularAvatar(article.imageUrl);
           bodyChildren.push(
             new Paragraph({
               children: [
                 new ImageRun({
-                  data: bytes,
+                  data: avatarBytes,
                   transformation: {
-                    width: 180,
-                    height: 180,
+                    width: 140,
+                    height: 140,
                   },
                 }),
               ],
@@ -186,7 +226,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             })
           );
         } catch (e) {
-          console.error("Magazine Image Export Error:", e);
+          console.error("Circular Avatar Processing Failed:", e);
         }
       }
 
@@ -202,7 +242,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             children: [
               new TextRun({
                 text: line.trim(),
-                size: 22,
+                size: 20,
                 font: "Arial",
               }),
             ],
@@ -216,8 +256,8 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         new Paragraph({
           children: [
             new TextRun({
-              text: `Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Official Registry'}`,
-              size: 16,
+              text: `Official Registry Entry | Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Verified'}`,
+              size: 14,
               font: "Arial",
               color: "999999",
               italic: true,
@@ -232,12 +272,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         properties: {
           type: SectionType.NEXT_PAGE,
           page: {
-            margin: {
-              top: 1440,
-              right: 1440,
-              bottom: 400,
-              left: 1440,
-            },
+            margin: { top: 1440, right: 1440, bottom: 400, left: 1440 },
           },
         },
         children: headerChildren,
@@ -251,12 +286,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             space: 720,
           },
           page: {
-            margin: {
-              top: 400,
-              right: 1440,
-              bottom: 1440,
-              left: 1440,
-            },
+            margin: { top: 400, right: 1440, bottom: 1440, left: 1440 },
           },
         },
         children: bodyChildren,
@@ -264,13 +294,60 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     }
   }
 
-  const doc = new Document({
-    sections: sections,
+  // Summary Final Page
+  const summaryChildren: any[] = [
+    new Paragraph({
+      children: [new TextRun({ text: "REGISTRY SUMMARY STATISTICS", bold: true, size: 28, underline: {} })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 1000, after: 600 },
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "METRIC", bold: true })] })], shading: { fill: "f1f5f9" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "TOTAL COUNT", bold: true })] })], shading: { fill: "f1f5f9" } }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ text: "Total Literary Contributions" })] }),
+            new TableCell({ children: [new Paragraph({ text: articles.length.toString(), alignment: AlignmentType.CENTER })] }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ text: "Total Unique Cadet Submitters" })] }),
+            new TableCell({ children: [new Paragraph({ text: uniqueContributors.toString(), alignment: AlignmentType.CENTER })] }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ 
+          text: `\nEnd of Official Archive. Generated on ${new Date().toLocaleDateString('en-GB')}`, 
+          italic: true, 
+          size: 16,
+          color: "666666"
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 1000 },
+    }),
+  ];
+
+  sections.push({
+    properties: { type: SectionType.NEXT_PAGE },
+    children: summaryChildren,
   });
+
+  const doc = new Document({ sections });
 
   try {
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `CADET_MAGAZINE_DRAFT_${new Date().toISOString().split('T')[0]}.docx`);
+    saveAs(blob, `CADET_LITERARY_ARCHIVE_${new Date().toISOString().split('T')[0]}.docx`);
   } catch (error) {
     console.error("DOCX Packing Error:", error);
     throw error;
@@ -278,12 +355,13 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 }
 
 /**
- * Generates a professional Nominal Roll / Contribution List organized by Platoon (DOCX)
+ * Generates a professional Nominal Roll Organized by Platoon (DOCX)
  */
 export async function exportContributionRegistry(articles: ArticleData[]) {
   const uniqueCadets = getProcessedCadetRegistry(articles);
   const companies = ['Alpha', 'Bravo', 'Charlie'];
   const platoons = ['1', '2', '3'];
+  const totalArticles = articles.length;
 
   const docChildren: any[] = [
     new Paragraph({
@@ -350,23 +428,37 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
     }
   }
 
+  // Summary Footer
   docChildren.push(
     new Paragraph({
-      children: [new TextRun({ text: `\nRegistry Summary: ${uniqueCadets.length} Unique Contributors`, bold: true, size: 18 })],
-      alignment: AlignmentType.LEFT,
-      spacing: { before: 400 },
+      children: [
+        new TextRun({ text: `\nCOMMAND REGISTRY SUMMARY`, bold: true, size: 20, underline: {} })
+      ],
+      spacing: { before: 600, after: 200 }
     }),
     new Paragraph({
-      children: [new TextRun({ text: `Report Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16 })],
+      children: [
+        new TextRun({ text: `Total Articles Filed: `, bold: true, size: 18 }),
+        new TextRun({ text: totalArticles.toString(), size: 18 }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Total Unique Contributors: `, bold: true, size: 18 }),
+        new TextRun({ text: uniqueCadets.length.toString(), size: 18 }),
+      ],
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `\nReport Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16, color: "666666" })],
       alignment: AlignmentType.RIGHT,
-      spacing: { before: 1000 },
+      spacing: { before: 800 },
     })
   );
 
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // Reduced margins for better mobile fit
+        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
       },
       children: docChildren,
     }],
@@ -382,13 +474,14 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
 }
 
 /**
- * Generates a mobile-friendly PDF Nominal Roll
+ * Generates a professional PDF Nominal Roll with summary stats
  */
 export async function exportContributionRegistryPDF(articles: ArticleData[]) {
   const uniqueCadets = getProcessedCadetRegistry(articles);
   const doc = new jsPDF();
   const companies = ['Alpha', 'Bravo', 'Charlie'];
   const platoons = ['1', '2', '3'];
+  const totalArticles = articles.length;
 
   // Title Section
   doc.setFontSize(16);
@@ -409,14 +502,13 @@ export async function exportContributionRegistryPDF(articles: ArticleData[]) {
 
       if (platoonCadets.length === 0) continue;
 
-      // Check if we need a new page
       if (currentY > 250) {
         doc.addPage();
         currentY = 20;
       }
 
       doc.setFontSize(11);
-      doc.setTextColor(37, 99, 235); // Primary Blue
+      doc.setTextColor(37, 99, 235);
       doc.text(`${company.toUpperCase()} COMPANY - PLATOON ${platoon}`, 14, currentY);
       doc.setTextColor(0, 0, 0);
       currentY += 5;
@@ -451,13 +543,34 @@ export async function exportContributionRegistryPDF(articles: ArticleData[]) {
     }
   }
 
-  // Footer Summary
+  // Summary Section at the end
+  if (currentY > 240) {
+    doc.addPage();
+    currentY = 20;
+  } else {
+    currentY += 10;
+  }
+
+  doc.setDrawColor(200);
+  doc.line(14, currentY, 196, currentY);
+  currentY += 10;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('COMMAND REGISTRY TOTALS', 14, currentY);
+  currentY += 8;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total Articles Published: ${totalArticles}`, 14, currentY);
+  currentY += 6;
+  doc.text(`Total Unique Contributors: ${uniqueCadets.length}`, 14, currentY);
+
+  // Page Numbers
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Page ${i} of ${pageCount} | Registry Summary: ${uniqueCadets.length} Unique Contributors`, 14, 285);
+    doc.text(`Page ${i} of ${pageCount} | Registry Archive: Intake 14/25-26`, 14, 285);
     doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, 196, 285, { align: 'right' });
   }
 
