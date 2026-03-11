@@ -75,5 +75,14 @@ service cloud.firestore {
       // Public terminal submission allowed for all authenticated sessions.
       allow create: if isSignedIn(); 
     }
+
+    match /system_logs/{logId} {
+      // Admins can audit all logs.
+      allow read, list: if isAdmin();
+      // Any signed-in user can create a log entry (for audit purposes).
+      allow create: if isSignedIn();
+      // Logs should not be modified or deleted.
+      allow update, delete: if false;
+    }
   }
 }
