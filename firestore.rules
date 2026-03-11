@@ -42,7 +42,7 @@ service cloud.firestore {
     }
 
     function isCommander() {
-      return isAdmin() || isPTSLeadership() || isRole('COMMANDER');
+      return isAdmin() || isPTSLeadership() || isRole('COMMANDER') || isRole('LEADER');
     }
 
     match /users/{userId} {
