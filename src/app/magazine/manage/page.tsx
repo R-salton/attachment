@@ -253,70 +253,74 @@ export default function MagazineManagementPortal() {
               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
               {filteredArticles.map((article) => (
                 <div 
                   key={article.id} 
                   onClick={() => router.push(`/magazine/view/${article.id}`)}
-                  className="group flex items-start gap-3 md:gap-4 p-3 bg-white border border-slate-100 rounded-2xl hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                  className="group flex flex-col sm:flex-row items-stretch gap-0 bg-white border border-slate-100 rounded-[2rem] hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer relative overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900 group-hover:bg-primary transition-all duration-500" />
                   
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 mt-0.5">
+                  <div className="w-full sm:w-48 md:w-56 aspect-[4/3] sm:aspect-square overflow-hidden bg-slate-50 shrink-0 group-hover:scale-105 transition-transform duration-700">
                     {article.imageUrl ? (
                       <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
                     ) : (
-                      <User className="h-6 w-6 text-slate-200" />
+                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                        <User className="h-12 w-12 text-slate-300" />
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">
-                          {article.cadetName}
-                        </h4>
-                        <Badge className="bg-slate-900 text-white text-[6px] font-black px-1 py-0.5 uppercase tracking-widest border-none shrink-0">
-                          {article.company}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex wrap items-center gap-x-2.5 text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                        <div className="flex items-center gap-1">
-                          <Layers className="h-2.5 w-2.5" /> PLT {article.platoon}
+                  <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-4">
+                          <h4 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">
+                            {article.cadetName}
+                          </h4>
+                          <Badge className="bg-slate-900 text-white text-[8px] font-black px-2 py-1 uppercase tracking-widest border-none shrink-0">
+                            {article.company}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-2.5 w-2.5" /> 
-                          {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Processing...'}
+                        
+                        <div className="flex items-center gap-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                          <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md">
+                            <Layers className="h-3 w-3 text-primary" /> PLT {article.platoon}
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md">
+                            <Calendar className="h-3 w-3 text-primary" /> 
+                            {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Processing...'}
+                          </div>
                         </div>
                       </div>
 
-                      <p className="text-[10px] font-medium text-slate-500 line-clamp-2 italic leading-relaxed mt-1">
+                      <p className="text-sm font-medium text-slate-600 line-clamp-3 italic leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-50">
                         "{article.content}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
+                      <div onClick={e => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-2xl border-none shadow-3xl p-6 max-w-md">
+                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-10 max-w-md">
                             <AlertDialogHeader>
-                              <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
-                                <Trash2 className="h-6 w-6 text-red-500" />
+                              <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                                <Trash2 className="h-8 w-8 text-red-500" />
                               </div>
-                              <AlertDialogTitle className="text-lg font-black uppercase tracking-tighter text-slate-900">Purge Contribution?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm font-bold text-slate-500 mt-1">
-                                This will permanently expunge OC {article.cadetName}'s article from the magazine draft registry. This action is final.
+                              <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter text-slate-900 leading-none">Purge Contribution?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-base font-bold text-slate-500 mt-2">
+                                This will permanently expunge OC {article.cadetName}'s article from the registry database.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-6 gap-2">
-                              <AlertDialogCancel className="rounded-xl h-10 font-black border-none bg-slate-50 text-slate-600 px-6">Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-10 font-black shadow-lg shadow-red-500/20 px-8 border-none hover:bg-red-600">
+                            <AlertDialogFooter className="mt-8 gap-3">
+                              <AlertDialogCancel className="rounded-xl h-12 font-black border-none bg-slate-100 text-slate-600 px-8">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-12 font-black shadow-xl shadow-red-500/20 px-10 border-none hover:bg-red-600">
                                 Confirm Purge
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -324,8 +328,8 @@ export default function MagazineManagementPortal() {
                         </AlertDialog>
                       </div>
                       
-                      <div className="flex items-center gap-1 text-[7px] font-black text-primary uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                        Review Transcript <ChevronRight className="h-2.5 w-2.5" />
+                      <div className="flex items-center gap-2 text-[9px] font-black text-primary uppercase tracking-[0.2em] group-hover:translate-x-1 transition-transform">
+                        Review Transcript <ChevronRight className="h-3 w-3" />
                       </div>
                     </div>
                   </div>
@@ -333,13 +337,13 @@ export default function MagazineManagementPortal() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-6 px-6 shadow-sm">
-              <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner">
-                <BookOpen className="h-8 w-8 text-slate-200" />
+            <div className="text-center py-24 bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 px-6 shadow-sm">
+              <div className="h-20 w-20 bg-slate-50 rounded-3xl flex items-center justify-center shadow-inner">
+                <BookOpen className="h-10 w-10 text-slate-200" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
               </div>
             </div>
           )}
