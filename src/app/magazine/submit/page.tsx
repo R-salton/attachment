@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Camera, Loader2, Send, CheckCircle2, User, Building2, Layers, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { recordLog } from '@/lib/logger';
 
 const COMPANIES = ["Alpha", "Bravo", "Charlie"];
 const PLATOONS = ["1", "2", "3"];
@@ -89,6 +90,14 @@ export default function MagazineSubmissionPortal() {
         content: formData.content,
         imageUrl: formData.image,
         createdAt: serverTimestamp()
+      });
+
+      // Record System Log (Anonymous session or guest)
+      recordLog(db, {
+        userId: 'ANONYMOUS',
+        userName: formData.cadetName,
+        action: 'ARTICLE_SUBMITTED',
+        details: `Submitted magazine article from ${formData.company} Coy, PLT ${formData.platoon}`
       });
 
       setIsSuccess(true);

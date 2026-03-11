@@ -50,9 +50,24 @@
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["ADMIN", "TRAINEE", "LEADER", "COMMANDER", "PTSLEADERSHIP", "INACTIVE"] },
         "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "unit"]
+    },
+    "SystemLog": {
+      "title": "SystemLog",
+      "description": "System-wide activity logs for auditing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "action", "timestamp"]
     }
   },
   "auth": {
@@ -70,6 +85,10 @@
     "/articles/{articleId}": {
       "schema": "Article",
       "description": "Collection of cadet magazine articles."
+    },
+    "/system_logs/{logId}": {
+      "schema": "SystemLog",
+      "description": "Centralized system audit logs."
     }
   }
 }

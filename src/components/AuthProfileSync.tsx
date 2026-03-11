@@ -28,27 +28,25 @@ export function AuthProfileSync() {
 
         if (!userSnap.exists()) {
           // Provision new profile with INACTIVE default. 
-          // Even Leadership accounts start as INACTIVE for manual verification.
-          const initialRole = isSystemAdmin ? 'ADMIN' : 'INACTIVE';
-          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS';
-          
           await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName || 'Pending Officer',
-            role: initialRole,
-            unit: initialUnit,
+            role: isSystemAdmin ? 'ADMIN' : 'INACTIVE',
+            unit: isSystemAdmin ? 'ORDERLY REPORT' : 'TRS',
             createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp(),
           });
         } else {
-          // Ensure bypass UIDs maintain their designated ADMIN roles if they exist
-          const currentData = userSnap.data();
-          if (isSystemAdmin && currentData.role !== 'ADMIN') {
-            await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
-          }
+          // Update last login on every sync/mount
+          await setDoc(userRef, { 
+            lastLogin: serverTimestamp(),
+            // Ensure bypass UIDs maintain their designated ADMIN roles if they exist
+            ...(isSystemAdmin ? { role: 'ADMIN' } : {})
+          }, { merge: true });
         }
       } catch (e) {
-        console.error("Profile sync failed. This is expected for new users before Firestore rules are fully propagation or if permission is denied.", e);
+        console.error("Profile sync failed. This is expected for new users before Firestore rules propagation.", e);
       }
     };
 

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
@@ -55,8 +55,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Loader2, 
+  ShieldAlert, 
+  UserCog, 
+  Mail, 
+  UserPlus, 
+  ShieldPlus, 
+  Trash2, 
+  ArrowLeft, 
+  Building2, 
+  Clock, 
+  History, 
+  Search,
+  Activity,
+  Calendar,
+  User
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { recordLog } from '@/lib/logger';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE", "PTSLEADERSHIP", "INACTIVE"];
@@ -65,11 +83,12 @@ export default function UserManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { isAdmin, isLoading: isAuthLoading } = useUserProfile();
+  const { isAdmin, user: currentUser, profile: currentProfile, isLoading: isAuthLoading } = useUserProfile();
   
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [logSearch, setLogSearch] = useState('');
   
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -77,6 +96,7 @@ export default function UserManagementPage() {
   const [newRole, setNewRole] = useState('TRAINEE');
   const [newUnit, setNewUnit] = useState(UNITS[0]);
 
+  // Users Query
   const usersQuery = useMemoFirebase(() => {
     if (!db || !isAdmin) return null;
     return query(collection(db, 'users'), orderBy('email', 'asc'));
@@ -84,31 +104,57 @@ export default function UserManagementPage() {
 
   const { data: users, isLoading: isUsersLoading } = useCollection(usersQuery);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    if (!db) return;
+  // Logs Query
+  const logsQuery = useMemoFirebase(() => {
+    if (!db || !isAdmin) return null;
+    return query(collection(db, 'system_logs'), orderBy('timestamp', 'desc'), limit(100));
+  }, [db, isAdmin]);
+
+  const { data: logs, isLoading: isLogsLoading } = useCollection(logsQuery);
+
+  const handleRoleChange = async (userId: string, targetUserName: string, newRole: string) => {
+    if (!db || !currentUser || !currentProfile) return;
     try {
       await updateDoc(doc(db, 'users', userId), { role: newRole });
+      recordLog(db, {
+        userId: currentUser.uid,
+        userName: currentProfile.displayName || 'Admin',
+        action: 'ROLE_UPDATE',
+        details: `Changed role of ${targetUserName} to ${newRole}`
+      });
       toast({ title: "Role Updated", description: "User permissions have been modified." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error", description: "Could not update user role." });
     }
   };
 
-  const handleUnitChange = async (userId: string, newUnit: string) => {
-    if (!db) return;
+  const handleUnitChange = async (userId: string, targetUserName: string, newUnit: string) => {
+    if (!db || !currentUser || !currentProfile) return;
     try {
       await updateDoc(doc(db, 'users', userId), { unit: newUnit });
+      recordLog(db, {
+        userId: currentUser.uid,
+        userName: currentProfile.displayName || 'Admin',
+        action: 'UNIT_UPDATE',
+        details: `Reassigned ${targetUserName} to ${newUnit}`
+      });
       toast({ title: "Unit Updated", description: "User station has been reassigned." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error", description: "Could not update user unit." });
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!db) return;
+  const handleDeleteUser = async (userId: string, targetUserName: string) => {
+    if (!db || !currentUser || !currentProfile) return;
     setIsDeleting(userId);
     try {
       await deleteDoc(doc(db, 'users', userId));
+      recordLog(db, {
+        userId: currentUser.uid,
+        userName: currentProfile.displayName || 'Admin',
+        action: 'USER_DELETE',
+        details: `Removed user ${targetUserName} from registry`
+      });
       toast({ title: "Registry Updated", description: "User profile has been removed." });
     } catch (e) {
       toast({ variant: "destructive", title: "Deletion Failed", description: "Could not remove user." });
@@ -119,7 +165,7 @@ export default function UserManagementPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmail || !newPassword || !newName || !db) return;
+    if (!newEmail || !newPassword || !newName || !db || !currentUser || !currentProfile) return;
 
     setIsCreating(true);
     const secondaryAppName = `Secondary-${Date.now()}`;
@@ -139,280 +185,270 @@ export default function UserManagementPage() {
         role: newRole,
         unit: newRole === 'PTSLEADERSHIP' ? 'ORDERLY REPORT' : newUnit,
         createdAt: serverTimestamp(),
+        lastLogin: null
       };
 
       await setDoc(doc(db, 'users', newUser.uid), userProfile);
 
-      toast({ 
-        title: "User Provisioned", 
-        description: `${newName} added successfully.` 
+      recordLog(db, {
+        userId: currentUser.uid,
+        userName: currentProfile.displayName || 'Admin',
+        action: 'USER_PROVISION',
+        details: `Provisioned new account for ${newName} (${newEmail})`
       });
-      
+
+      toast({ title: "User Provisioned", description: `${newName} added successfully.` });
       setIsAddUserOpen(false);
-      setNewEmail('');
-      setNewPassword('');
-      setNewName('');
-      setNewRole('TRAINEE');
-      setNewUnit(UNITS[0]);
+      setNewEmail(''); setNewPassword(''); setNewName('');
     } catch (error: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Provisioning Failed", 
-        description: error.message || "Could not create user." 
-      });
+      toast({ variant: "destructive", title: "Provisioning Failed", description: error.message });
     } finally {
-      if (secondaryApp) {
-        await deleteApp(secondaryApp);
-      }
+      if (secondaryApp) await deleteApp(secondaryApp);
       setIsCreating(false);
     }
   };
 
-  if (isAuthLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const filteredLogs = logs?.filter(log => 
+    log.userName.toLowerCase().includes(logSearch.toLowerCase()) || 
+    log.action.toLowerCase().includes(logSearch.toLowerCase()) ||
+    log.details.toLowerCase().includes(logSearch.toLowerCase())
+  );
+
+  const formatTimestamp = (ts: any) => {
+    if (!ts) return 'N/A';
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return date.toLocaleString('en-GB', { 
+      day: '2-digit', month: 'short', year: '2-digit', 
+      hour: '2-digit', minute: '2-digit' 
+    });
+  };
+
+  if (isAuthLoading) return <div className="flex-1 flex items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
 
   if (!isAdmin) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <ShieldAlert className="h-12 w-12 md:h-16 md:w-16 text-destructive mb-4" />
-        <h2 className="text-xl md:text-2xl font-bold">Access Restricted</h2>
-        <p className="text-slate-500 max-w-md mt-2 text-sm md:text-base">Only system administrators can access user management controls.</p>
-        <Button onClick={() => router.push('/')} className="mt-6">Return Dashboard</Button>
+        <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold uppercase tracking-tight">Access Restricted</h2>
+        <Button onClick={() => router.push('/')} className="mt-6 rounded-xl">Return Dashboard</Button>
       </div>
     );
   }
 
   return (
     <div className="flex-1 bg-[#f8fafc] p-4 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="md:hidden">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex flex-col gap-0.5 md:gap-1">
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2 md:gap-3">
-                <UserCog className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                Management
-              </h1>
-              <p className="text-xs md:text-sm text-slate-500">Personnel registry and role assignments.</p>
+            <div className="flex flex-col">
+              <h1 className="text-2xl md:text-4xl font-black tracking-tight text-slate-900 uppercase leading-none">Management</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Authorized Command Registry</p>
             </div>
           </div>
 
           <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl font-bold h-10 md:h-12 px-6 shadow-lg shadow-primary/20 text-xs md:text-sm w-full md:w-auto">
-                <UserPlus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+              <Button className="rounded-xl font-bold h-12 px-8 shadow-xl shadow-primary/20">
+                <UserPlus className="mr-2 h-5 w-5" />
                 Add Personnel
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-2xl md:rounded-lg">
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-lg">
-                  <ShieldPlus className="h-5 w-5 text-primary" />
-                  Provision Account
-                </DialogTitle>
-                <DialogHeader className="text-left">
-                  <DialogDescription className="text-xs md:text-sm">
-                    Enter official credentials to authorize a new user.
-                  </DialogDescription>
-                </DialogHeader>
+                <DialogTitle>Provision Account</DialogTitle>
+                <DialogDescription>Enter official credentials to authorize a new user.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddUser} className="space-y-4 py-4">
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="name" className="text-xs">Full Name</Label>
-                  <Input 
-                    id="name" 
-                    value={newName} 
-                    onChange={(e) => setNewName(e.target.value)} 
-                    placeholder="e.g. Jean Damascene" 
-                    required 
-                    className="h-9 text-sm"
-                  />
+                <div className="space-y-2">
+                  <Label>Full Name</Label>
+                  <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Jean Damascene" required />
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="email" className="text-xs">Official Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={newEmail} 
-                    onChange={(e) => setNewEmail(e.target.value)} 
-                    placeholder="name@example.com" 
-                    required 
-                    className="h-9 text-sm"
-                  />
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="name@pts.gov" required />
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
-                  <Label htmlFor="password" className="text-xs">Initial Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    value={newPassword} 
-                    onChange={(e) => setNewPassword(e.target.value)} 
-                    placeholder="Min 6 characters" 
-                    required 
-                    className="h-9 text-sm"
-                  />
+                <div className="space-y-2">
+                  <Label>Initial Password</Label>
+                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 6 characters" required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5 md:space-y-2">
-                    <Label htmlFor="role" className="text-xs">Access Role</Label>
+                  <div className="space-y-2">
+                    <Label>Role</Label>
                     <Select value={newRole} onValueChange={setNewRole}>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select Role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ROLES.map(role => (
-                          <SelectItem key={role} value={role}>{role}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5 md:space-y-2">
-                    <Label htmlFor="unit" className="text-xs">Unit</Label>
-                    <Select 
-                      value={newRole === 'PTSLEADERSHIP' ? 'ORDERLY REPORT' : newUnit} 
-                      onValueChange={setNewUnit}
-                      disabled={newRole === 'PTSLEADERSHIP'}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select Unit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                      </SelectContent>
+                  <div className="space-y-2">
+                    <Label>Unit</Label>
+                    <Select value={newUnit} onValueChange={setNewUnit}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
-                <DialogFooter className="pt-4">
-                  <Button type="submit" className="w-full h-10 text-sm" disabled={isCreating}>
-                    {isCreating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                    Create Record
-                  </Button>
-                </DialogFooter>
+                <DialogFooter><Button type="submit" className="w-full h-12" disabled={isCreating}>{isCreating ? <Loader2 className="animate-spin" /> : 'Create Record'}</Button></DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Card className="border-none shadow-xl overflow-hidden rounded-[1.5rem] md:rounded-[2rem]">
-          <CardHeader className="bg-slate-900 text-white p-6 md:p-8">
-            <CardTitle className="text-lg md:text-xl">Personnel Registry</CardTitle>
-            <CardDescription className="text-slate-400 text-xs md:text-sm">Active records: {users?.length || 0}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
-            {isUsersLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 md:py-20 gap-4">
-                <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin text-primary" />
-                <p className="text-xs md:text-sm font-medium text-slate-500">Fetching records...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow>
-                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Name</TableHead>
-                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Role</TableHead>
-                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12">Unit</TableHead>
-                    <TableHead className="font-bold text-xs md:text-sm h-10 md:h-12 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map((u) => {
-                    const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || u.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
-                    const isInactive = u.role === 'INACTIVE';
-                    
-                    return (
-                      <TableRow key={u.uid} className={`transition-colors ${isInactive ? 'bg-amber-50/30 hover:bg-amber-50/50' : 'hover:bg-slate-50'}`}>
-                        <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
-                          <div className="flex flex-col">
-                            <span className="flex items-center gap-2">
-                              {u.displayName}
-                              {isSystemMaster && <Badge variant="secondary" className="h-4 text-[7px] uppercase tracking-tighter bg-primary/10 text-primary">Master</Badge>}
-                              {isInactive && (
-                                <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 text-[8px] font-black uppercase">
-                                  <Clock className="h-2.5 w-2.5" /> Pending
-                                </div>
-                              )}
-                            </span>
-                            <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 md:py-4">
-                          <div className="flex items-center gap-2">
-                            <Select 
-                              disabled={isSystemMaster}
-                              defaultValue={u.role} 
-                              onValueChange={(val) => handleRoleChange(u.uid, val)}
-                            >
-                              <SelectTrigger className={`w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs ${isInactive ? 'border-amber-300 ring-amber-200' : ''}`}>
-                                <SelectValue placeholder="Role" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ROLES.map(role => (
-                                  <SelectItem key={role} value={role} className="text-[10px] md:text-xs">
-                                    {role}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 md:py-4">
-                          <Select 
-                            disabled={isSystemMaster || u.role === 'PTSLEADERSHIP'}
-                            defaultValue={u.unit} 
-                            onValueChange={(val) => handleUnitChange(u.uid, val)}
-                          >
-                            <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
-                              <SelectValue placeholder="Unit" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNITS.map(unit => <SelectItem key={unit} value={unit} className="text-[10px] md:text-xs">{unit}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right py-3 md:py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            {isSystemMaster ? (
-                              <span className="text-[10px] md:text-xs text-slate-400 italic px-2 md:px-4">System Master</span>
-                            ) : (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 md:h-9 md:w-9">
-                                    {isDeleting === u.uid ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="w-[95vw] rounded-2xl md:rounded-lg">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-lg">Revoke Access?</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-xs md:text-sm">
-                                      This will permanently remove <strong>{u.displayName}</strong>.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter className="gap-2">
-                                    <AlertDialogCancel className="text-xs md:text-sm h-10">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs md:text-sm h-10">
-                                      Confirm Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </div>
-                        </TableCell>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="bg-slate-100 p-1 rounded-xl h-auto gap-1">
+            <TabsTrigger value="users" className="rounded-lg font-bold px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <UserCog className="h-4 w-4 mr-2" /> Personnel Registry
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="rounded-lg font-bold px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <History className="h-4 w-4 mr-2" /> Command Logs Board
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users">
+            <Card className="border-none shadow-2xl rounded-3xl overflow-hidden">
+              <CardHeader className="bg-slate-900 text-white p-8">
+                <CardTitle>Authorized Personnel</CardTitle>
+                <CardDescription className="text-slate-400">Manage access levels and unit assignments for the {users?.length || 0} active records.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                {isUsersLoading ? (
+                  <div className="py-20 flex flex-col items-center"><Loader2 className="animate-spin text-primary h-10 w-10" /></div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead className="font-bold">Identity</TableHead>
+                        <TableHead className="font-bold">Privileges</TableHead>
+                        <TableHead className="font-bold">Deployment</TableHead>
+                        <TableHead className="font-bold">Temporal Log</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {users?.map((u) => {
+                        const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || u.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
+                        return (
+                          <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-black text-slate-900 uppercase text-xs flex items-center gap-2">
+                                  {u.displayName}
+                                  {isSystemMaster && <Badge className="bg-blue-100 text-blue-700 text-[8px] h-4">MASTER</Badge>}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">{u.email}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select disabled={isSystemMaster} defaultValue={u.role} onValueChange={(val) => handleRoleChange(u.uid, u.displayName, val)}>
+                                <SelectTrigger className="h-8 text-[10px] font-bold w-[120px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Select disabled={isSystemMaster} defaultValue={u.unit} onValueChange={(val) => handleUnitChange(u.uid, u.displayName, val)}>
+                                <SelectTrigger className="h-8 text-[10px] font-bold w-[140px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+                                  <Calendar className="h-3 w-3 text-blue-600" /> Reg: {formatTimestamp(u.createdAt)}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600">
+                                  <Clock className="h-3 w-3" /> Last: {formatTimestamp(u.lastLogin)}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {!isSystemMaster && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-slate-300 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Revoke Access?</AlertDialogTitle>
+                                      <AlertDialogDescription>Permanently expunge <strong>{u.displayName}</strong> from the registry.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteUser(u.uid, u.displayName)} className="bg-red-500 text-white">Confirm Purge</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="logs">
+            <Card className="border-none shadow-2xl rounded-3xl overflow-hidden">
+              <CardHeader className="bg-slate-900 text-white p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-primary" />
+                      Command Activity Board
+                    </CardTitle>
+                    <CardDescription className="text-slate-400">Audit trail of mission-critical system operations.</CardDescription>
+                  </div>
+                  <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <Input 
+                      placeholder="Audit Search..." 
+                      className="pl-10 h-10 bg-slate-800 border-slate-700 text-white text-xs font-bold"
+                      value={logSearch}
+                      onChange={e => setLogSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLogsLoading ? (
+                  <div className="py-20 flex flex-col items-center"><Loader2 className="animate-spin text-primary h-10 w-10" /></div>
+                ) : filteredLogs && filteredLogs.length > 0 ? (
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead className="font-bold">Timestamp</TableHead>
+                        <TableHead className="font-bold">Operator</TableHead>
+                        <TableHead className="font-bold">Operation</TableHead>
+                        <TableHead className="font-bold">Briefing Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredLogs.map((log) => (
+                        <TableRow key={log.id} className="text-[11px] font-bold text-slate-600">
+                          <TableCell className="text-slate-400 whitespace-nowrap">{formatTimestamp(log.timestamp)}</TableCell>
+                          <TableCell className="text-slate-900 uppercase"><User className="h-3 w-3 inline mr-1 text-blue-600" />{log.userName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="bg-slate-100 text-slate-700 border-none text-[8px] tracking-widest">{log.action}</Badge>
+                          </TableCell>
+                          <TableCell className="max-w-md italic font-medium leading-tight">"{log.details}"</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="py-32 text-center space-y-4">
+                    <History className="h-12 w-12 text-slate-200 mx-auto" />
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No activity records found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

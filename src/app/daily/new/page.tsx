@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -59,6 +60,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { recordLog } from '@/lib/logger';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
 
@@ -276,6 +278,14 @@ export default function NewDailyReport() {
 
     setDoc(reportRef, reportData)
       .then(() => {
+        // Record System Log
+        recordLog(db, {
+          userId: user.uid,
+          userName: profile.displayName || 'Officer',
+          action: 'REPORT_SUBMITTED',
+          details: `Filed SITREP for ${values.unitName} on ${values.reportDate}`
+        });
+
         toast({ title: "Report Saved", description: "SITUATION REPORT has been archived." });
         router.push('/reports');
       })
