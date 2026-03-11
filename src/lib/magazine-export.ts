@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -58,7 +57,7 @@ async function createCircularAvatar(base64Str: string): Promise<Uint8Array> {
       const yOffset = (img.height - size) / 2;
       ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
 
-      // Convert to bytes for docx
+      // Convert to bytes for docx (PNG format is more stable for transparency/circularity)
       const dataUrl = canvas.toDataURL('image/png');
       const base64Data = dataUrl.split(',')[1];
       const binaryString = window.atob(base64Data);
@@ -110,15 +109,16 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
 
 /**
  * Exports multiple articles to a professional, two-column magazine document.
+ * Refactored for maximum MS Office compatibility.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
   const uniqueContributors = new Set(articles.map(a => a.cadetName.toUpperCase())).size;
 
-  // Title Section
+  // 1. Title Section (Cover Page)
   sections.push({
     properties: {
-      type: SectionType.CONTINUOUS,
+      type: SectionType.NEXT_PAGE,
     },
     children: [
       new Paragraph({
@@ -132,7 +132,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { before: 1000, after: 200 },
+        spacing: { before: 2000, after: 200 },
       }),
       new Paragraph({
         children: [
@@ -157,6 +157,18 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         },
         spacing: { after: 1000 },
       }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "POLICE TRAINING SCHOOL (PTS) GISHARI",
+            bold: true,
+            size: 20,
+            font: "Arial",
+            color: "333333",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+      }),
     ],
   });
 
@@ -167,6 +179,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     if (companyArticles.length === 0) continue;
 
     for (const article of companyArticles) {
+      // 2. Article Header Section (Full Width)
       const headerChildren: any[] = [
         new Paragraph({
           children: [
@@ -177,7 +190,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
               font: "Arial",
             }),
           ],
-          spacing: { before: 200, after: 100 },
+          spacing: { before: 400, after: 100 },
         }),
         new Paragraph({
           children: [
@@ -204,9 +217,9 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         }),
       ];
 
+      // 3. Article Body Section (Two Columns)
       const bodyChildren: any[] = [];
 
-      // Circular Avatar Handling
       if (article.imageUrl) {
         try {
           const avatarBytes = await createCircularAvatar(article.imageUrl);
@@ -219,6 +232,11 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
                     width: 140,
                     height: 140,
                   },
+                  altText: {
+                    title: "Cadet Avatar",
+                    description: `Portrait of ${article.cadetName}`,
+                    name: "avatar"
+                  }
                 }),
               ],
               spacing: { after: 300 },
@@ -232,7 +250,8 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 
       const contentLines = article.content.split('\n');
       for (const line of contentLines) {
-        if (!line.trim()) {
+        const trimmed = line.trim();
+        if (!trimmed) {
           bodyChildren.push(new Paragraph({ spacing: { after: 100 } }));
           continue;
         }
@@ -241,7 +260,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
           new Paragraph({
             children: [
               new TextRun({
-                text: line.trim(),
+                text: trimmed,
                 size: 20,
                 font: "Arial",
               }),
@@ -256,7 +275,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         new Paragraph({
           children: [
             new TextRun({
-              text: `Official Registry Entry | Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Verified'}`,
+              text: `\nOfficial Registry Entry | Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Verified'}`,
               size: 14,
               font: "Arial",
               color: "999999",
@@ -268,6 +287,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         })
       );
 
+      // Add Header Section
       sections.push({
         properties: {
           type: SectionType.NEXT_PAGE,
@@ -278,6 +298,8 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         children: headerChildren,
       });
 
+      // Add Body Section with columns
+      // Note: MS Word works best when column sections are NEXT_PAGE if they change structure significantly
       sections.push({
         properties: {
           type: SectionType.CONTINUOUS,
@@ -294,7 +316,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     }
   }
 
-  // Summary Final Page
+  // 4. Summary Final Page (Statistical Breakdown)
   const summaryChildren: any[] = [
     new Paragraph({
       children: [new TextRun({ text: "REGISTRY SUMMARY STATISTICS", bold: true, size: 28, underline: {} })],
@@ -306,8 +328,16 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       rows: [
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "METRIC", bold: true })] })], shading: { fill: "f1f5f9" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "TOTAL COUNT", bold: true })] })], shading: { fill: "f1f5f9" } }),
+            new TableCell({ 
+              children: [new Paragraph({ children: [new TextRun({ text: "METRIC", bold: true })] })], 
+              shading: { fill: "F1F5F9" },
+              verticalAlign: VerticalAlign.CENTER,
+            }),
+            new TableCell({ 
+              children: [new Paragraph({ children: [new TextRun({ text: "TOTAL COUNT", bold: true })] })], 
+              shading: { fill: "F1F5F9" },
+              verticalAlign: VerticalAlign.CENTER,
+            }),
           ],
         }),
         new TableRow({
@@ -339,7 +369,12 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
   ];
 
   sections.push({
-    properties: { type: SectionType.NEXT_PAGE },
+    properties: { 
+      type: SectionType.NEXT_PAGE,
+      page: {
+        margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+      },
+    },
     children: summaryChildren,
   });
 
@@ -391,7 +426,7 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
               text: `${company.toUpperCase()} COMPANY - PLATOON ${platoon}`, 
               bold: true, 
               size: 22,
-              color: "2563eb"
+              color: "2563EB"
             })
           ],
           spacing: { before: 400, after: 200 },
@@ -400,10 +435,10 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
 
       const headerRow = new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "NBR OF ARTICLES", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "NBR OF ARTICLES", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
         ],
       });
 
@@ -422,7 +457,6 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
           rows: [headerRow, ...dataRows],
-          spacing: { after: 400 }
         })
       );
     }
