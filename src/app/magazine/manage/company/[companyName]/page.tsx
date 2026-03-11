@@ -23,7 +23,8 @@ import {
   ListOrdered,
   FileText,
   Users,
-  LayoutGrid
+  LayoutGrid,
+  Printer
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -47,7 +48,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { exportMagazineToDocx, exportContributionRegistry, exportContributionRegistryPDF } from '@/lib/magazine-export';
+import { exportMagazineToDocx, exportMagazineToPDF, exportContributionRegistry, exportContributionRegistryPDF } from '@/lib/magazine-export';
 
 export default function CompanyArticlesPortal({ params }: { params: Promise<{ companyName: string }> }) {
   const router = useRouter();
@@ -99,14 +100,27 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
     }
   };
 
-  const handleExport = async () => {
+  const handleExportWord = async () => {
     if (!articles || articles.length === 0) return;
     setIsExporting(true);
     try {
       await exportMagazineToDocx(articles);
-      toast({ title: "Export Complete", description: `${companyName} magazine draft generated.` });
+      toast({ title: "Word Archive Generated", description: `${companyName} stable Word archive ready.` });
     } catch (e) {
       toast({ variant: "destructive", title: "Export Failed", description: "Could not generate DOCX file." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!articles || articles.length === 0) return;
+    setIsExporting(true);
+    try {
+      await exportMagazineToPDF(articles);
+      toast({ title: "Magazine PDF Ready", description: `${companyName} high-fidelity PDF generated.` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate PDF." });
     } finally {
       setIsExporting(false);
     }
@@ -207,14 +221,27 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button 
-            onClick={handleExport} 
-            disabled={isExporting || !articles?.length} 
-            className="flex-1 sm:flex-none rounded-lg h-10 px-4 font-black shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-xs transition-all"
-          >
-            {isExporting ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <FileDown className="mr-2 h-3.5 w-3.5" />}
-            UNIT ARCHIVE
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                disabled={isExporting || !articles?.length} 
+                className="flex-1 sm:flex-none rounded-lg h-10 px-4 font-black shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-xs transition-all"
+              >
+                {isExporting ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <FileText className="mr-2 h-3.5 w-3.5" />}
+                UNIT ARCHIVE
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-xl p-2 w-56">
+              <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400">Export Company Archive</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <Printer className="h-3.5 w-3.5 text-blue-600" /> MAGAZINE PDF (2-COL)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportWord} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <FileDown className="h-3.5 w-3.5 text-emerald-600" /> WORD DOCUMENT (STABLE)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

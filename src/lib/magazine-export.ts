@@ -29,8 +29,7 @@ interface ArticleData {
 }
 
 /**
- * Utility to convert an image base64 string to a circular avatar using Canvas.
- * Ensures the output is a valid Uint8Array for the docx library.
+ * Utility to convert an image base64 string to a circular avatar for Word (Uint8Array).
  */
 async function createCircularAvatar(base64Str: string): Promise<Uint8Array | null> {
   if (!base64Str || !base64Str.includes('base64,')) return null;
@@ -74,6 +73,14 @@ async function createCircularAvatar(base64Str: string): Promise<Uint8Array | nul
 }
 
 /**
+ * Utility to convert base64 to simple data for jsPDF.
+ */
+function getCleanBase64(base64Str: string) {
+  if (!base64Str) return null;
+  return base64Str.includes('base64,') ? base64Str : null;
+}
+
+/**
  * Aggregates stats for the final summary page.
  */
 function getProcessedCadetRegistry(articles: ArticleData[]) {
@@ -110,251 +117,223 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
 }
 
 /**
- * Exports multiple articles to a professional Word document.
- * Optimized for Microsoft Office compatibility by using stable section breaks.
+ * Exports multiple articles to a stable Word document (Single Column for MS Office Compatibility).
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
-  const sections: any[] = [];
-  const uniqueContributors = new Set(articles.map(a => a.cadetName.toUpperCase())).size;
-
-  // 1. Cover Page
-  sections.push({
-    properties: {
-      type: SectionType.NEXT_PAGE,
-    },
-    children: [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: "OFFICER CADET INTAKE 14/25-26",
-            bold: true,
-            size: 28,
-            font: "Arial",
-            color: "444444",
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 2400, after: 200 },
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: "OFFICIAL LITERARY ARCHIVE",
-            bold: true,
-            size: 56,
-            font: "Arial",
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      }),
-      new Paragraph({
-        border: {
-          bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 12 },
-        },
-        spacing: { after: 1200 },
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: "POLICE TRAINING SCHOOL (PTS) GISHARI",
-            bold: true,
-            size: 24,
-            font: "Arial",
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-      }),
-    ],
-  });
-
-  // Group by Company for better organization
-  const companies = ['Alpha', 'Bravo', 'Charlie'];
-
-  for (const companyName of companies) {
-    const companyArticles = articles.filter(a => a.company === companyName);
-    if (companyArticles.length === 0) continue;
-
-    for (const article of companyArticles) {
-      // 2. Article Header Section (1 Column)
-      const headerChildren: any[] = [
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: article.cadetName.toUpperCase(),
-              bold: true,
-              size: 36,
-              font: "Arial",
-            }),
-          ],
-          spacing: { before: 400, after: 100 },
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `${article.company} Company | Platoon ${article.platoon}`,
-              italic: true,
-              size: 20,
-              font: "Arial",
-              color: "555555",
-            }),
-          ],
-          spacing: { after: 400 },
-        }),
-        new Paragraph({
-          border: {
-            bottom: { color: "333333", space: 1, style: BorderStyle.SINGLE, size: 6 },
-          },
-          spacing: { after: 600 },
-        }),
-      ];
-
-      // 3. Article Body Section (2 Columns)
-      const bodyChildren: any[] = [];
-
-      // Avatar Processing
-      if (article.imageUrl) {
-        const avatarBytes = await createCircularAvatar(article.imageUrl);
-        if (avatarBytes) {
-          bodyChildren.push(
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: avatarBytes,
-                  transformation: { width: 120, height: 120 },
-                  altText: { title: "Avatar", description: "Portrait", name: "portrait" }
-                }),
-              ],
-              spacing: { after: 400 },
-              alignment: AlignmentType.LEFT,
-            })
-          );
-        }
-      }
-
-      // Content Flow
-      const contentLines = article.content.split('\n');
-      for (const line of contentLines) {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          bodyChildren.push(new Paragraph({ spacing: { after: 100 } }));
-          continue;
-        }
-        
-        bodyChildren.push(
-          new Paragraph({
-            children: [new TextRun({ text: trimmed, size: 22, font: "Arial" })],
-            spacing: { after: 200 },
-            alignment: AlignmentType.LEFT, // Left is more stable in Word OOXML columns than Justified
-          })
-        );
-      }
-
-      // Registry Footer
-      bodyChildren.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `\n--- Official Registry Entry ---\nFiled: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'}`,
-              size: 16,
-              font: "Arial",
-              color: "888888",
-              italic: true,
-            }),
-          ],
-          spacing: { before: 800 },
-          alignment: AlignmentType.RIGHT,
-        })
-      );
-
-      // We use separate sections for Header and Body. 
-      // Using NEXT_PAGE for both ensures maximum isolation and prevents Word from getting confused about column state.
-      sections.push({
-        properties: {
-          type: SectionType.NEXT_PAGE,
-          page: { margin: { top: 1440, right: 1440, bottom: 400, left: 1440 } },
-        },
-        children: headerChildren,
-      });
-
-      sections.push({
-        properties: {
-          type: SectionType.CONTINUOUS, // Continuous here flows from the header on the same page
-          column: { count: 2, space: 720 },
-          page: { margin: { top: 400, right: 1440, bottom: 1440, left: 1440 } },
-        },
-        children: bodyChildren,
-      });
-    }
-  }
-
-  // 4. Summary Table Page
-  const summaryChildren: any[] = [
+  const children: any[] = [
+    // Cover Page
     new Paragraph({
-      children: [new TextRun({ text: "REGISTRY SUMMARY STATISTICS", bold: true, size: 32, underline: {} })],
+      children: [new TextRun({ text: "OFFICER CADET INTAKE 14/25-26", bold: true, size: 28, font: "Arial", color: "444444" })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 1000, after: 800 },
-    }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({ 
-              children: [new Paragraph({ children: [new TextRun({ text: "COMMAND METRIC", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], 
-              shading: { fill: "EEEEEE" },
-            }),
-            new TableCell({ 
-              children: [new Paragraph({ children: [new TextRun({ text: "TOTAL VOLUME", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], 
-              shading: { fill: "EEEEEE" },
-            }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "Total Literary Contributions", spacing: { before: 100, after: 100 } })] }),
-            new TableCell({ children: [new Paragraph({ text: articles.length.toString(), alignment: AlignmentType.CENTER, spacing: { before: 100, after: 100 } })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "Total Unique Cadet Personnel", spacing: { before: 100, after: 100 } })] }),
-            new TableCell({ children: [new Paragraph({ text: uniqueContributors.toString(), alignment: AlignmentType.CENTER, spacing: { before: 100, after: 100 } })] }),
-          ],
-        }),
-      ],
+      spacing: { before: 2400, after: 200 },
     }),
     new Paragraph({
-      children: [
-        new TextRun({ 
-          text: `\nEnd of Official Archive. Generated on ${new Date().toLocaleDateString('en-GB')}`, 
-          italic: true, 
-          size: 18,
-          color: "777777"
-        })
-      ],
+      children: [new TextRun({ text: "OFFICIAL LITERARY ARCHIVE", bold: true, size: 56, font: "Arial" })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 1200 },
+      spacing: { after: 400 },
     }),
+    new Paragraph({
+      border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 12 } },
+      spacing: { after: 1200 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "POLICE TRAINING SCHOOL (PTS) GISHARI", bold: true, size: 24, font: "Arial" })],
+      alignment: AlignmentType.CENTER,
+    }),
+    new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }),
   ];
 
-  sections.push({
-    properties: { 
-      type: SectionType.NEXT_PAGE,
-      page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
-    },
-    children: summaryChildren,
+  for (const article of articles) {
+    // Header
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: article.cadetName.toUpperCase(), bold: true, size: 32, font: "Arial" })],
+        spacing: { before: 400, after: 100 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `${article.company} Company | Platoon ${article.platoon}`, italic: true, size: 20, font: "Arial", color: "555555" })],
+        spacing: { after: 400 },
+      })
+    );
+
+    // Image
+    if (article.imageUrl) {
+      const avatarBytes = await createCircularAvatar(article.imageUrl);
+      if (avatarBytes) {
+        children.push(new Paragraph({
+          children: [new ImageRun({ data: avatarBytes, transformation: { width: 100, height: 100 } })],
+          spacing: { after: 400 },
+        }));
+      }
+    }
+
+    // Body
+    const contentLines = article.content.split('\n');
+    for (const line of contentLines) {
+      if (line.trim()) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: line.trim(), size: 22, font: "Arial" })],
+          spacing: { after: 200 },
+        }));
+      }
+    }
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `\nFiled: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'}`, size: 16, font: "Arial", color: "888888", italic: true })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { after: 800 },
+    }));
+
+    children.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 400 } }));
+  }
+
+  // Summary Table
+  children.push(new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }));
+  children.push(new Paragraph({ children: [new TextRun({ text: "REGISTRY SUMMARY", bold: true, size: 28, underline: {} })], alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 } }));
+  
+  children.push(new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({ children: [
+        new TableCell({ children: [new Paragraph({ text: "Metric", bold: true })], shading: { fill: "F1F5F9" } }),
+        new TableCell({ children: [new Paragraph({ text: "Total", bold: true })], shading: { fill: "F1F5F9" } })
+      ]}),
+      new TableRow({ children: [
+        new TableCell({ children: [new Paragraph({ text: "Total Articles" })] }),
+        new TableCell({ children: [new Paragraph({ text: articles.length.toString() })] })
+      ]}),
+      new TableRow({ children: [
+        new TableCell({ children: [new Paragraph({ text: "Unique Contributors" })] }),
+        new TableCell({ children: [new Paragraph({ text: new Set(articles.map(a => a.cadetName)).size.toString() })] })
+      ]})
+    ]
+  }));
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+      children: children
+    }]
   });
 
-  const doc = new Document({ sections });
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, `CADET_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
+}
 
-  try {
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `CADET_ARCHIVE_${new Date().toISOString().split('T')[0]}.docx`);
-  } catch (error) {
-    console.error("Word Document Packaging Error:", error);
-    throw error;
+/**
+ * Exports Magazine to a professional 2-Column PDF.
+ */
+export async function exportMagazineToPDF(articles: ArticleData[]) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const colGap = 10;
+  const colWidth = (pageWidth - (margin * 2) - colGap) / 2;
+
+  // 1. Cover Page
+  doc.setFillColor(15, 23, 42); // slate-900
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text("OFFICER CADET INTAKE 14/25-26", pageWidth / 2, pageHeight / 3, { align: 'center' });
+  
+  doc.setFontSize(32);
+  doc.text("OFFICIAL LITERARY", pageWidth / 2, (pageHeight / 3) + 20, { align: 'center' });
+  doc.text("ARCHIVE", pageWidth / 2, (pageHeight / 3) + 35, { align: 'center' });
+  
+  doc.setDrawColor(59, 130, 246); // primary
+  doc.setLineWidth(2);
+  doc.line(pageWidth / 4, (pageHeight / 3) + 45, (pageWidth / 4) * 3, (pageHeight / 3) + 45);
+  
+  doc.setFontSize(12);
+  doc.text("POLICE TRAINING SCHOOL (PTS) GISHARI", pageWidth / 2, (pageHeight / 3) + 60, { align: 'center' });
+
+  // 2. Articles
+  for (const article of articles) {
+    doc.addPage();
+    doc.setTextColor(0, 0, 0);
+    
+    // Header Section
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text(article.cadetName.toUpperCase(), margin, 25);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${article.company} Company | Platoon ${article.platoon}`, margin, 32);
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 35, pageWidth - margin, 35);
+
+    let currentY = 45;
+
+    // Avatar
+    if (article.imageUrl) {
+      try {
+        doc.saveGraphicsState();
+        doc.arc(margin + 15, currentY + 15, 15, 0, Math.PI * 2);
+        doc.clip();
+        doc.addImage(article.imageUrl, 'JPEG', margin, currentY, 30, 30);
+        doc.restoreGraphicsState();
+        currentY += 40;
+      } catch (e) {
+        console.error("PDF Image Error", e);
+      }
+    }
+
+    // Two Column Content
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    const textLines = doc.splitTextToSize(article.content, colWidth);
+    const half = Math.ceil(textLines.length / 2);
+    const leftCol = textLines.slice(0, half);
+    const rightCol = textLines.slice(half);
+
+    doc.text(leftCol, margin, currentY, { maxWidth: colWidth, lineHeightFactor: 1.5 });
+    
+    // Check if right column needs a new page (rare for a single article header)
+    doc.text(rightCol, margin + colWidth + colGap, currentY, { maxWidth: colWidth, lineHeightFactor: 1.5 });
+    
+    // Footer
+    const footerY = Math.max(currentY + (leftCol.length * 5), currentY + (rightCol.length * 5)) + 15;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`--- Official Registry Record | Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'} ---`, pageWidth / 2, footerY, { align: 'center' });
   }
+
+  // 3. Registry Summary
+  doc.addPage();
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text("COMMAND REGISTRY TOTALS", pageWidth / 2, 30, { align: 'center' });
+  
+  const stats = [
+    ["Command Metric", "Value"],
+    ["Total Contributions", articles.length.toString()],
+    ["Unique Contributors", new Set(articles.map(a => a.cadetName)).size.toString()],
+    ["Alpha Company", articles.filter(a => a.company === 'Alpha').length.toString()],
+    ["Bravo Company", articles.filter(a => a.company === 'Bravo').length.toString()],
+    ["Charlie Company", articles.filter(a => a.company === 'Charlie').length.toString()],
+  ];
+
+  autoTable(doc, {
+    startY: 45,
+    head: [stats[0]],
+    body: stats.slice(1),
+    theme: 'grid',
+    headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+    margin: { left: 40, right: 40 }
+  });
+
+  doc.save(`CADET_MAGAZINE_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 /**
