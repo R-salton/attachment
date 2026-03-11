@@ -26,11 +26,14 @@ export function AuthProfileSync() {
           user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
           user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
+        // Leadership check for specific high-level account
+        const isLeadershipAccount = user.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
+
         if (!userSnap.exists()) {
           // Provision new profile with minimal defaults. 
           // Leadership roles must be explicitly assigned via the Users terminal.
-          const initialRole = isSystemAdmin ? 'ADMIN' : 'TRAINEE';
-          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS';
+          const initialRole = isSystemAdmin ? 'ADMIN' : (isLeadershipAccount ? 'PTSLEADERSHIP' : 'TRAINEE');
+          const initialUnit = (isSystemAdmin || isLeadershipAccount) ? 'ORDERLY REPORT' : 'TRS';
           
           await setDoc(userRef, {
             uid: user.uid,
@@ -43,6 +46,9 @@ export function AuthProfileSync() {
         } else if (isSystemAdmin && userSnap.data().role !== 'ADMIN') {
           // Keep Master Admins in the ADMIN role
           await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
+        } else if (isLeadershipAccount && userSnap.data().role !== 'PTSLEADERSHIP') {
+          // Ensure Leadership account is correctly labeled
+          await setDoc(userRef, { role: 'PTSLEADERSHIP' }, { merge: true });
         }
       } catch (e) {
         console.error("Profile sync failed:", e);

@@ -15,6 +15,13 @@ service cloud.firestore {
       );
     }
 
+    // Leadership bypass for specific high-level users.
+    function isLeadershipBypass() {
+      return isSignedIn() && (
+        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2'
+      );
+    }
+
     // Role-based helper fetching role from the user's profile document
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
@@ -31,7 +38,7 @@ service cloud.firestore {
     }
 
     function isPTSLeadership() {
-      return isRole('PTSLEADERSHIP');
+      return isLeadershipBypass() || isRole('PTSLEADERSHIP');
     }
 
     function isCommander() {

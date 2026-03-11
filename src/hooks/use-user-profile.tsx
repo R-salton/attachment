@@ -20,6 +20,9 @@ export function useUserProfile() {
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
+  // Leadership UID identification (Account explicitly assigned to PTS Leadership)
+  const isLeadershipUID = user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
+
   const isLoading = isUserLoading || (!!user && isProfileLoading);
 
   if (isLoading) {
@@ -27,10 +30,10 @@ export function useUserProfile() {
       profile: null, 
       isLoading: true, 
       isAdmin: isMasterAdmin, 
-      isCommander: isMasterAdmin,
-      isLeader: isMasterAdmin, 
+      isCommander: isMasterAdmin || isLeadershipUID,
+      isLeader: isMasterAdmin || isLeadershipUID, 
       isMasterAdmin: isMasterAdmin,
-      isPTSLeadership: false,
+      isPTSLeadership: isLeadershipUID,
       isTrainee: false,
       user: user || null 
     };
@@ -51,9 +54,9 @@ export function useUserProfile() {
   }
   
   // Derived role logic: document role takes priority
-  const role = profile?.role || (isMasterAdmin ? 'ADMIN' : 'TRAINEE');
+  const role = profile?.role || (isMasterAdmin ? 'ADMIN' : (isLeadershipUID ? 'PTSLEADERSHIP' : 'TRAINEE'));
   
-  const isPTSLeadership = role === 'PTSLEADERSHIP';
+  const isPTSLeadership = role === 'PTSLEADERSHIP' || isLeadershipUID;
   const isAdmin = role === 'ADMIN' || isMasterAdmin;
   const isCommander = role === 'COMMANDER' || isAdmin || isPTSLeadership;
   const isLeader = role === 'LEADER' || isCommander;
