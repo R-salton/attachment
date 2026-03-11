@@ -53,19 +53,24 @@ export function useUserProfile() {
     };
   }
   
-  // Derived role logic: document role takes priority
-  const role = profile?.role || (isMasterAdmin ? 'ADMIN' : (isLeadershipUID ? 'PTSLEADERSHIP' : 'TRAINEE'));
+  // Derived role logic: document role takes priority, then defaults based on UIDs
+  const storedRole = profile?.role;
+  const role = storedRole || (isMasterAdmin ? 'ADMIN' : (isLeadershipUID ? 'PTSLEADERSHIP' : 'TRAINEE'));
   
   const isPTSLeadership = role === 'PTSLEADERSHIP' || isLeadershipUID;
   const isAdmin = role === 'ADMIN' || isMasterAdmin;
-  const isCommander = role === 'COMMANDER' || isAdmin || isPTSLeadership;
-  const isLeader = role === 'LEADER' || isCommander;
-  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !isAdmin && !isPTSLeadership;
+  
+  // A leadership account should NOT be an Admin unless specifically assigned ADMIN role
+  const finalIsAdmin = (storedRole === 'ADMIN') || isMasterAdmin;
+  
+  const isCommander = finalIsAdmin || isPTSLeadership || role === 'COMMANDER';
+  const isLeader = isCommander || role === 'LEADER';
+  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !finalIsAdmin && !isPTSLeadership;
 
   return { 
     profile, 
     isLoading: false, 
-    isAdmin, 
+    isAdmin: finalIsAdmin, 
     isCommander,
     isLeader, 
     isMasterAdmin,

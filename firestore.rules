@@ -15,7 +15,7 @@ service cloud.firestore {
       );
     }
 
-    // Leadership bypass for specific high-level users.
+    // Leadership bypass for specific high-level oversight accounts.
     function isLeadershipBypass() {
       return isSignedIn() && (
         request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2'

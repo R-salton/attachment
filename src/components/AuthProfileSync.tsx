@@ -31,24 +31,26 @@ export function AuthProfileSync() {
 
         if (!userSnap.exists()) {
           // Provision new profile with minimal defaults. 
-          // Leadership roles must be explicitly assigned via the Users terminal.
+          // Leadership roles are assigned based on the recognized bypass UIDs.
           const initialRole = isSystemAdmin ? 'ADMIN' : (isLeadershipAccount ? 'PTSLEADERSHIP' : 'TRAINEE');
           const initialUnit = (isSystemAdmin || isLeadershipAccount) ? 'ORDERLY REPORT' : 'TRS';
           
           await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName || 'Officer',
+            displayName: user.displayName || (isLeadershipAccount ? 'Command Leadership' : 'Officer'),
             role: initialRole,
             unit: initialUnit,
             createdAt: serverTimestamp(),
           });
-        } else if (isSystemAdmin && userSnap.data().role !== 'ADMIN') {
-          // Keep Master Admins in the ADMIN role
-          await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
-        } else if (isLeadershipAccount && userSnap.data().role !== 'PTSLEADERSHIP') {
-          // Ensure Leadership account is correctly labeled
-          await setDoc(userRef, { role: 'PTSLEADERSHIP' }, { merge: true });
+        } else {
+          // Ensure bypass UIDs maintain their designated high-level roles
+          const currentData = userSnap.data();
+          if (isSystemAdmin && currentData.role !== 'ADMIN') {
+            await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
+          } else if (isLeadershipAccount && currentData.role !== 'PTSLEADERSHIP') {
+            await setDoc(userRef, { role: 'PTSLEADERSHIP' }, { merge: true });
+          }
         }
       } catch (e) {
         console.error("Profile sync failed:", e);
