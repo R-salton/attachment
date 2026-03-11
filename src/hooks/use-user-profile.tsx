@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
@@ -19,7 +18,8 @@ export function useUserProfile() {
   const isMasterAdmin = 
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
+    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2' ||
+    user?.email === 'admin@gmail.com';
 
   const isLoading = isUserLoading || (!!user && isProfileLoading);
 

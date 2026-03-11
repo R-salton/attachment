@@ -52,7 +52,7 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       // PTSLEADERSHIP and ADMIN can read/list all
-      allow read, list: if isCommander();
+      allow read, list: if isAdmin() || isPTSLeadership() || isRole('COMMANDER');
       // Document-level access for owners (required for listing their own feed)
       allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -33,7 +32,7 @@ export function AuthProfileSync() {
         if (!userSnap.exists()) {
           // Provision new profile
           const initialRole = isSystemAdmin ? 'ADMIN' : 'TRAINEE';
-          const initialUnit = 'TRS'; // Default unit for new officers
+          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS'; // Default unit for new officers
           
           await setDoc(userRef, {
             uid: user.uid,
