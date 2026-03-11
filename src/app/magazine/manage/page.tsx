@@ -24,7 +24,8 @@ import {
   ChevronRight,
   Building2,
   ListOrdered,
-  FileText
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -120,6 +121,12 @@ export default function MagazineManagementPortal() {
     alpha: articles?.filter(a => a.company === 'Alpha').length || 0,
     bravo: articles?.filter(a => a.company === 'Bravo').length || 0,
     charlie: articles?.filter(a => a.company === 'Charlie').length || 0,
+  };
+
+  const getWordPreview = (text: string, count: number) => {
+    const words = text.split(/\s+/);
+    if (words.length <= count) return text;
+    return words.slice(0, count).join(' ') + '...';
   };
 
   if (isAuthLoading) {
@@ -253,59 +260,64 @@ export default function MagazineManagementPortal() {
               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
               {filteredArticles.map((article) => (
                 <div 
                   key={article.id} 
                   onClick={() => router.push(`/magazine/view/${article.id}`)}
-                  className="group relative flex flex-col p-5 bg-white border border-slate-100 rounded-2xl hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group relative flex flex-col p-6 bg-white border border-slate-100 rounded-2xl hover:shadow-2xl hover:border-primary/20 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-slate-100 shrink-0 bg-slate-50 shadow-sm group-hover:border-primary/30 transition-colors">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-100 shrink-0 bg-slate-50 shadow-sm group-hover:border-primary/30 transition-colors">
                       {article.imageUrl ? (
                         <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <User className="h-6 w-6 text-slate-300" />
+                          <User className="h-8 w-8 text-slate-300" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-black text-slate-900 uppercase truncate leading-none mb-1">
+                      <h4 className="text-base font-black text-slate-900 uppercase leading-tight mb-1">
                         {article.cadetName}
                       </h4>
-                      <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                        <Layers className="h-2.5 w-2.5 text-primary" /> PLT {article.platoon}
+                      <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <Layers className="h-3 w-3 text-primary" /> PLT {article.platoon}
                       </div>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-xs font-medium text-slate-600 line-clamp-2 italic leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-50/50 min-h-[3.5rem]">
-                    "{article.content}"
-                  </p>
+                  <div className="mt-6 space-y-4">
+                    <p className="text-sm font-medium text-slate-600 italic leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-50/50 min-h-[8rem]">
+                      "{getWordPreview(article.content, 60)}"
+                    </p>
+                    <Button variant="ghost" size="sm" className="w-full rounded-xl text-primary font-black text-[10px] uppercase tracking-widest bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/20 group/btn">
+                      View Full Article <ExternalLink className="ml-2 h-3 w-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </Button>
+                  </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-50 flex flex-col gap-2">
+                  <div className="mt-6 pt-4 border-t border-slate-50 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-1.5">
-                        <Badge className="w-fit h-4 text-[7px] font-black px-1.5 uppercase bg-slate-900 text-white border-none shrink-0">
+                        <Badge className="w-fit h-5 text-[8px] font-black px-2 uppercase bg-slate-900 text-white border-none shrink-0">
                           {article.company} Company
                         </Badge>
-                        <div className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                          <Calendar className="h-2.5 w-2.5 text-primary" /> 
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                          <Calendar className="h-3 w-3 text-primary" /> 
                           {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : '...'}
                         </div>
                       </div>
                       
-                      <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
+                      <div onClick={e => e.stopPropagation()} className="flex items-center gap-2">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-8 max-w-sm">
                             <AlertDialogHeader>
-                              <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                              <div className="h-12 w-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
                                 <Trash2 className="h-6 w-6 text-red-500" />
                               </div>
                               <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter text-slate-900">Purge Entry?</AlertDialogTitle>
@@ -321,7 +333,9 @@ export default function MagazineManagementPortal() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                        <ChevronRight className="h-3 w-3 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                        <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                          <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
                     </div>
                   </div>
