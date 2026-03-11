@@ -15,11 +15,10 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
-  // System master bypass (UID based for initial setup safety)
+  // System master bypass (Owner UIDs only)
   const isMasterAdmin = 
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
-    user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
+    user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
   const isLoading = isUserLoading || (!!user && isProfileLoading);
 
@@ -51,7 +50,7 @@ export function useUserProfile() {
     };
   }
   
-  // Derived role logic: document role takes priority over system defaults
+  // Derived role logic: document role takes priority
   const role = profile?.role || (isMasterAdmin ? 'ADMIN' : 'TRAINEE');
   
   const isPTSLeadership = role === 'PTSLEADERSHIP';

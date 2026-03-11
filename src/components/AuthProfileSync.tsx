@@ -24,8 +24,7 @@ export function AuthProfileSync() {
         // System Master check for initial setup
         const isSystemAdmin = 
           user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
-          user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-          user.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
+          user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
         if (!userSnap.exists()) {
           // Provision new profile with minimal defaults. 

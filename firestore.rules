@@ -7,12 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Master Admin bypass for system owners (UID based only)
+    // Master Admin bypass for core system owners only.
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
-        request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2'
+        request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2'
       );
     }
 
@@ -59,11 +58,11 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      // Articles can be submitted via the public terminal.
-      allow create: if true; 
-      
-      // Management access reserved for Leadership and Admins.
+      // Management access for Leadership and Admins.
       allow read, list, update, delete: if isAdmin() || isPTSLeadership();
+      
+      // Public terminal submission.
+      allow create: if true; 
     }
   }
 }
