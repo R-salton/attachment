@@ -7,37 +7,42 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // ABSOLUTE MASTER BYPASS
+    // ABSOLUTE MASTER BYPASS - Centralized authority list
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
         request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
         request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.token.email == 'cboazi100@gmail.com'
+        request.auth.token.email == 'cboazi100@gmail.com' ||
+        request.auth.token.email == 'admin@gmail.com'
       );
     }
 
-    // Helper for role-based access
-    function hasRole(role) {
+    // Helper for role-based access with safety checks
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isRole(role) {
       return isSignedIn() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+             getRole() == role;
     }
 
     function isAdmin() {
-      return isMasterAdmin() || hasRole('ADMIN');
+      return isMasterAdmin() || isRole('ADMIN');
     }
 
     function isPTSLeadership() {
-      return hasRole('PTSLEADERSHIP');
+      return isRole('PTSLEADERSHIP');
     }
 
     function isCommander() {
-      return isAdmin() || isPTSLeadership() || hasRole('COMMANDER');
+      return isAdmin() || isPTSLeadership() || isRole('COMMANDER');
     }
 
     function isLeader() {
-      return isCommander() || hasRole('LEADER');
+      return isCommander() || isRole('LEADER');
     }
 
     match /users/{userId} {
@@ -45,8 +50,11 @@ service cloud.firestore {
     }
 
     match /reports/{reportId} {
+      // Broad read/list access for Leadership/Admin
       allow read, list: if isLeader();
+      // Document-level access for owners (required for listing their own feed)
       allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isPTSLeadership());
       allow delete: if isSignedIn() && (resource.data.ownerId == reportId || resource.data.ownerId == request.auth.uid || isAdmin() || isCommander());
@@ -54,7 +62,7 @@ service cloud.firestore {
 
     match /articles/{articleId} {
       allow create: if true; // Public submission terminal
-      allow read, list, update, delete: if isMasterAdmin() || isPTSLeadership();
+      allow read, list, update, delete: if isAdmin() || isPTSLeadership();
     }
   }
 }

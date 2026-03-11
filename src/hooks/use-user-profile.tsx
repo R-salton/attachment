@@ -5,7 +5,7 @@ import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export function useUserProfile() {
-  const { user, isUserLoading: isAuthLoading } = useUser();
+  const { user, isAuthLoading } = useUser();
   const db = useFirestore();
 
   const userRef = useMemoFirebase(() => {
@@ -18,6 +18,7 @@ export function useUserProfile() {
   const isMasterAdmin = 
     user?.email === 'nezasalton@gmail.com' || 
     user?.email === 'cboazi100@gmail.com' ||
+    user?.email === 'admin@gmail.com' ||
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
@@ -47,9 +48,9 @@ export function useUserProfile() {
       isAdmin: false, 
       isCommander: false, 
       isLeader: false, 
-      isMasterAdmin: false,
-      isPTSLeadership: false,
-      isTrainee: false,
+      isMasterAdmin: false, 
+      isPTSLeadership: false, 
+      isTrainee: false, 
       user: null 
     };
   }

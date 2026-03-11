@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 /**
  * Component to ensure every authenticated user has a UserProfile document in Firestore.
- * Automatically provisions the primary Administrator account with 'ADMIN' role.
+ * Automatically provisions designated Master Administrator accounts with 'ADMIN' role.
  */
 export function AuthProfileSync() {
   const { user } = useUser();
@@ -21,8 +21,13 @@ export function AuthProfileSync() {
       try {
         const userSnap = await getDoc(userRef);
 
-        // Identify if this is the designated primary Administrator
-        const isSystemAdmin = user.email === 'nezasalton@gmail.com' || user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+        // Identify if this is a designated primary Administrator
+        const isSystemAdmin = 
+          user.email === 'nezasalton@gmail.com' || 
+          user.email === 'cboazi100@gmail.com' ||
+          user.email === 'admin@gmail.com' ||
+          user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+          user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
         if (!userSnap.exists()) {
           // Provision new profile
@@ -38,7 +43,7 @@ export function AuthProfileSync() {
             createdAt: serverTimestamp(),
           });
         } else if (isSystemAdmin && userSnap.data().role !== 'ADMIN') {
-          // Ensure System Admin always has the correct role if profile already exists
+          // Ensure Master Admin always has the correct role if profile already exists
           await setDoc(userRef, { 
             role: 'ADMIN'
           }, { merge: true });
