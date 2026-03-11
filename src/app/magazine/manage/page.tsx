@@ -253,84 +253,79 @@ export default function MagazineManagementPortal() {
               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredArticles.map((article) => (
                 <div 
                   key={article.id} 
                   onClick={() => router.push(`/magazine/view/${article.id}`)}
-                  className="group flex flex-col sm:flex-row items-stretch gap-0 bg-white border border-slate-100 rounded-[2rem] hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer relative overflow-hidden"
+                  className="group relative flex flex-col p-5 bg-white border border-slate-100 rounded-2xl hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900 group-hover:bg-primary transition-all duration-500" />
-                  
-                  <div className="w-full sm:w-48 md:w-56 aspect-[4/3] sm:aspect-square overflow-hidden bg-slate-50 shrink-0 group-hover:scale-105 transition-transform duration-700">
-                    {article.imageUrl ? (
-                      <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                        <User className="h-12 w-12 text-slate-300" />
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-slate-100 shrink-0 bg-slate-50 shadow-sm group-hover:border-primary/30 transition-colors">
+                      {article.imageUrl ? (
+                        <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="h-6 w-6 text-slate-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h4 className="text-sm font-black text-slate-900 uppercase truncate leading-none">
+                          {article.cadetName}
+                        </h4>
+                        <Badge className="h-5 text-[7px] font-black px-1.5 uppercase bg-slate-900 text-white border-none shrink-0">
+                          {article.company}
+                        </Badge>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        <div className="flex items-center gap-1">
+                          <Layers className="h-2.5 w-2.5 text-primary" /> PLT {article.platoon}
+                        </div>
+                        <span className="w-1 h-1 rounded-full bg-slate-200" />
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-2.5 w-2.5 text-primary" /> 
+                          {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : '...'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-4">
-                          <h4 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">
-                            {article.cadetName}
-                          </h4>
-                          <Badge className="bg-slate-900 text-white text-[8px] font-black px-2 py-1 uppercase tracking-widest border-none shrink-0">
-                            {article.company}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                          <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md">
-                            <Layers className="h-3 w-3 text-primary" /> PLT {article.platoon}
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md">
-                            <Calendar className="h-3 w-3 text-primary" /> 
-                            {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Processing...'}
-                          </div>
-                        </div>
-                      </div>
+                  <p className="mt-4 text-xs font-medium text-slate-600 line-clamp-2 italic leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-50/50 min-h-[3.5rem]">
+                    "{article.content}"
+                  </p>
 
-                      <p className="text-sm font-medium text-slate-600 line-clamp-3 italic leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-50">
-                        "{article.content}"
-                      </p>
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
+                    <div className="flex items-center gap-1.5 text-[8px] font-black text-primary uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                      Transcript <ChevronRight className="h-2.5 w-2.5" />
                     </div>
-
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
-                      <div onClick={e => e.stopPropagation()}>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-10 max-w-md">
-                            <AlertDialogHeader>
-                              <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
-                                <Trash2 className="h-8 w-8 text-red-500" />
-                              </div>
-                              <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter text-slate-900 leading-none">Purge Contribution?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-base font-bold text-slate-500 mt-2">
-                                This will permanently expunge OC {article.cadetName}'s article from the registry database.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-8 gap-3">
-                              <AlertDialogCancel className="rounded-xl h-12 font-black border-none bg-slate-100 text-slate-600 px-8">Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-12 font-black shadow-xl shadow-red-500/20 px-10 border-none hover:bg-red-600">
-                                Confirm Purge
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-[9px] font-black text-primary uppercase tracking-[0.2em] group-hover:translate-x-1 transition-transform">
-                        Review Transcript <ChevronRight className="h-3 w-3" />
-                      </div>
+                    
+                    <div onClick={e => e.stopPropagation()}>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-8 max-w-sm">
+                          <AlertDialogHeader>
+                            <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                              <Trash2 className="h-6 w-6 text-red-500" />
+                            </div>
+                            <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter text-slate-900">Purge Entry?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm font-bold text-slate-500">
+                              Permanently expunge OC {article.cadetName}'s article from the registry.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-6 gap-2">
+                            <AlertDialogCancel className="rounded-xl h-10 font-black border-none bg-slate-100 text-slate-600 px-6">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-10 font-black px-6 hover:bg-red-600 border-none shadow-lg shadow-red-500/20">
+                              Confirm
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
