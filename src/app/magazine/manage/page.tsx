@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -149,39 +148,39 @@ export default function MagazineManagementPortal() {
 
   return (
     <div className="flex-1 bg-[#f8fafc] pb-32">
-      <header className="border-b bg-white/95 backdrop-blur-md px-4 md:px-12 py-4 md:py-8 flex flex-col lg:flex-row items-start lg:items-center justify-between sticky top-0 z-50 shadow-sm gap-4 lg:gap-0">
-        <div className="flex items-center gap-3 md:gap-8 w-full lg:w-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-10 w-10 md:h-16 md:w-16 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 shadow-sm hover:bg-white transition-all shrink-0">
-            <ArrowLeft className="h-5 w-5 md:h-7 md:w-7" />
+      <header className="border-b bg-white/95 backdrop-blur-md px-4 md:px-8 py-3 md:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between sticky top-0 z-50 shadow-sm gap-4">
+        <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-9 w-9 md:h-10 md:w-10 rounded-lg bg-slate-50 border border-slate-100 shadow-sm hover:bg-white transition-all shrink-0">
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
           <div className="flex flex-col overflow-hidden">
-            <div className="flex items-center gap-2 mb-0.5 md:mb-1">
-              <ShieldCheck className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-              <span className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-primary truncate">PTS Command Terminal</span>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <ShieldCheck className="h-3 w-3 text-primary" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-primary truncate">PTS Command Terminal</span>
             </div>
-            <h1 className="text-xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase truncate">Magazine Registry</h1>
+            <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none uppercase truncate">Magazine Registry</h1>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-2 md:gap-3 w-full lg:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline"
                 disabled={isExportingRoll || stats.total === 0} 
-                className="w-full sm:w-auto rounded-xl md:rounded-2xl h-11 md:h-14 px-4 md:px-6 font-bold border-slate-200 shadow-sm text-[10px] md:text-sm"
+                className="flex-1 sm:flex-none rounded-lg h-10 px-3 md:px-4 font-bold border-slate-200 shadow-sm text-xs"
               >
-                {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ListOrdered className="mr-2 h-4 w-4" />}
+                {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <ListOrdered className="mr-2 h-3.5 w-3.5" />}
                 NOMINAL ROLL
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="rounded-xl p-2 w-48">
               <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400">Select Format</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExportNominalRoll('PDF')} className="cursor-pointer gap-2 py-3 rounded-lg font-bold">
-                <FileText className="h-4 w-4 text-red-500" /> Mobile PDF Archive
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('PDF')} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <FileText className="h-3.5 w-3.5 text-red-500" /> Mobile PDF Archive
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportNominalRoll('DOCX')} className="cursor-pointer gap-2 py-3 rounded-lg font-bold">
-                <FileDown className="h-4 w-4 text-blue-500" /> Word Registry (DOCX)
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('DOCX')} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <FileDown className="h-3.5 w-3.5 text-blue-500" /> Word Registry (DOCX)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -189,24 +188,24 @@ export default function MagazineManagementPortal() {
           <Button 
             onClick={handleExport} 
             disabled={isExporting || stats.total === 0} 
-            className="w-full sm:w-auto rounded-xl md:rounded-2xl h-11 md:h-16 px-6 md:px-10 font-black shadow-xl md:shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-xs md:text-lg transition-all active:scale-95"
+            className="flex-1 sm:flex-none rounded-lg h-10 px-4 md:px-6 font-black shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-xs transition-all active:scale-95"
           >
-            {isExporting ? <Loader2 className="animate-spin mr-2 md:mr-3 h-4 w-4 md:h-6 md:w-6" /> : <FileDown className="mr-2 md:mr-3 h-4 w-4 md:h-6 md:w-6" />}
+            {isExporting ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <FileDown className="mr-2 h-3.5 w-3.5" />}
             GENERATE MAG DRAFT
           </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto mt-6 md:mt-16 px-4 md:px-12 space-y-8 md:space-y-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-          <Card className="border-none shadow-2xl rounded-[1.5rem] md:rounded-[2rem] bg-slate-900 text-white p-6 md:p-10 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
-              <TrendingUp className="h-16 w-16 md:h-20 md:w-20" />
+      <main className="max-w-7xl mx-auto mt-6 md:mt-10 px-4 md:px-8 space-y-8 md:space-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <Card className="border-none shadow-xl rounded-2xl bg-slate-900 text-white p-6 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <TrendingUp className="h-12 w-12 md:h-16 md:w-16" />
             </div>
-            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1 md:mb-2">Total Contributions</span>
-            <div className="text-4xl md:text-6xl font-black leading-none">{stats.total}</div>
-            <div className="mt-4 md:mt-6 flex items-center gap-2">
-              <Badge className="bg-primary text-white border-none text-[7px] md:text-[9px] font-black px-2 md:px-3 py-0.5 md:py-1">ACTIVE DATABASE</Badge>
+            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Total Contributions</span>
+            <div className="text-3xl md:text-4xl font-black leading-none">{stats.total}</div>
+            <div className="mt-4 flex items-center gap-2">
+              <Badge className="bg-primary text-white border-none text-[7px] md:text-[8px] font-black px-2 py-0.5">ACTIVE DATABASE</Badge>
             </div>
           </Card>
           
@@ -215,30 +214,30 @@ export default function MagazineManagementPortal() {
             { name: 'Bravo', count: stats.bravo, color: 'bg-emerald-600' },
             { name: 'Charlie', count: stats.charlie, color: 'bg-amber-600' }
           ].map(company => (
-            <Card key={company.name} className="border-none shadow-xl rounded-[1.5rem] md:rounded-[2rem] bg-white p-6 md:p-10 relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
-              <div className={`absolute top-0 right-0 w-1.5 h-full ${company.color}`} />
-              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1 md:mb-2">{company.name} Company</span>
-              <div className="text-4xl md:text-6xl font-black text-slate-900 leading-none">{company.count}</div>
-              <p className="mt-4 md:mt-6 text-[8px] md:text-[10px] font-black uppercase text-slate-300 tracking-tighter flex items-center gap-1">
-                Filed Submissions <ArrowUpRight className="h-2.5 w-2.5 md:h-3 md:w-3" />
+            <Card key={company.name} className="border-none shadow-lg rounded-2xl bg-white p-6 relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+              <div className={`absolute top-0 right-0 w-1 h-full ${company.color}`} />
+              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">{company.name} Company</span>
+              <div className="text-3xl md:text-4xl font-black text-slate-900 leading-none">{company.count}</div>
+              <p className="mt-4 text-[8px] font-black uppercase text-slate-300 tracking-tighter flex items-center gap-1">
+                Filed Submissions <ArrowUpRight className="h-2 w-2" />
               </p>
             </Card>
           ))}
         </div>
 
-        <div className="space-y-6 md:space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 px-2">
-            <div className="flex items-center gap-3 md:gap-4">
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary">
-                <BookOpen className="h-5 w-5 md:h-6 md:w-6" />
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-white shadow-md flex items-center justify-center text-primary">
+                <BookOpen className="h-4.5 w-4.5" />
               </div>
-              <h2 className="text-xl md:text-3xl font-black uppercase tracking-tighter text-slate-900">Submission Archives</h2>
+              <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">Submission Archives</h2>
             </div>
-            <div className="relative w-full md:w-[400px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-slate-400" />
+            <div className="relative w-full md:w-[320px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
-                placeholder="Filter by cadet name or company..." 
-                className="pl-11 md:pl-14 h-12 md:h-16 rounded-xl md:rounded-[1.5rem] bg-white shadow-2xl border-none font-bold text-xs md:text-base focus:ring-primary transition-all"
+                placeholder="Filter by cadet or company..." 
+                className="pl-10 h-11 rounded-xl bg-white shadow-lg border-none font-bold text-xs focus:ring-primary transition-all"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -246,78 +245,78 @@ export default function MagazineManagementPortal() {
           </div>
 
           {isArticlesLoading ? (
-            <div className="py-24 md:py-32 flex flex-col items-center justify-center gap-4 md:gap-6">
+            <div className="py-20 flex flex-col items-center justify-center gap-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                <Loader2 className="h-12 w-12 md:h-20 md:w-20 animate-spin text-primary relative z-10" />
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10" />
               </div>
-              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
+              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
               {filteredArticles.map((article) => (
                 <div 
                   key={article.id} 
                   onClick={() => router.push(`/magazine/view/${article.id}`)}
-                  className="group flex items-start gap-3 md:gap-4 p-3 md:p-4 bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[2rem] hover:shadow-2xl hover:border-primary/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                  className="group flex items-start gap-3 md:gap-4 p-3 bg-white border border-slate-100 rounded-2xl hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-1 md:w-1.5 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
+                  <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
                   
-                  <div className="w-16 h-16 sm:w-28 sm:h-28 rounded-xl md:rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 mt-1">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 mt-0.5">
                     {article.imageUrl ? (
                       <img src={article.imageUrl} alt={article.cadetName} className="w-full h-full object-cover" />
                     ) : (
-                      <User className="h-6 w-6 md:h-10 md:w-10 text-slate-200" />
+                      <User className="h-6 w-6 text-slate-200" />
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full pt-1">
-                    <div className="space-y-1 md:space-y-1.5">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm sm:text-lg font-black text-slate-900 uppercase tracking-tight truncate max-w-[140px] sm:max-w-none">
+                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">
                           {article.cadetName}
                         </h4>
-                        <Badge className="bg-slate-900 text-white text-[6px] md:text-[7px] font-black px-1 md:px-1.5 py-0.5 uppercase tracking-widest border-none shrink-0">
+                        <Badge className="bg-slate-900 text-white text-[6px] font-black px-1 py-0.5 uppercase tracking-widest border-none shrink-0">
                           {article.company}
                         </Badge>
                       </div>
                       
-                      <div className="flex wrap items-center gap-x-2 md:gap-x-3 gap-y-1 text-[7px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex wrap items-center gap-x-2.5 text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest">
                         <div className="flex items-center gap-1">
-                          <Layers className="h-2.5 w-2.5 md:h-3 md:w-3" /> PLT {article.platoon}
+                          <Layers className="h-2.5 w-2.5" /> PLT {article.platoon}
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3" /> 
+                          <Calendar className="h-2.5 w-2.5" /> 
                           {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Processing...'}
                         </div>
                       </div>
 
-                      <p className="text-[10px] md:text-xs font-medium text-slate-500 line-clamp-2 italic leading-relaxed mt-1 md:mt-2">
+                      <p className="text-[10px] font-medium text-slate-500 line-clamp-2 italic leading-relaxed mt-1">
                         "{article.content}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 md:mt-4">
+                    <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                              <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-[2rem] md:rounded-[2.5rem] border-none shadow-3xl p-6 md:p-10 max-w-lg">
+                          <AlertDialogContent className="rounded-2xl border-none shadow-3xl p-6 max-w-md">
                             <AlertDialogHeader>
-                              <div className="h-12 w-12 md:h-16 md:w-16 bg-red-50 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6">
-                                <Trash2 className="h-6 w-6 md:h-8 md:w-8 text-red-500" />
+                              <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                                <Trash2 className="h-6 w-6 text-red-500" />
                               </div>
-                              <AlertDialogTitle className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900">Purge Contribution?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm md:text-base font-bold text-slate-500 mt-2">
+                              <AlertDialogTitle className="text-lg font-black uppercase tracking-tighter text-slate-900">Purge Contribution?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-slate-500 mt-1">
                                 This will permanently expunge OC {article.cadetName}'s article from the magazine draft registry. This action is final.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-6 md:mt-10 gap-3 md:gap-4">
-                              <AlertDialogCancel className="rounded-xl md:rounded-2xl h-11 md:h-14 font-black border-none bg-slate-50 text-slate-600 px-6 md:px-8">Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl md:rounded-2xl h-11 md:h-14 font-black shadow-2xl shadow-red-500/30 px-8 md:px-10 border-none hover:bg-red-600">
+                            <AlertDialogFooter className="mt-6 gap-2">
+                              <AlertDialogCancel className="rounded-xl h-10 font-black border-none bg-slate-50 text-slate-600 px-6">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-10 font-black shadow-lg shadow-red-500/20 px-8 border-none hover:bg-red-600">
                                 Confirm Purge
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -325,8 +324,8 @@ export default function MagazineManagementPortal() {
                         </AlertDialog>
                       </div>
                       
-                      <div className="flex items-center gap-1.5 text-[7px] md:text-[9px] font-black text-primary uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                        Review Transcript <ChevronRight className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                      <div className="flex items-center gap-1 text-[7px] font-black text-primary uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                        Review Transcript <ChevronRight className="h-2.5 w-2.5" />
                       </div>
                     </div>
                   </div>
@@ -334,13 +333,13 @@ export default function MagazineManagementPortal() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-32 md:py-56 bg-white rounded-[2rem] md:rounded-[5rem] border border-dashed border-slate-200 flex flex-col items-center gap-6 md:gap-8 px-6 md:px-10 shadow-sm">
-              <div className="h-16 w-16 md:h-28 md:w-28 bg-slate-50 rounded-[1.5rem] md:rounded-[3rem] flex items-center justify-center shadow-inner">
-                <BookOpen className="h-8 w-8 md:h-14 md:w-14 text-slate-200" />
+            <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-6 px-6 shadow-sm">
+              <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner">
+                <BookOpen className="h-8 w-8 text-slate-200" />
               </div>
-              <div className="space-y-2 md:space-y-3">
-                <h3 className="text-xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
-                <p className="text-[8px] md:text-sm text-slate-400 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Registry Empty</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest max-w-md mx-auto">No literary contributions have been harvested into the magazine database yet.</p>
               </div>
             </div>
           )}
