@@ -137,7 +137,7 @@ export default function UserManagementPage() {
         email: newEmail,
         displayName: newName,
         role: newRole,
-        unit: newUnit,
+        unit: newRole === 'PTSLEADERSHIP' ? 'ORDERLY REPORT' : newUnit,
         createdAt: serverTimestamp(),
       };
 
@@ -217,9 +217,11 @@ export default function UserManagementPage() {
                   <ShieldPlus className="h-5 w-5 text-primary" />
                   Provision Account
                 </DialogTitle>
-                <DialogDescription className="text-xs md:text-sm">
-                  Enter official credentials to authorize a new user.
-                </DialogDescription>
+                <DialogHeader className="text-left">
+                  <DialogDescription className="text-xs md:text-sm">
+                    Enter official credentials to authorize a new user.
+                  </DialogDescription>
+                </DialogHeader>
               </DialogHeader>
               <form onSubmit={handleAddUser} className="space-y-4 py-4">
                 <div className="space-y-1.5 md:space-y-2">
@@ -273,7 +275,11 @@ export default function UserManagementPage() {
                   </div>
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="unit" className="text-xs">Unit</Label>
-                    <Select value={newUnit} onValueChange={setNewUnit}>
+                    <Select 
+                      value={newRole === 'PTSLEADERSHIP' ? 'ORDERLY REPORT' : newUnit} 
+                      onValueChange={setNewUnit}
+                      disabled={newRole === 'PTSLEADERSHIP'}
+                    >
                       <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Select Unit" />
                       </SelectTrigger>
@@ -351,7 +357,7 @@ export default function UserManagementPage() {
                         </TableCell>
                         <TableCell className="py-3 md:py-4">
                           <Select 
-                            disabled={isSystemMaster}
+                            disabled={isSystemMaster || u.role === 'PTSLEADERSHIP'}
                             defaultValue={u.unit} 
                             onValueChange={(val) => handleUnitChange(u.uid, val)}
                           >
