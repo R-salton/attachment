@@ -18,7 +18,10 @@ import {
   Search,
   ChevronRight,
   ExternalLink,
-  Building2
+  Building2,
+  FileDown,
+  ListOrdered,
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -34,6 +37,15 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportMagazineToDocx, exportContributionRegistry, exportContributionRegistryPDF } from '@/lib/magazine-export';
 
 export default function CompanyArticlesPortal({ params }: { params: Promise<{ companyName: string }> }) {
   const router = useRouter();
@@ -43,6 +55,8 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
   const db = useFirestore();
   const { isAdmin, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingRoll, setIsExportingRoll] = useState(false);
 
   const hasAccess = isAdmin || isPTSLeadership;
 
@@ -63,6 +77,36 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
       toast({ title: "Article Removed", description: "Submission has been deleted from the registry." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error", description: "Could not remove article." });
+    }
+  };
+
+  const handleExport = async () => {
+    if (!articles || articles.length === 0) return;
+    setIsExporting(true);
+    try {
+      await exportMagazineToDocx(articles);
+      toast({ title: "Export Complete", description: `${companyName} magazine draft generated.` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate DOCX file." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportNominalRoll = async (format: 'DOCX' | 'PDF') => {
+    if (!articles || articles.length === 0) return;
+    setIsExportingRoll(true);
+    try {
+      if (format === 'DOCX') {
+        await exportContributionRegistry(articles);
+      } else {
+        await exportContributionRegistryPDF(articles);
+      }
+      toast({ title: "Registry Exported", description: `${companyName} nominal roll (${format}) is ready.` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate registry document." });
+    } finally {
+      setIsExportingRoll(false);
     }
   };
 
@@ -109,29 +153,73 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
           <div className="flex flex-col overflow-hidden">
             <div className="flex items-center gap-1.5 mb-0.5">
               <Building2 className="h-3 w-3 text-primary" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-primary truncate">{companyName} Company Portal</span>
+              <span className="text-[8px] font-black uppercase tracking-widest text-primary truncate">{companyName} Company Repository</span>
             </div>
-            <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none uppercase truncate">Literary Contributions</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none uppercase truncate">Literary Archive</h1>
+              <Badge className="bg-slate-100 text-slate-600 border-none font-black text-[10px] px-2 h-5">{articles?.length || 0} Files</Badge>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-[280px]">
+
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                disabled={isExportingRoll || !articles?.length} 
+                className="flex-1 sm:flex-none rounded-lg h-10 px-3 font-bold border-slate-200 shadow-sm text-xs"
+              >
+                {isExportingRoll ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <ListOrdered className="mr-2 h-3.5 w-3.5" />}
+                NOMINAL ROLL
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-xl p-2 w-48">
+              <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400">Unit Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('PDF')} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <FileText className="h-3.5 w-3.5 text-red-500" /> Mobile PDF Archive
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportNominalRoll('DOCX')} className="cursor-pointer gap-2 py-2.5 rounded-lg font-bold text-xs">
+                <FileDown className="h-3.5 w-3.5 text-blue-500" /> Word Registry (DOCX)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={handleExport} 
+            disabled={isExporting || !articles?.length} 
+            className="flex-1 sm:flex-none rounded-lg h-10 px-4 font-black shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-xs transition-all"
+          >
+            {isExporting ? <Loader2 className="animate-spin mr-2 h-3.5 w-3.5" /> : <FileDown className="mr-2 h-3.5 w-3.5" />}
+            UNIT DRAFT
+          </Button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto mt-6 md:mt-10 px-4 md:px-8 space-y-8">
+        <div className="flex items-center justify-between gap-4 px-1">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-white shadow-md flex items-center justify-center text-primary">
+              <BookOpen className="h-4.5 w-4.5" />
+            </div>
+            <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Unit Submissions</h2>
+          </div>
+          <div className="relative w-full sm:w-[280px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <Input 
-              placeholder="Search by cadet name..." 
-              className="pl-9 h-10 rounded-lg bg-slate-50 border-none font-bold text-xs"
+              placeholder="Filter by cadet name..." 
+              className="pl-9 h-10 rounded-lg bg-white border-none shadow-sm font-bold text-xs"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto mt-6 md:mt-10 px-4 md:px-8 space-y-8">
         {isArticlesLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Registry...</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Unit Registry...</span>
           </div>
         ) : filteredArticles && filteredArticles.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
