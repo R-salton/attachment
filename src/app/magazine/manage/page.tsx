@@ -138,7 +138,7 @@ export default function MagazineManagementPortal() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 max-w-lg">
-          <Layers className="h-20 w-20 text-slate-200 mb-6 mx-auto" />
+          <ShieldCheck className="h-20 w-20 text-slate-200 mb-6 mx-auto" />
           <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Access Unauthorized</h2>
           <p className="text-slate-500 font-bold mt-2">Only authorized command personnel may access the magazine registry terminal.</p>
           <Button onClick={() => router.push('/')} className="mt-10 rounded-2xl h-14 px-12 font-black w-full shadow-xl">Return to Dashboard</Button>
