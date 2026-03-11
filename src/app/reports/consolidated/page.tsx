@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -56,13 +57,15 @@ export default function OverallReportPage() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { isAdmin, isCommander, isLeader, isLoading: isAuthLoading } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
 
   const [targetDaySpan, setTargetDaySpan] = useState<number>(30);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerateConsolidatedReportOutput | null>(null);
   const [reportMode, setReportMode] = useState<'CHRONOLOGICAL' | 'OPERATION_SUMMARY'>('CHRONOLOGICAL');
   const [dateToImagesMap, setDateToImagesMap] = useState<Map<string, string[]>>(new Map());
+
+  const canAccess = isAdmin || isCommander || isLeader || isPTSLeadership;
 
   const handleGenerate = async (all = false, mode: 'CHRONOLOGICAL' | 'OPERATION_SUMMARY' = 'CHRONOLOGICAL') => {
     if (!db) return;
@@ -190,7 +193,7 @@ export default function OverallReportPage() {
 
   if (isAuthLoading) return <div className="flex-1 flex items-center justify-center bg-slate-50"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
-  if (!isAdmin && !isCommander && !isLeader) {
+  if (!canAccess) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-10 text-center">
         <ShieldCheck className="h-20 w-20 text-slate-200 mb-6" />

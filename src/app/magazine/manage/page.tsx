@@ -56,15 +56,17 @@ export default function MagazineManagementPortal() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { isMasterAdmin, isLoading: isAuthLoading } = useUserProfile();
+  const { isMasterAdmin, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingRoll, setIsExportingRoll] = useState(false);
 
+  const hasAccess = isMasterAdmin || isPTSLeadership;
+
   const articlesQuery = useMemoFirebase(() => {
-    if (!db || !isMasterAdmin) return null;
+    if (!db || !hasAccess) return null;
     return query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
-  }, [db, isMasterAdmin]);
+  }, [db, hasAccess]);
 
   const { data: articles, isLoading: isArticlesLoading } = useCollection(articlesQuery);
 
@@ -132,13 +134,13 @@ export default function MagazineManagementPortal() {
     );
   }
 
-  if (!isMasterAdmin) {
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 max-w-lg">
           <Layers className="h-20 w-20 text-slate-200 mb-6 mx-auto" />
           <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Access Unauthorized</h2>
-          <p className="text-slate-500 font-bold mt-2">Only Master Command personnel may access the magazine registry terminal.</p>
+          <p className="text-slate-500 font-bold mt-2">Only authorized command personnel may access the magazine registry terminal.</p>
           <Button onClick={() => router.push('/')} className="mt-10 rounded-2xl h-14 px-12 font-black w-full shadow-xl">Return to Dashboard</Button>
         </div>
       </div>
@@ -155,7 +157,7 @@ export default function MagazineManagementPortal() {
           <div className="flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 mb-0.5 md:mb-1">
               <ShieldCheck className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-              <span className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-primary truncate">Master Command Terminal</span>
+              <span className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-primary truncate">PTS Command Terminal</span>
             </div>
             <h1 className="text-xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase truncate">Magazine Registry</h1>
           </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -52,25 +53,25 @@ const UNITS = [
 export default function Home() {
   const db = useFirestore();
   const router = useRouter();
-  const { isAdmin, isCommander, isLeader, profile, isLoading, user } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, isPTSLeadership, profile, isLoading, user } = useUserProfile();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [unitFilter, setUnitFilter] = useState('ALL');
   const [dateFilter, setDateFilter] = useState('');
 
-  const displayLimit = (isAdmin || isCommander || isLeader) ? 50 : 20;
+  const displayLimit = (isAdmin || isCommander || isLeader || isPTSLeadership) ? 50 : 20;
 
   const recentReportsQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || isLoading || !profile) return null;
     
     const baseQuery = collection(db, 'reports');
     
-    if (isAdmin || isCommander || isLeader) {
+    if (isAdmin || isCommander || isLeader || isPTSLeadership) {
       return query(baseQuery, orderBy('createdAt', 'desc'), limit(displayLimit));
     } else {
       return query(baseQuery, where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(displayLimit));
     }
-  }, [db, isAdmin, isCommander, isLeader, profile, user?.uid, isLoading, displayLimit]);
+  }, [db, isAdmin, isCommander, isLeader, isPTSLeadership, profile, user?.uid, isLoading, displayLimit]);
 
   const { data: reports, isLoading: isReportsLoading } = useCollection(recentReportsQuery);
 
@@ -116,7 +117,7 @@ export default function Home() {
             <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Secure Protocol Active</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">
-            {isAdmin || isCommander || isLeader ? 'Command Registry' : `Operational Feed`}
+            {(isAdmin || isCommander || isLeader || isPTSLeadership) ? 'Command Registry' : `Operational Feed`}
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="bg-slate-900 text-white font-bold px-3 py-1 text-[10px] rounded-lg shadow-sm uppercase">
@@ -137,7 +138,7 @@ export default function Home() {
         </div>
       </header>
 
-      {(isAdmin || isCommander) && (
+      {(isAdmin || isCommander || isPTSLeadership) && (
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-2">
             <Navigation className="h-4 w-4 text-blue-600" />

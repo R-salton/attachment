@@ -33,6 +33,7 @@ export function useUserProfile() {
       isCommander: isMasterAdmin,
       isLeader: isMasterAdmin, 
       isMasterAdmin: isMasterAdmin,
+      isPTSLeadership: false,
       isTrainee: false,
       user: user || null 
     };
@@ -47,6 +48,7 @@ export function useUserProfile() {
       isCommander: false, 
       isLeader: false, 
       isMasterAdmin: false,
+      isPTSLeadership: false,
       isTrainee: false,
       user: null 
     };
@@ -55,10 +57,11 @@ export function useUserProfile() {
   // Default roles if profile isn't fully initialized yet but user exists
   const role = profile?.role || (isMasterAdmin ? 'ADMIN' : 'TRAINEE');
   
+  const isPTSLeadership = role === 'PTSLEADERSHIP';
   const isAdmin = role === 'ADMIN' || isMasterAdmin;
-  const isCommander = role === 'COMMANDER' || isAdmin;
+  const isCommander = role === 'COMMANDER' || isAdmin || isPTSLeadership;
   const isLeader = role === 'LEADER' || isCommander;
-  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !isAdmin;
+  const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !isAdmin && !isPTSLeadership;
 
   return { 
     profile, 
@@ -67,6 +70,7 @@ export function useUserProfile() {
     isCommander,
     isLeader, 
     isMasterAdmin,
+    isPTSLeadership,
     isTrainee,
     user 
   };

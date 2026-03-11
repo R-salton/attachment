@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -58,7 +59,7 @@ import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, Arro
 import { useToast } from '@/hooks/use-toast';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
-const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE"];
+const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE", "PTSLEADERSHIP"];
 
 export default function UserManagementPage() {
   const router = useRouter();

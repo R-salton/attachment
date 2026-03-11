@@ -80,11 +80,13 @@ export default function ArticleDetailPortal({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const { toast } = useToast();
   const db = useFirestore();
-  const { isMasterAdmin, isLoading: isAuthLoading } = useUserProfile();
+  const { isMasterAdmin, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasAccess = isMasterAdmin || isPTSLeadership;
 
   // Edit States
   const [editedName, setEditedName] = useState("");
@@ -94,9 +96,9 @@ export default function ArticleDetailPortal({ params }: { params: Promise<{ id: 
   const [editedImage, setEditedImage] = useState("");
 
   const articleRef = useMemoFirebase(() => {
-    if (!db || !id || !isMasterAdmin) return null;
+    if (!db || !id || !hasAccess) return null;
     return doc(db, 'articles', id);
-  }, [db, id, isMasterAdmin]);
+  }, [db, id, hasAccess]);
 
   const { data: article, isLoading } = useDoc(articleRef);
 
@@ -175,12 +177,12 @@ export default function ArticleDetailPortal({ params }: { params: Promise<{ id: 
     );
   }
 
-  if (!isMasterAdmin) {
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
         <ShieldCheck className="h-20 w-20 text-slate-200 mb-6" />
         <h2 className="text-3xl font-black uppercase text-slate-900">Unauthorized Access</h2>
-        <p className="text-slate-500 font-bold mt-2">Only Master Command personnel may view the article transcripts.</p>
+        <p className="text-slate-500 font-bold mt-2">Only authorized command personnel may view the article transcripts.</p>
         <Button onClick={() => router.push('/')} className="mt-10 rounded-2xl h-14 px-12 font-black">Return Dashboard</Button>
       </div>
     );

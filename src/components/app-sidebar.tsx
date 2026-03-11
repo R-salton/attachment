@@ -37,7 +37,7 @@ import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAdmin, isCommander, isLeader, isMasterAdmin, profile, user, isLoading } = useUserProfile();
+  const { isAdmin, isCommander, isLeader, isMasterAdmin, isPTSLeadership, profile, user, isLoading } = useUserProfile();
   const auth = useAuth();
 
   const handleSignOut = () => signOut(auth);
@@ -97,12 +97,12 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {(isAdmin || isCommander || isLeader) && (
+            {(isAdmin || isCommander || isLeader || isPTSLeadership) && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Special Portals</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {(isAdmin || isCommander) && (
+                    {(isAdmin || isCommander || isPTSLeadership) && (
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={pathname === '/reports/consolidated'} className="h-11 rounded-xl">
                           <Link href="/reports/consolidated">
@@ -112,7 +112,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )}
-                    {isMasterAdmin && (
+                    {(isMasterAdmin || isPTSLeadership) && (
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
                           <Link href="/magazine/manage">
@@ -172,7 +172,7 @@ export function AppSidebar() {
               <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <span className="text-xs font-black text-foreground truncate max-w-[120px] leading-tight">{profile?.displayName}</span>
                 <span className="text-[10px] text-primary uppercase font-black tracking-tighter">
-                  {isMasterAdmin ? 'Master Admin' : isAdmin ? 'System Admin' : profile?.role}
+                  {isMasterAdmin ? 'Master Admin' : isAdmin ? 'System Admin' : isPTSLeadership ? 'PTS Leadership' : profile?.role}
                 </span>
               </div>
             )}
