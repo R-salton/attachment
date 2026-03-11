@@ -15,7 +15,7 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
-  // System master bypass (Owner UIDs only)
+  // System master bypass (Primary Owner UIDs only)
   const isMasterAdmin = 
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';

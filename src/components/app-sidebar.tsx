@@ -112,7 +112,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )}
-                    {(isMasterAdmin || isPTSLeadership) && (
+                    {(isAdmin || isPTSLeadership) && (
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
                           <Link href="/magazine/manage">
