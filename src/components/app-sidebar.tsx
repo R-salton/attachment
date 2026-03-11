@@ -76,7 +76,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {isLeader && (
+                  {isLeader && !isPTSLeadership && (
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={pathname === '/daily/new'} className="h-11 rounded-xl">
                         <Link href="/daily/new">

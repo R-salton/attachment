@@ -124,7 +124,7 @@ export default function Home() {
             </Badge>
           </div>
         </div>
-        {(isLeader || isCommander || isAdmin) && (
+        {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
           <div className="flex items-center gap-3">
             <Button asChild className="h-12 rounded-xl font-black shadow-xl shadow-blue-600/20 px-8 bg-blue-600 hover:bg-blue-700">
               <Link href="/daily/new">
@@ -136,7 +136,7 @@ export default function Home() {
         )}
       </header>
 
-      {(isAdmin || isCommander || isPTSLeadership) && (
+      {(isAdmin || (isCommander && !isPTSLeadership)) && (
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-2">
             <Navigation className="h-4 w-4 text-blue-600" />
@@ -161,7 +161,7 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <Card className={`${(isLeader || isCommander || isAdmin) ? 'lg:col-span-3' : 'lg:col-span-4'} border border-slate-200 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col`}>
+        <Card className={`${(isLeader || isCommander || isAdmin) && !isPTSLeadership ? 'lg:col-span-3' : 'lg:col-span-4'} border border-slate-200 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col`}>
           <CardHeader className="p-8 pb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-1">
@@ -268,7 +268,7 @@ export default function Home() {
                     <ShieldCheck className="h-6 w-6 text-slate-200" />
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-1 uppercase">No Records Found</h3>
-                  {(isLeader || isCommander || isAdmin) && (
+                  {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
                     <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
                       <Link href="/daily/new">File First Report</Link>
                     </Button>
@@ -279,7 +279,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {(isLeader || isCommander || isAdmin) && (
+        {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
           <div className="space-y-6 lg:col-span-1">
             <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
               <CardHeader className="p-8">
