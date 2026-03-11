@@ -27,7 +27,8 @@ export function AuthProfileSync() {
           user.email === 'cboazi100@gmail.com' ||
           user.email === 'admin@gmail.com' ||
           user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-          user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
+          user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
+          user.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
 
         if (!userSnap.exists()) {
           // Provision new profile

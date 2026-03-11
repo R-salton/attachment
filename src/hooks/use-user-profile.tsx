@@ -20,7 +20,8 @@ export function useUserProfile() {
     user?.email === 'cboazi100@gmail.com' ||
     user?.email === 'admin@gmail.com' ||
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
-    user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
+    user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
+    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
 
   // Explicitly determine loading state. 
   // We are loading if auth is initializing OR if user exists but profile doc is still being fetched.

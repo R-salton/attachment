@@ -12,6 +12,7 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
         request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
+        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2' ||
         request.auth.token.email == 'nezasalton@gmail.com' ||
         request.auth.token.email == 'cboazi100@gmail.com' ||
         request.auth.token.email == 'admin@gmail.com'
