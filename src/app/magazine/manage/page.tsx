@@ -221,7 +221,11 @@ export default function MagazineManagementPortal() {
             { name: 'Bravo', count: stats.bravo, color: 'bg-emerald-600' },
             { name: 'Charlie', count: stats.charlie, color: 'bg-amber-600' }
           ].map(company => (
-            <Card key={company.name} className="border-none shadow-lg rounded-2xl bg-white p-6 relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+            <Card 
+              key={company.name} 
+              onClick={() => router.push(`/magazine/manage/company/${company.name}`)}
+              className="border-none shadow-lg rounded-2xl bg-white p-6 relative overflow-hidden group hover:shadow-xl transition-all duration-500 cursor-pointer active:scale-[0.98]"
+            >
               <div className={`absolute top-0 right-0 w-1 h-full ${company.color}`} />
               <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">{company.name} Company</span>
               <div className="text-3xl md:text-4xl font-black text-slate-900 leading-none">{company.count}</div>
