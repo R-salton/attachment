@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
@@ -14,12 +15,11 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
-  // Safety bypass for system masters
+  // System master bypass (UID based for initial setup safety)
   const isMasterAdmin = 
     user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2' ||
-    user?.email === 'admin@gmail.com';
+    user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
 
   const isLoading = isUserLoading || (!!user && isProfileLoading);
 
@@ -51,6 +51,7 @@ export function useUserProfile() {
     };
   }
   
+  // Derived role logic: document role takes priority over system defaults
   const role = profile?.role || (isMasterAdmin ? 'ADMIN' : 'TRAINEE');
   
   const isPTSLeadership = role === 'PTSLEADERSHIP';

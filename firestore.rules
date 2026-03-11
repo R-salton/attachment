@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Minimal safety bypass for system owners
+    // Master Admin bypass for system owners (UID based only)
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
@@ -16,7 +16,7 @@ service cloud.firestore {
       );
     }
 
-    // Role-based helper
+    // Role-based helper fetching role from the user's profile document
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -39,21 +39,18 @@ service cloud.firestore {
       return isAdmin() || isPTSLeadership() || isRole('COMMANDER');
     }
 
-    function isLeader() {
-      return isCommander() || isRole('LEADER');
-    }
-
     match /users/{userId} {
-      // Only Admins can manage other users. Users can always read their own profile.
+      // Only Admins can manage the personnel registry.
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if isAdmin();
-      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /reports/{reportId} {
-      // PTSLEADERSHIP and ADMIN can read/list all
-      allow read, list: if isAdmin() || isPTSLeadership() || isRole('COMMANDER');
-      // Document-level access for owners (required for listing their own feed)
+      // PTSLEADERSHIP and Command roles can read/list all records globally.
+      allow read, list: if isCommander();
+      
+      // Document-level access for owners.
       allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       
       allow create: if isSignedIn();
@@ -62,7 +59,10 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      allow create: if true; // Public submission terminal
+      // Articles can be submitted via the public terminal.
+      allow create: if true; 
+      
+      // Management access reserved for Leadership and Admins.
       allow read, list, update, delete: if isAdmin() || isPTSLeadership();
     }
   }

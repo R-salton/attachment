@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -5,8 +6,8 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 /**
- * Component to ensure every authenticated user has a UserProfile document in Firestore.
- * Automatically provisions designated Master Administrator accounts with 'ADMIN' role.
+ * Component to ensure authenticated users have a profile.
+ * Roles are primarily managed via the Personnel Management terminal.
  */
 export function AuthProfileSync() {
   const { user } = useUser();
@@ -20,19 +21,17 @@ export function AuthProfileSync() {
       try {
         const userSnap = await getDoc(userRef);
 
-        // Identify if this is a designated primary Administrator
+        // System Master check for initial setup
         const isSystemAdmin = 
-          user.email === 'nezasalton@gmail.com' || 
-          user.email === 'cboazi100@gmail.com' ||
-          user.email === 'admin@gmail.com' ||
-          user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+          user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
           user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
           user.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
 
         if (!userSnap.exists()) {
-          // Provision new profile
+          // Provision new profile with minimal defaults. 
+          // Leadership roles must be explicitly assigned via the Users terminal.
           const initialRole = isSystemAdmin ? 'ADMIN' : 'TRAINEE';
-          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS'; // Default unit for new officers
+          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS';
           
           await setDoc(userRef, {
             uid: user.uid,
@@ -43,10 +42,8 @@ export function AuthProfileSync() {
             createdAt: serverTimestamp(),
           });
         } else if (isSystemAdmin && userSnap.data().role !== 'ADMIN') {
-          // Ensure Master Admin always has the correct role if profile already exists
-          await setDoc(userRef, { 
-            role: 'ADMIN'
-          }, { merge: true });
+          // Keep Master Admins in the ADMIN role
+          await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
         }
       } catch (e) {
         console.error("Profile sync failed:", e);
