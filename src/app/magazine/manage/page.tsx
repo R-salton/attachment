@@ -260,7 +260,7 @@ export default function MagazineManagementPortal() {
               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Harvesting Articles...</span>
             </div>
           ) : filteredArticles && filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
               {filteredArticles.map((article) => (
                 <div 
                   key={article.id} 
@@ -278,7 +278,7 @@ export default function MagazineManagementPortal() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-black text-slate-900 uppercase leading-tight mb-1">
+                      <h4 className="text-xl font-black text-slate-900 uppercase leading-tight mb-1">
                         {article.cadetName}
                       </h4>
                       <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -288,11 +288,13 @@ export default function MagazineManagementPortal() {
                   </div>
 
                   <div className="mt-6 space-y-4">
-                    <p className="text-sm font-medium text-slate-600 italic leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-50/50 min-h-[8rem]">
-                      "{getWordPreview(article.content, 60)}"
-                    </p>
-                    <Button variant="ghost" size="sm" className="w-full rounded-xl text-primary font-black text-[10px] uppercase tracking-widest bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/20 group/btn">
-                      View Full Article <ExternalLink className="ml-2 h-3 w-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 min-h-[10rem]">
+                      <p className="text-sm font-medium text-slate-600 italic leading-relaxed line-clamp-6">
+                        "{getWordPreview(article.content, 60)}"
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="w-full h-11 rounded-xl text-primary font-black text-[11px] uppercase tracking-widest bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/20 group/btn shadow-sm">
+                      View Full Article <ExternalLink className="ml-2 h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                     </Button>
                   </div>
 
