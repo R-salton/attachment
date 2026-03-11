@@ -7,13 +7,11 @@ import {
   TextRun, 
   AlignmentType, 
   ImageRun, 
-  SectionType,
   BorderStyle,
   Table,
   TableRow,
   TableCell,
   WidthType,
-  VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
@@ -26,6 +24,16 @@ interface ArticleData {
   content: string;
   imageUrl?: string;
   createdAt: any;
+}
+
+/**
+ * Sanitizes strings to prevent XML corruption in .docx files.
+ * Removes control characters that break the OOXML schema.
+ */
+function sanitizeForXml(str: string): string {
+  if (!str) return "";
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u0084\u0086-\u009F]/g, "");
 }
 
 /**
@@ -73,14 +81,6 @@ async function createCircularAvatar(base64Str: string): Promise<Uint8Array | nul
 }
 
 /**
- * Utility to convert base64 to simple data for jsPDF.
- */
-function getCleanBase64(base64Str: string) {
-  if (!base64Str) return null;
-  return base64Str.includes('base64,') ? base64Str : null;
-}
-
-/**
  * Aggregates stats for the final summary page.
  */
 function getProcessedCadetRegistry(articles: ArticleData[]) {
@@ -92,7 +92,7 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
   }>();
 
   articles.forEach(article => {
-    const cleanName = article.cadetName
+    const cleanName = sanitizeForXml(article.cadetName)
       .replace(/\bOC\b/gi, '')
       .replace(/\s+/g, ' ')
       .trim()
@@ -117,7 +117,8 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
 }
 
 /**
- * Exports multiple articles to a stable Word document (Single Column for MS Office Compatibility).
+ * Exports multiple articles to a stable Word document.
+ * Focuses on MS Office compatibility by using a single section and simple formatting.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const children: any[] = [
@@ -140,15 +141,15 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       children: [new TextRun({ text: "POLICE TRAINING SCHOOL (PTS) GISHARI", bold: true, size: 24, font: "Arial" })],
       alignment: AlignmentType.CENTER,
     }),
-    new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }),
+    new Paragraph({ children: [new TextRun({ text: "", break: 1 })] }),
   ];
 
   for (const article of articles) {
     // Header
     children.push(
       new Paragraph({
-        children: [new TextRun({ text: article.cadetName.toUpperCase(), bold: true, size: 32, font: "Arial" })],
-        spacing: { before: 400, after: 100 },
+        children: [new TextRun({ text: sanitizeForXml(article.cadetName).toUpperCase(), bold: true, size: 32, font: "Arial" })],
+        spacing: { before: 800, after: 100 },
       }),
       new Paragraph({
         children: [new TextRun({ text: `${article.company} Company | Platoon ${article.platoon}`, italic: true, size: 20, font: "Arial", color: "555555" })],
@@ -161,14 +162,21 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       const avatarBytes = await createCircularAvatar(article.imageUrl);
       if (avatarBytes) {
         children.push(new Paragraph({
-          children: [new ImageRun({ data: avatarBytes, transformation: { width: 100, height: 100 } })],
+          children: [
+            new ImageRun({ 
+              data: avatarBytes, 
+              transformation: { width: 100, height: 100 },
+              altText: { title: "Cadet Profile", description: "Circular profile image" }
+            })
+          ],
           spacing: { after: 400 },
         }));
       }
     }
 
-    // Body
-    const contentLines = article.content.split('\n');
+    // Body - Split by lines and create paragraphs for each
+    const sanitizedContent = sanitizeForXml(article.content);
+    const contentLines = sanitizedContent.split(/\r?\n/);
     for (const line of contentLines) {
       if (line.trim()) {
         children.push(new Paragraph({
@@ -179,24 +187,26 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     }
 
     children.push(new Paragraph({
-      children: [new TextRun({ text: `\nFiled: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'}`, size: 16, font: "Arial", color: "888888", italic: true })],
+      children: [new TextRun({ text: `Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'}`, size: 16, font: "Arial", color: "888888", italic: true })],
       alignment: AlignmentType.RIGHT,
       spacing: { after: 800 },
     }));
 
-    children.push(new Paragraph({ border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, spacing: { after: 400 } }));
+    children.push(new Paragraph({ 
+      border: { bottom: { color: "EEEEEE", style: BorderStyle.SINGLE, size: 4 } }, 
+      spacing: { after: 400 } 
+    }));
   }
 
   // Summary Table
-  children.push(new Paragraph({ children: [new TextRun({ text: "", break: 1 })], pageBreakBefore: true }));
-  children.push(new Paragraph({ children: [new TextRun({ text: "REGISTRY SUMMARY", bold: true, size: 28, underline: {} })], alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: "REGISTRY SUMMARY", bold: true, size: 28 })], alignment: AlignmentType.CENTER, spacing: { before: 800, after: 400 } }));
   
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
       new TableRow({ children: [
-        new TableCell({ children: [new Paragraph({ text: "Metric", bold: true })], shading: { fill: "F1F5F9" } }),
-        new TableCell({ children: [new Paragraph({ text: "Total", bold: true })], shading: { fill: "F1F5F9" } })
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Metric", bold: true })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total", bold: true })] })] })
       ]}),
       new TableRow({ children: [
         new TableCell({ children: [new Paragraph({ text: "Total Articles" })] }),
@@ -217,7 +227,8 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `CADET_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
+  const dateStr = new Date().toISOString().split('T')[0];
+  saveAs(blob, `CADET_REGISTRY_${dateStr}.docx`);
 }
 
 /**
@@ -297,8 +308,6 @@ export async function exportMagazineToPDF(articles: ArticleData[]) {
     const rightCol = textLines.slice(half);
 
     doc.text(leftCol, margin, currentY, { maxWidth: colWidth, lineHeightFactor: 1.5 });
-    
-    // Check if right column needs a new page (rare for a single article header)
     doc.text(rightCol, margin + colWidth + colGap, currentY, { maxWidth: colWidth, lineHeightFactor: 1.5 });
     
     // Footer
@@ -315,7 +324,7 @@ export async function exportMagazineToPDF(articles: ArticleData[]) {
   doc.setFont('helvetica', 'bold');
   doc.text("COMMAND REGISTRY TOTALS", pageWidth / 2, 30, { align: 'center' });
   
-  const stats = [
+  const statsTable = [
     ["Command Metric", "Value"],
     ["Total Contributions", articles.length.toString()],
     ["Unique Contributors", new Set(articles.map(a => a.cadetName)).size.toString()],
@@ -326,8 +335,8 @@ export async function exportMagazineToPDF(articles: ArticleData[]) {
 
   autoTable(doc, {
     startY: 45,
-    head: [stats[0]],
-    body: stats.slice(1),
+    head: [statsTable[0]],
+    body: statsTable.slice(1),
     theme: 'grid',
     headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
     margin: { left: 40, right: 40 }
@@ -352,7 +361,7 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
       spacing: { after: 200 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: "LITERARY MAGAZINE CONTRIBUTION REGISTRY", bold: true, size: 24, underline: {} })],
+      children: [new TextRun({ text: "LITERARY MAGAZINE CONTRIBUTION REGISTRY", bold: true, size: 24 })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 600 },
     }),
@@ -380,30 +389,29 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
         })
       );
 
-      const headerRow = new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "NBR OF ARTICLES", bold: true, size: 20 })], alignment: AlignmentType.CENTER })], shading: { fill: "F1F5F9" }, verticalAlign: VerticalAlign.CENTER }),
-        ],
-      });
-
-      const dataRows = platoonCadets.map((cadet, idx) => {
-        return new TableRow({
+      const rows = [
+        new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (idx + 1).toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "OC", size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.name, size: 20 })] })], verticalAlign: VerticalAlign.CENTER }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.articleCount.toString(), size: 20 })], alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "S/N", bold: true, size: 20 })], alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "RANK", bold: true, size: 20 })], alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CADET FULL NAME", bold: true, size: 20 })], alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "NBR OF ARTICLES", bold: true, size: 20 })], alignment: AlignmentType.CENTER })] }),
           ],
-        });
-      });
+        }),
+        ...platoonCadets.map((cadet, idx) => new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (idx + 1).toString(), size: 20 })], alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "OC", size: 20 })], alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.name, size: 20 })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cadet.articleCount.toString(), size: 20 })], alignment: AlignmentType.CENTER })] }),
+          ],
+        }))
+      ];
 
       docChildren.push(
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [headerRow, ...dataRows],
+          rows: rows,
         })
       );
     }
@@ -412,9 +420,7 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
   // Summary Footer
   docChildren.push(
     new Paragraph({
-      children: [
-        new TextRun({ text: `\nCOMMAND REGISTRY SUMMARY`, bold: true, size: 20, underline: {} })
-      ],
+      children: [new TextRun({ text: "COMMAND REGISTRY SUMMARY", bold: true, size: 20 })],
       spacing: { before: 600, after: 200 }
     }),
     new Paragraph({
@@ -428,30 +434,18 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
         new TextRun({ text: `Total Unique Contributors: `, bold: true, size: 18 }),
         new TextRun({ text: uniqueCadets.length.toString(), size: 18 }),
       ],
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `\nReport Generated: ${new Date().toLocaleDateString('en-GB')}`, italic: true, size: 16, color: "666666" })],
-      alignment: AlignmentType.RIGHT,
-      spacing: { before: 800 },
     })
   );
 
   const doc = new Document({
     sections: [{
-      properties: {
-        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
-      },
+      properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
       children: docChildren,
     }],
   });
 
-  try {
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `CADET_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
-  } catch (error) {
-    console.error("Nominal Roll Export Error:", error);
-    throw error;
-  }
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, `CADET_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
 }
 
 /**
