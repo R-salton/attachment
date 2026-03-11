@@ -28,7 +28,6 @@ import {
   ShieldCheck,
   Settings,
   Loader2,
-  Sparkles,
   BookOpen,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
@@ -77,14 +76,17 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/daily/new'} className="h-11 rounded-xl">
-                      <Link href="/daily/new">
-                        <FilePlus className="h-4 w-4" />
-                        <span className="font-bold">New Report</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {isLeader && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/daily/new'} className="h-11 rounded-xl">
+                        <Link href="/daily/new">
+                          <FilePlus className="h-4 w-4" />
+                          <span className="font-bold">New Report</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname === '/reports'} className="h-11 rounded-xl">
                       <Link href="/reports">
@@ -97,31 +99,19 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {(isAdmin || isCommander || isLeader || isPTSLeadership) && (
+            {(isAdmin || isPTSLeadership) && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground py-4">Special Portals</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {(isAdmin || isCommander || isPTSLeadership) && (
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname === '/reports/consolidated'} className="h-11 rounded-xl">
-                          <Link href="/reports/consolidated">
-                            <Sparkles className="h-4 w-4" />
-                            <span className="font-bold">Consolidated Report</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )}
-                    {(isAdmin || isPTSLeadership) && (
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
-                          <Link href="/magazine/manage">
-                            <BookOpen className="h-4 w-4" />
-                            <span className="font-bold">Magazine Registry</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )}
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/magazine/manage'} className="h-11 rounded-xl">
+                        <Link href="/magazine/manage">
+                          <BookOpen className="h-4 w-4" />
+                          <span className="font-bold">Magazine Registry</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>

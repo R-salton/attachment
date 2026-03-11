@@ -12,18 +12,13 @@ import {
   ShieldCheck, 
   ArrowRight,
   Lock,
-  UserCog,
-  ShieldAlert,
   Shield,
-  Eye,
   Activity,
   Building2,
   Navigation,
   FileText,
   Calendar,
   Search,
-  Filter,
-  User,
   Clock
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
@@ -128,14 +123,16 @@ export default function Home() {
             </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button asChild className="h-12 rounded-xl font-black shadow-xl shadow-blue-600/20 px-8 bg-blue-600 hover:bg-blue-700">
-            <Link href="/daily/new">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              FILE NEW REPORT
-            </Link>
-          </Button>
-        </div>
+        {isLeader && (
+          <div className="flex items-center gap-3">
+            <Button asChild className="h-12 rounded-xl font-black shadow-xl shadow-blue-600/20 px-8 bg-blue-600 hover:bg-blue-700">
+              <Link href="/daily/new">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                FILE NEW REPORT
+              </Link>
+            </Button>
+          </div>
+        )}
       </header>
 
       {(isAdmin || isCommander || isPTSLeadership) && (
@@ -163,7 +160,7 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <Card className="lg:col-span-3 border border-slate-200 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col">
+        <Card className={`${isLeader ? 'lg:col-span-3' : 'lg:col-span-4'} border border-slate-200 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col`}>
           <CardHeader className="p-8 pb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-1">
@@ -267,49 +264,53 @@ export default function Home() {
               ) : (
                 <div className="col-span-full text-center py-20 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
                   <div className="bg-white h-12 w-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <ShieldAlert className="h-6 w-6 text-slate-200" />
+                    <ShieldCheck className="h-6 w-6 text-slate-200" />
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-1 uppercase">No Records Found</h3>
-                  <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
-                    <Link href="/daily/new">File First Report</Link>
-                  </Button>
+                  {isLeader && (
+                    <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
+                      <Link href="/daily/new">File First Report</Link>
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-6 lg:col-span-1">
-          <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
-            <CardHeader className="p-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-blue-400" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Terminal Access</span>
-              </div>
-              <CardTitle className="text-2xl font-black tracking-tight">Command Center</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-4">
-              <Button asChild className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black text-xs shadow-lg shadow-blue-600/20">
-                <Link href="/daily/new">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  NEW SITREP
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black text-xs">
-                <Link href="/reports">
-                  <History className="mr-2 h-4 w-4" />
-                  ACCESS ARCHIVES
-                </Link>
-              </Button>
-              
-              <div className="pt-6 border-t border-white/10 mt-6">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
-                  Authorized access only. All actions are logged and encrypted within the command registry.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {isLeader && (
+          <div className="space-y-6 lg:col-span-1">
+            <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
+              <CardHeader className="p-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Terminal Access</span>
+                </div>
+                <CardTitle className="text-2xl font-black tracking-tight">Command Center</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 pt-0 space-y-4">
+                <Button asChild className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black text-xs shadow-lg shadow-blue-600/20">
+                  <Link href="/daily/new">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    NEW SITREP
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black text-xs">
+                  <Link href="/reports">
+                    <History className="mr-2 h-4 w-4" />
+                    ACCESS ARCHIVES
+                  </Link>
+                </Button>
+                
+                <div className="pt-6 border-t border-white/10 mt-6">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                    Authorized access only. All actions are logged and encrypted within the command registry.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
