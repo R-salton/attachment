@@ -29,50 +29,52 @@ interface ArticleData {
 }
 
 /**
- * Utility to convert an image base64 string to a circular avatar using Canvas
+ * Utility to convert an image base64 string to a circular avatar using Canvas.
+ * Ensures the output is a valid Uint8Array for the docx library.
  */
-async function createCircularAvatar(base64Str: string): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
+async function createCircularAvatar(base64Str: string): Promise<Uint8Array | null> {
+  if (!base64Str || !base64Str.includes('base64,')) return null;
+  
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = base64Str;
     img.onload = () => {
-      const size = Math.min(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error("Could not create canvas context"));
-        return;
+      try {
+        const size = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(null);
+
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        const xOffset = (img.width - size) / 2;
+        const yOffset = (img.height - size) / 2;
+        ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.split(',')[1];
+        const binaryString = window.atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        resolve(bytes);
+      } catch (e) {
+        console.error("Canvas processing failed", e);
+        resolve(null);
       }
-
-      // Draw circular clip
-      ctx.beginPath();
-      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-      ctx.clip();
-
-      // Draw image centered
-      const xOffset = (img.width - size) / 2;
-      const yOffset = (img.height - size) / 2;
-      ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
-
-      // Convert to bytes for docx (PNG format is more stable for transparency/circularity)
-      const dataUrl = canvas.toDataURL('image/png');
-      const base64Data = dataUrl.split(',')[1];
-      const binaryString = window.atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      resolve(bytes);
     };
-    img.onerror = () => reject(new Error("Image load failed"));
+    img.onerror = () => resolve(null);
   });
 }
 
 /**
- * Shared utility to clean names and aggregate contribution counts
+ * Aggregates stats for the final summary page.
  */
 function getProcessedCadetRegistry(articles: ArticleData[]) {
   const cadetRegistry = new Map<string, { 
@@ -108,14 +110,14 @@ function getProcessedCadetRegistry(articles: ArticleData[]) {
 }
 
 /**
- * Exports multiple articles to a professional, two-column magazine document.
- * Refactored for maximum MS Office compatibility.
+ * Exports multiple articles to a professional Word document.
+ * Optimized for Microsoft Office compatibility by using stable section breaks.
  */
 export async function exportMagazineToDocx(articles: ArticleData[]) {
   const sections: any[] = [];
   const uniqueContributors = new Set(articles.map(a => a.cadetName.toUpperCase())).size;
 
-  // 1. Title Section (Cover Page)
+  // 1. Cover Page
   sections.push({
     properties: {
       type: SectionType.NEXT_PAGE,
@@ -126,20 +128,20 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
           new TextRun({
             text: "OFFICER CADET INTAKE 14/25-26",
             bold: true,
-            size: 24,
+            size: 28,
             font: "Arial",
-            color: "666666",
+            color: "444444",
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { before: 2000, after: 200 },
+        spacing: { before: 2400, after: 200 },
       }),
       new Paragraph({
         children: [
           new TextRun({
             text: "OFFICIAL LITERARY ARCHIVE",
             bold: true,
-            size: 48,
+            size: 56,
             font: "Arial",
           }),
         ],
@@ -148,23 +150,17 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
       }),
       new Paragraph({
         border: {
-          bottom: {
-            color: "000000",
-            space: 1,
-            style: BorderStyle.SINGLE,
-            size: 12,
-          },
+          bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 12 },
         },
-        spacing: { after: 1000 },
+        spacing: { after: 1200 },
       }),
       new Paragraph({
         children: [
           new TextRun({
             text: "POLICE TRAINING SCHOOL (PTS) GISHARI",
             bold: true,
-            size: 20,
+            size: 24,
             font: "Arial",
-            color: "333333",
           }),
         ],
         alignment: AlignmentType.CENTER,
@@ -172,6 +168,7 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     ],
   });
 
+  // Group by Company for better organization
   const companies = ['Alpha', 'Bravo', 'Charlie'];
 
   for (const companyName of companies) {
@@ -179,14 +176,14 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
     if (companyArticles.length === 0) continue;
 
     for (const article of companyArticles) {
-      // 2. Article Header Section (Full Width)
+      // 2. Article Header Section (1 Column)
       const headerChildren: any[] = [
         new Paragraph({
           children: [
             new TextRun({
               text: article.cadetName.toUpperCase(),
               bold: true,
-              size: 32,
+              size: 36,
               font: "Arial",
             }),
           ],
@@ -197,57 +194,45 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
             new TextRun({
               text: `${article.company} Company | Platoon ${article.platoon}`,
               italic: true,
-              size: 18,
+              size: 20,
               font: "Arial",
-              color: "666666",
+              color: "555555",
             }),
           ],
           spacing: { after: 400 },
         }),
         new Paragraph({
           border: {
-            bottom: {
-              color: "333333",
-              space: 1,
-              style: BorderStyle.SINGLE,
-              size: 6,
-            },
+            bottom: { color: "333333", space: 1, style: BorderStyle.SINGLE, size: 6 },
           },
-          spacing: { after: 400 },
+          spacing: { after: 600 },
         }),
       ];
 
-      // 3. Article Body Section (Two Columns)
+      // 3. Article Body Section (2 Columns)
       const bodyChildren: any[] = [];
 
+      // Avatar Processing
       if (article.imageUrl) {
-        try {
-          const avatarBytes = await createCircularAvatar(article.imageUrl);
+        const avatarBytes = await createCircularAvatar(article.imageUrl);
+        if (avatarBytes) {
           bodyChildren.push(
             new Paragraph({
               children: [
                 new ImageRun({
                   data: avatarBytes,
-                  transformation: {
-                    width: 140,
-                    height: 140,
-                  },
-                  altText: {
-                    title: "Cadet Avatar",
-                    description: `Portrait of ${article.cadetName}`,
-                    name: "avatar"
-                  }
+                  transformation: { width: 120, height: 120 },
+                  altText: { title: "Avatar", description: "Portrait", name: "portrait" }
                 }),
               ],
-              spacing: { after: 300 },
+              spacing: { after: 400 },
               alignment: AlignmentType.LEFT,
             })
           );
-        } catch (e) {
-          console.error("Circular Avatar Processing Failed:", e);
         }
       }
 
+      // Content Flow
       const contentLines = article.content.split('\n');
       for (const line of contentLines) {
         const trimmed = line.trim();
@@ -258,70 +243,57 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         
         bodyChildren.push(
           new Paragraph({
-            children: [
-              new TextRun({
-                text: trimmed,
-                size: 20,
-                font: "Arial",
-              }),
-            ],
-            spacing: { after: 150 },
-            alignment: AlignmentType.JUSTIFIED,
+            children: [new TextRun({ text: trimmed, size: 22, font: "Arial" })],
+            spacing: { after: 200 },
+            alignment: AlignmentType.LEFT, // Left is more stable in Word OOXML columns than Justified
           })
         );
       }
 
+      // Registry Footer
       bodyChildren.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `\nOfficial Registry Entry | Filed: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Verified'}`,
-              size: 14,
+              text: `\n--- Official Registry Entry ---\nFiled: ${article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : 'Verified'}`,
+              size: 16,
               font: "Arial",
-              color: "999999",
+              color: "888888",
               italic: true,
             }),
           ],
-          spacing: { before: 600 },
+          spacing: { before: 800 },
           alignment: AlignmentType.RIGHT,
         })
       );
 
-      // Add Header Section
+      // We use separate sections for Header and Body. 
+      // Using NEXT_PAGE for both ensures maximum isolation and prevents Word from getting confused about column state.
       sections.push({
         properties: {
           type: SectionType.NEXT_PAGE,
-          page: {
-            margin: { top: 1440, right: 1440, bottom: 400, left: 1440 },
-          },
+          page: { margin: { top: 1440, right: 1440, bottom: 400, left: 1440 } },
         },
         children: headerChildren,
       });
 
-      // Add Body Section with columns
-      // Note: MS Word works best when column sections are NEXT_PAGE if they change structure significantly
       sections.push({
         properties: {
-          type: SectionType.CONTINUOUS,
-          column: {
-            count: 2,
-            space: 720,
-          },
-          page: {
-            margin: { top: 400, right: 1440, bottom: 1440, left: 1440 },
-          },
+          type: SectionType.CONTINUOUS, // Continuous here flows from the header on the same page
+          column: { count: 2, space: 720 },
+          page: { margin: { top: 400, right: 1440, bottom: 1440, left: 1440 } },
         },
         children: bodyChildren,
       });
     }
   }
 
-  // 4. Summary Final Page (Statistical Breakdown)
+  // 4. Summary Table Page
   const summaryChildren: any[] = [
     new Paragraph({
-      children: [new TextRun({ text: "REGISTRY SUMMARY STATISTICS", bold: true, size: 28, underline: {} })],
+      children: [new TextRun({ text: "REGISTRY SUMMARY STATISTICS", bold: true, size: 32, underline: {} })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 1000, after: 600 },
+      spacing: { before: 1000, after: 800 },
     }),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
@@ -329,27 +301,25 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         new TableRow({
           children: [
             new TableCell({ 
-              children: [new Paragraph({ children: [new TextRun({ text: "METRIC", bold: true })] })], 
-              shading: { fill: "F1F5F9" },
-              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ children: [new TextRun({ text: "COMMAND METRIC", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], 
+              shading: { fill: "EEEEEE" },
             }),
             new TableCell({ 
-              children: [new Paragraph({ children: [new TextRun({ text: "TOTAL COUNT", bold: true })] })], 
-              shading: { fill: "F1F5F9" },
-              verticalAlign: VerticalAlign.CENTER,
+              children: [new Paragraph({ children: [new TextRun({ text: "TOTAL VOLUME", bold: true, size: 22 })], alignment: AlignmentType.CENTER })], 
+              shading: { fill: "EEEEEE" },
             }),
           ],
         }),
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph({ text: "Total Literary Contributions" })] }),
-            new TableCell({ children: [new Paragraph({ text: articles.length.toString(), alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ text: "Total Literary Contributions", spacing: { before: 100, after: 100 } })] }),
+            new TableCell({ children: [new Paragraph({ text: articles.length.toString(), alignment: AlignmentType.CENTER, spacing: { before: 100, after: 100 } })] }),
           ],
         }),
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph({ text: "Total Unique Cadet Submitters" })] }),
-            new TableCell({ children: [new Paragraph({ text: uniqueContributors.toString(), alignment: AlignmentType.CENTER })] }),
+            new TableCell({ children: [new Paragraph({ text: "Total Unique Cadet Personnel", spacing: { before: 100, after: 100 } })] }),
+            new TableCell({ children: [new Paragraph({ text: uniqueContributors.toString(), alignment: AlignmentType.CENTER, spacing: { before: 100, after: 100 } })] }),
           ],
         }),
       ],
@@ -359,21 +329,19 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
         new TextRun({ 
           text: `\nEnd of Official Archive. Generated on ${new Date().toLocaleDateString('en-GB')}`, 
           italic: true, 
-          size: 16,
-          color: "666666"
+          size: 18,
+          color: "777777"
         })
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 1000 },
+      spacing: { before: 1200 },
     }),
   ];
 
   sections.push({
     properties: { 
       type: SectionType.NEXT_PAGE,
-      page: {
-        margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
-      },
+      page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
     },
     children: summaryChildren,
   });
@@ -382,9 +350,9 @@ export async function exportMagazineToDocx(articles: ArticleData[]) {
 
   try {
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `CADET_LITERARY_ARCHIVE_${new Date().toISOString().split('T')[0]}.docx`);
+    saveAs(blob, `CADET_ARCHIVE_${new Date().toISOString().split('T')[0]}.docx`);
   } catch (error) {
-    console.error("DOCX Packing Error:", error);
+    console.error("Word Document Packaging Error:", error);
     throw error;
   }
 }
@@ -500,7 +468,7 @@ export async function exportContributionRegistry(articles: ArticleData[]) {
 
   try {
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `CADET_CONTRIBUTION_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
+    saveAs(blob, `CADET_REGISTRY_${new Date().toISOString().split('T')[0]}.docx`);
   } catch (error) {
     console.error("Nominal Roll Export Error:", error);
     throw error;
@@ -595,7 +563,6 @@ export async function exportContributionRegistryPDF(articles: ArticleData[]) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Total Articles Published: ${totalArticles}`, 14, currentY);
-  currentY += 6;
   doc.text(`Total Unique Contributors: ${uniqueCadets.length}`, 14, currentY);
 
   // Page Numbers
