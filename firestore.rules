@@ -7,19 +7,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // ABSOLUTE MASTER BYPASS - Centralized authority list
+    // Minimal safety bypass for system owners
     function isMasterAdmin() {
       return isSignedIn() && (
         request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
         request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
-        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2' ||
-        request.auth.token.email == 'nezasalton@gmail.com' ||
-        request.auth.token.email == 'cboazi100@gmail.com' ||
-        request.auth.token.email == 'admin@gmail.com'
+        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2'
       );
     }
 
-    // Helper for role-based access with safety checks
+    // Role-based helper
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -47,18 +44,21 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Only Admins can manage other users. Users can always read their own profile.
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+      allow update: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /reports/{reportId} {
-      // Broad read/list access for Leadership/Admin
-      allow read, list: if isLeader();
+      // PTSLEADERSHIP and ADMIN can read/list all
+      allow read, list: if isCommander();
       // Document-level access for owners (required for listing their own feed)
       allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
       
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isPTSLeadership());
-      allow delete: if isSignedIn() && (resource.data.ownerId == reportId || resource.data.ownerId == request.auth.uid || isAdmin() || isCommander());
+      allow delete: if isAdmin() || isPTSLeadership() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
 
     match /articles/{articleId} {

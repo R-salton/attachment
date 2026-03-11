@@ -5,7 +5,7 @@ import { useDoc, useUser, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export function useUserProfile() {
-  const { user, isAuthLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const db = useFirestore();
 
   const userRef = useMemoFirebase(() => {
@@ -15,17 +15,13 @@ export function useUserProfile() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userRef);
 
+  // Safety bypass for system masters
   const isMasterAdmin = 
-    user?.email === 'nezasalton@gmail.com' || 
-    user?.email === 'cboazi100@gmail.com' ||
-    user?.email === 'admin@gmail.com' ||
-    user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' ||
+    user?.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
     user?.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2' ||
     user?.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
 
-  // Explicitly determine loading state. 
-  // We are loading if auth is initializing OR if user exists but profile doc is still being fetched.
-  const isLoading = isAuthLoading || (!!user && isProfileLoading);
+  const isLoading = isUserLoading || (!!user && isProfileLoading);
 
   if (isLoading) {
     return { 
@@ -41,7 +37,6 @@ export function useUserProfile() {
     };
   }
 
-  // If no user is authenticated
   if (!user) {
     return { 
       profile: null, 
@@ -56,7 +51,6 @@ export function useUserProfile() {
     };
   }
   
-  // Default roles if profile isn't fully initialized yet but user exists
   const role = profile?.role || (isMasterAdmin ? 'ADMIN' : 'TRAINEE');
   
   const isPTSLeadership = role === 'PTSLEADERSHIP';

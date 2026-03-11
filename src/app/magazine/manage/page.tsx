@@ -56,12 +56,12 @@ export default function MagazineManagementPortal() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const { isMasterAdmin, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
+  const { isAdmin, isPTSLeadership, isLoading: isAuthLoading } = useUserProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingRoll, setIsExportingRoll] = useState(false);
 
-  const hasAccess = isMasterAdmin || isPTSLeadership;
+  const hasAccess = isAdmin || isPTSLeadership;
 
   const articlesQuery = useMemoFirebase(() => {
     if (!db || !hasAccess) return null;
@@ -282,7 +282,7 @@ export default function MagazineManagementPortal() {
                         </Badge>
                       </div>
                       
-                      <div className="flex flex-wrap items-center gap-x-2 md:gap-x-3 gap-y-1 text-[7px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex wrap items-center gap-x-2 md:gap-x-3 gap-y-1 text-[7px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                         <div className="flex items-center gap-1">
                           <Layers className="h-2.5 w-2.5 md:h-3 md:w-3" /> PLT {article.platoon}
                         </div>
