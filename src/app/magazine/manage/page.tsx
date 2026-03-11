@@ -271,23 +271,11 @@ export default function MagazineManagementPortal() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-black text-slate-900 uppercase truncate leading-none">
-                          {article.cadetName}
-                        </h4>
-                        <Badge className="h-5 text-[7px] font-black px-1.5 uppercase bg-slate-900 text-white border-none shrink-0">
-                          {article.company}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                        <div className="flex items-center gap-1">
-                          <Layers className="h-2.5 w-2.5 text-primary" /> PLT {article.platoon}
-                        </div>
-                        <span className="w-1 h-1 rounded-full bg-slate-200" />
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-2.5 w-2.5 text-primary" /> 
-                          {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : '...'}
-                        </div>
+                      <h4 className="text-sm font-black text-slate-900 uppercase truncate leading-none mb-1">
+                        {article.cadetName}
+                      </h4>
+                      <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        <Layers className="h-2.5 w-2.5 text-primary" /> PLT {article.platoon}
                       </div>
                     </div>
                   </div>
@@ -296,36 +284,45 @@ export default function MagazineManagementPortal() {
                     "{article.content}"
                   </p>
 
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
-                    <div className="flex items-center gap-1.5 text-[8px] font-black text-primary uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                      Transcript <ChevronRight className="h-2.5 w-2.5" />
-                    </div>
-                    
-                    <div onClick={e => e.stopPropagation()}>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-8 max-w-sm">
-                          <AlertDialogHeader>
-                            <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
-                              <Trash2 className="h-6 w-6 text-red-500" />
-                            </div>
-                            <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter text-slate-900">Purge Entry?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm font-bold text-slate-500">
-                              Permanently expunge OC {article.cadetName}'s article from the registry.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="mt-6 gap-2">
-                            <AlertDialogCancel className="rounded-xl h-10 font-black border-none bg-slate-100 text-slate-600 px-6">Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-10 font-black px-6 hover:bg-red-600 border-none shadow-lg shadow-red-500/20">
-                              Confirm
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                  <div className="mt-4 pt-3 border-t border-slate-50 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1.5">
+                        <Badge className="w-fit h-4 text-[7px] font-black px-1.5 uppercase bg-slate-900 text-white border-none shrink-0">
+                          {article.company} Company
+                        </Badge>
+                        <div className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                          <Calendar className="h-2.5 w-2.5 text-primary" /> 
+                          {article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString('en-GB') : '...'}
+                        </div>
+                      </div>
+                      
+                      <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-[2rem] border-none shadow-3xl p-8 max-w-sm">
+                            <AlertDialogHeader>
+                              <div className="h-12 w-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                                <Trash2 className="h-6 w-6 text-red-500" />
+                              </div>
+                              <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter text-slate-900">Purge Entry?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm font-bold text-slate-500">
+                                Permanently expunge OC {article.cadetName}'s article from the registry.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-6 gap-2">
+                              <AlertDialogCancel className="rounded-xl h-10 font-black border-none bg-slate-100 text-slate-600 px-6">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={(e) => handleDelete(e, article.id)} className="bg-red-500 text-white rounded-xl h-10 font-black px-6 hover:bg-red-600 border-none shadow-lg shadow-red-500/20">
+                                Confirm
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <ChevronRight className="h-3 w-3 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
                 </div>
