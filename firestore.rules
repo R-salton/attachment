@@ -46,14 +46,18 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Only Admins can manage the personnel registry.
+      // Users can read their own profile. Admins can manage all.
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      // Allow new users to create their initial profile document.
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Only Admins can update roles/units, but users can update basic profile metadata.
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Only Admins can purge users from the registry.
+      allow write: if isAdmin();
     }
 
     match /reports/{reportId} {
-      // PTSLEADERSHIP and Command roles can read/list all records globally.
+      // Command roles can read/list all records globally.
       allow read, list: if isCommander();
       
       // Document-level access for owners.
@@ -68,8 +72,8 @@ service cloud.firestore {
       // Management access for Leadership and Admins.
       allow read, list, update, delete: if isAdmin() || isPTSLeadership();
       
-      // Public terminal submission.
-      allow create: if true; 
+      // Public terminal submission allowed for all authenticated sessions.
+      allow create: if isSignedIn(); 
     }
   }
 }

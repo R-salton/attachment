@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 /**
  * Component to ensure authenticated users have a profile.
- * Roles are primarily managed via the Personnel Management terminal.
+ * Every new user defaults to INACTIVE unless they are a hardcoded System Admin.
  */
 export function AuthProfileSync() {
   const { user } = useUser();
@@ -21,39 +21,34 @@ export function AuthProfileSync() {
       try {
         const userSnap = await getDoc(userRef);
 
-        // System Master check for initial setup
+        // System Master check for initial setup bypass
         const isSystemAdmin = 
           user.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
           user.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
 
-        // Leadership check for specific high-level account
-        const isLeadershipAccount = user.uid === 'IsXXoo9z34UpjnJJTtlXhBvxHWz2';
-
         if (!userSnap.exists()) {
-          // Provision new profile with minimal defaults. 
-          // New self-registered users are INACTIVE until an admin approves them.
-          const initialRole = isSystemAdmin ? 'ADMIN' : (isLeadershipAccount ? 'PTSLEADERSHIP' : 'INACTIVE');
-          const initialUnit = (isSystemAdmin || isLeadershipAccount) ? 'ORDERLY REPORT' : 'TRS';
+          // Provision new profile with INACTIVE default. 
+          // Even Leadership accounts start as INACTIVE for manual verification.
+          const initialRole = isSystemAdmin ? 'ADMIN' : 'INACTIVE';
+          const initialUnit = isSystemAdmin ? 'ORDERLY REPORT' : 'TRS';
           
           await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName || (isLeadershipAccount ? 'Command Leadership' : 'Pending Officer'),
+            displayName: user.displayName || 'Pending Officer',
             role: initialRole,
             unit: initialUnit,
             createdAt: serverTimestamp(),
           });
         } else {
-          // Ensure bypass UIDs maintain their designated high-level roles
+          // Ensure bypass UIDs maintain their designated ADMIN roles if they exist
           const currentData = userSnap.data();
           if (isSystemAdmin && currentData.role !== 'ADMIN') {
             await setDoc(userRef, { role: 'ADMIN' }, { merge: true });
-          } else if (isLeadershipAccount && currentData.role !== 'PTSLEADERSHIP') {
-            await setDoc(userRef, { role: 'PTSLEADERSHIP' }, { merge: true });
           }
         }
       } catch (e) {
-        console.error("Profile sync failed:", e);
+        console.error("Profile sync failed. This is expected for new users before Firestore rules are fully propagation or if permission is denied.", e);
       }
     };
 

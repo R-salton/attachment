@@ -55,7 +55,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2 } from 'lucide-react';
+import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, ArrowLeft, Building2, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
@@ -323,7 +323,7 @@ export default function UserManagementPage() {
                 </TableHeader>
                 <TableBody>
                   {users?.map((u) => {
-                    const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+                    const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || u.uid === '7oiKVWSJ30Ucg0DxamaRhoxlI3G2';
                     const isInactive = u.role === 'INACTIVE';
                     
                     return (
@@ -333,7 +333,11 @@ export default function UserManagementPage() {
                             <span className="flex items-center gap-2">
                               {u.displayName}
                               {isSystemMaster && <Badge variant="secondary" className="h-4 text-[7px] uppercase tracking-tighter bg-primary/10 text-primary">Master</Badge>}
-                              {isInactive && <Badge className="h-4 text-[7px] uppercase tracking-tighter bg-amber-100 text-amber-700 border-amber-200">Pending Approval</Badge>}
+                              {isInactive && (
+                                <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 text-[8px] font-black uppercase">
+                                  <Clock className="h-2.5 w-2.5" /> Pending
+                                </div>
+                              )}
                             </span>
                             <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
                           </div>
