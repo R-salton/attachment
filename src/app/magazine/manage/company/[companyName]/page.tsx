@@ -157,7 +157,9 @@ export default function CompanyArticlesPortal({ params }: { params: Promise<{ co
             </div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none uppercase truncate">Literary Archive</h1>
-              <Badge className="bg-slate-100 text-slate-600 border-none font-black text-[10px] px-2 h-5">{articles?.length || 0} Files</Badge>
+              <Badge className="bg-primary text-white border-none font-black text-[10px] px-3 h-6 shadow-lg shadow-primary/20">
+                {articles?.length || 0} Files
+              </Badge>
             </div>
           </div>
         </div>
