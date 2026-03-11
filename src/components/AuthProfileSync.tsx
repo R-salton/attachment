@@ -31,14 +31,14 @@ export function AuthProfileSync() {
 
         if (!userSnap.exists()) {
           // Provision new profile with minimal defaults. 
-          // Leadership roles are assigned based on the recognized bypass UIDs.
-          const initialRole = isSystemAdmin ? 'ADMIN' : (isLeadershipAccount ? 'PTSLEADERSHIP' : 'TRAINEE');
+          // New self-registered users are INACTIVE until an admin approves them.
+          const initialRole = isSystemAdmin ? 'ADMIN' : (isLeadershipAccount ? 'PTSLEADERSHIP' : 'INACTIVE');
           const initialUnit = (isSystemAdmin || isLeadershipAccount) ? 'ORDERLY REPORT' : 'TRS';
           
           await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName || (isLeadershipAccount ? 'Command Leadership' : 'Officer'),
+            displayName: user.displayName || (isLeadershipAccount ? 'Command Leadership' : 'Pending Officer'),
             role: initialRole,
             unit: initialUnit,
             createdAt: serverTimestamp(),

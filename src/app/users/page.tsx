@@ -59,7 +59,7 @@ import { Loader2, ShieldAlert, UserCog, Mail, UserPlus, ShieldPlus, Trash2, Arro
 import { useToast } from '@/hooks/use-toast';
 
 const UNITS = ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"];
-const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE", "PTSLEADERSHIP"];
+const ROLES = ["ADMIN", "COMMANDER", "LEADER", "TRAINEE", "PTSLEADERSHIP", "INACTIVE"];
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -324,13 +324,16 @@ export default function UserManagementPage() {
                 <TableBody>
                   {users?.map((u) => {
                     const isSystemMaster = u.email === 'nezasalton@gmail.com' || u.uid === 'S7QoMkUQNHaok4JjLB1fFd9OI0g1';
+                    const isInactive = u.role === 'INACTIVE';
+                    
                     return (
-                      <TableRow key={u.uid} className="hover:bg-slate-50 transition-colors">
+                      <TableRow key={u.uid} className={`transition-colors ${isInactive ? 'bg-amber-50/30 hover:bg-amber-50/50' : 'hover:bg-slate-50'}`}>
                         <TableCell className="font-medium text-xs md:text-sm py-3 md:py-4">
                           <div className="flex flex-col">
                             <span className="flex items-center gap-2">
                               {u.displayName}
                               {isSystemMaster && <Badge variant="secondary" className="h-4 text-[7px] uppercase tracking-tighter bg-primary/10 text-primary">Master</Badge>}
+                              {isInactive && <Badge className="h-4 text-[7px] uppercase tracking-tighter bg-amber-100 text-amber-700 border-amber-200">Pending Approval</Badge>}
                             </span>
                             <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{u.email}</span>
                           </div>
@@ -342,7 +345,7 @@ export default function UserManagementPage() {
                               defaultValue={u.role} 
                               onValueChange={(val) => handleRoleChange(u.uid, val)}
                             >
-                              <SelectTrigger className="w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs">
+                              <SelectTrigger className={`w-[110px] md:w-[140px] h-8 md:h-9 text-[10px] md:text-xs ${isInactive ? 'border-amber-300 ring-amber-200' : ''}`}>
                                 <SelectValue placeholder="Role" />
                               </SelectTrigger>
                               <SelectContent>

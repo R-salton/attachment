@@ -35,6 +35,7 @@ export function useUserProfile() {
       isMasterAdmin: isMasterAdmin,
       isPTSLeadership: isLeadershipUID,
       isTrainee: false,
+      isInactive: false,
       user: user || null 
     };
   }
@@ -49,13 +50,14 @@ export function useUserProfile() {
       isMasterAdmin: false, 
       isPTSLeadership: false, 
       isTrainee: false, 
+      isInactive: false,
       user: null 
     };
   }
   
   // Derived role logic: document role takes priority, then defaults based on UIDs
   const storedRole = profile?.role;
-  const role = storedRole || (isMasterAdmin ? 'ADMIN' : (isLeadershipUID ? 'PTSLEADERSHIP' : 'TRAINEE'));
+  const role = storedRole || (isMasterAdmin ? 'ADMIN' : (isLeadershipUID ? 'PTSLEADERSHIP' : 'INACTIVE'));
   
   const isPTSLeadership = role === 'PTSLEADERSHIP' || isLeadershipUID;
   const isAdmin = role === 'ADMIN' || isMasterAdmin;
@@ -66,6 +68,7 @@ export function useUserProfile() {
   const isCommander = finalIsAdmin || isPTSLeadership || role === 'COMMANDER';
   const isLeader = isCommander || role === 'LEADER';
   const isTrainee = role === 'TRAINEE' && !isCommander && !isLeader && !finalIsAdmin && !isPTSLeadership;
+  const isInactive = role === 'INACTIVE' && !isMasterAdmin && !isLeadershipUID;
 
   return { 
     profile, 
@@ -76,6 +79,7 @@ export function useUserProfile() {
     isMasterAdmin,
     isPTSLeadership,
     isTrainee,
+    isInactive,
     user 
   };
 }
