@@ -20,7 +20,8 @@ import {
   Calendar,
   Search,
   Clock,
-  Eye
+  Eye,
+  Users
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
@@ -124,42 +125,25 @@ export default function Home() {
             </Badge>
           </div>
         </div>
-        {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
+          {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
             <Button asChild className="h-12 rounded-xl font-black shadow-xl shadow-blue-600/20 px-8 bg-blue-600 hover:bg-blue-700">
               <Link href="/daily/new">
                 <PlusCircle className="mr-2 h-5 w-5" />
                 FILE NEW REPORT
               </Link>
             </Button>
-          </div>
-        )}
+          )}
+          <Button asChild variant="outline" className="h-12 rounded-xl font-black border-slate-200 bg-white hover:bg-slate-50 shadow-sm px-6">
+            <Link href="/visitors/register">
+              <Users className="mr-2 h-5 w-5 text-primary" />
+              VISITOR ENTRY
+            </Link>
+          </Button>
+        </div>
       </header>
 
-      {(isAdmin || (isCommander && !isPTSLeadership)) && (
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 px-2">
-            <Navigation className="h-4 w-4 text-blue-600" />
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Unit Repositories</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-            {UNITS.map((unit) => (
-              <Link key={unit.id} href={`/reports/unit/${unit.id}`}>
-                <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-slate-200 shadow-sm cursor-pointer group overflow-hidden bg-white">
-                  <div className={`h-1 w-full ${unit.color}`} />
-                  <CardHeader className="p-4 space-y-2">
-                    <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      {unit.id === "ORDERLY REPORT" ? <FileText className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
-                    </div>
-                    <CardTitle className="text-[10px] font-black uppercase tracking-tight truncate text-slate-900">{unit.name}</CardTitle>
-                  </CardHeader>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
+      {/* Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <Card className={`${(isLeader || isCommander || isAdmin) && !isPTSLeadership ? 'lg:col-span-3' : 'lg:col-span-4'} border border-slate-200 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col`}>
           <CardHeader className="p-8 pb-4">
@@ -247,7 +231,7 @@ export default function Home() {
                     {report.createdAt && (
                       <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-4">
                         <Clock className="h-2.5 w-2.5" />
-                        Filed: {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
+                        Filed: {report.createdAt.toDate ? report.createdAt.toDate().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Processing...'}
                       </div>
                     )}
 
@@ -268,18 +252,13 @@ export default function Home() {
                     <ShieldCheck className="h-6 w-6 text-slate-200" />
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-1 uppercase">No Records Found</h3>
-                  {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
-                    <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
-                      <Link href="/daily/new">File First Report</Link>
-                    </Button>
-                  )}
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
+        {(isLeader || isCommander || isAdmin || isPTSLeadership) && (
           <div className="space-y-6 lg:col-span-1">
             <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] overflow-hidden relative group">
               <CardHeader className="p-8">
@@ -290,12 +269,22 @@ export default function Home() {
                 <CardTitle className="text-2xl font-black tracking-tight">Command Center</CardTitle>
               </CardHeader>
               <CardContent className="p-8 pt-0 space-y-4">
-                <Button asChild className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black text-xs shadow-lg shadow-blue-600/20">
-                  <Link href="/daily/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    NEW SITREP
-                  </Link>
-                </Button>
+                {(isLeader || isCommander || isAdmin) && !isPTSLeadership && (
+                  <Button asChild className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black text-xs shadow-lg shadow-blue-600/20">
+                    <Link href="/daily/new">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      NEW SITREP
+                    </Link>
+                  </Button>
+                )}
+                {(isAdmin || isPTSLeadership) && (
+                  <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-primary/10 border-primary/20 hover:bg-primary hover:text-white font-black text-xs text-primary transition-all">
+                    <Link href="/visitors/manage">
+                      <Users className="mr-2 h-4 w-4" />
+                      VISITOR REGISTRY
+                    </Link>
+                  </Button>
+                )}
                 <Button asChild variant="outline" className="w-full h-12 rounded-xl bg-white/5 border-white/10 hover:bg-white hover:text-slate-900 font-black text-xs">
                   <Link href="/reports">
                     <History className="mr-2 h-4 w-4" />

@@ -29,6 +29,7 @@ import {
   Settings,
   Loader2,
   BookOpen,
+  UserPlus
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -76,16 +77,14 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {isLeader && !isPTSLeadership && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={pathname === '/daily/new'} className="h-11 rounded-xl">
-                        <Link href="/daily/new">
-                          <FilePlus className="h-4 w-4" />
-                          <span className="font-bold">New Report</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/visitors/register'} className="h-11 rounded-xl">
+                      <Link href="/visitors/register">
+                        <UserPlus className="h-4 w-4" />
+                        <span className="font-bold">Visitor Registry</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname === '/reports'} className="h-11 rounded-xl">
@@ -109,6 +108,14 @@ export function AppSidebar() {
                         <Link href="/magazine/manage">
                           <BookOpen className="h-4 w-4" />
                           <span className="font-bold">Magazine Registry</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/visitors/manage'} className="h-11 rounded-xl">
+                        <Link href="/visitors/manage">
+                          <Users className="h-4 w-4" />
+                          <span className="font-bold">Visitor Admin</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

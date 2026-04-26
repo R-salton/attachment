@@ -7,82 +7,47 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Master Admin bypass for core system owners only.
-    function isMasterAdmin() {
-      return isSignedIn() && (
-        request.auth.uid == 'S7QoMkUQNHaok4JjLB1fFd9OI0g1' || 
-        request.auth.uid == '7oiKVWSJ30Ucg0DxamaRhoxlI3G2'
-      );
-    }
-
-    // Leadership bypass for specific high-level oversight accounts.
-    function isLeadershipBypass() {
-      return isSignedIn() && (
-        request.auth.uid == 'IsXXoo9z34UpjnJJTtlXhBvxHWz2'
-      );
-    }
-
-    // Role-based helper fetching role from the user's profile document
-    function getRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
-    function isRole(role) {
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getRole() == role;
-    }
-
     function isAdmin() {
-      return isMasterAdmin() || isRole('ADMIN');
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
     }
 
     function isPTSLeadership() {
-      return isLeadershipBypass() || isRole('PTSLEADERSHIP');
-    }
-
-    function isCommander() {
-      return isAdmin() || isPTSLeadership() || isRole('COMMANDER') || isRole('LEADER');
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'PTSLEADERSHIP';
     }
 
     match /users/{userId} {
-      // Users can read their own profile. Admins can manage all.
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Allow new users to create their initial profile document.
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // Only Admins can update roles/units, but users can update basic profile metadata.
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Only Admins can purge users from the registry.
-      allow write: if isAdmin();
     }
 
     match /reports/{reportId} {
-      // Command roles can read/list all records globally.
-      allow read, list: if isCommander();
-      
-      // Document-level access for owners.
-      allow read, list: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-      
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin() || isPTSLeadership());
-      allow delete: if isAdmin() || isPTSLeadership() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow read, list: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     match /articles/{articleId} {
-      // Management access for Leadership and Admins.
-      allow read, list, update, delete: if isAdmin() || isPTSLeadership();
-      
-      // Public terminal submission allowed for all authenticated sessions.
-      allow create: if isSignedIn(); 
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || isPTSLeadership();
+    }
+
+    match /cadets/{cadetId} {
+      allow read, list: if isSignedIn();
+      allow write: if isAdmin() || isPTSLeadership();
+    }
+
+    match /visitor_responses/{responseId} {
+      allow read, list: if isAdmin() || isPTSLeadership();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || isPTSLeadership();
     }
 
     match /system_logs/{logId} {
-      // Admins can audit all logs.
       allow read, list: if isAdmin();
-      // Any signed-in user can create a log entry (for audit purposes).
       allow create: if isSignedIn();
-      // Logs should not be modified or deleted.
-      allow update, delete: if false;
     }
   }
 }

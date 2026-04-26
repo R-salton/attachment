@@ -7,19 +7,14 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "ownerId": { "type": "string", "description": "The UID of the user who owns this report." },
+        "ownerId": { "type": "string" },
         "reportDate": { "type": "string" },
-        "dayNumber": { "type": "integer", "description": "The day number of the attachment." },
+        "dayNumber": { "type": "integer" },
         "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"] },
         "reportTitle": { "type": "string" },
         "reportingCommanderName": { "type": "string" },
-        "reportingCommanderTitle": { "type": "string" },
         "fullText": { "type": "string" },
-        "images": { 
-          "type": "array", 
-          "items": { "type": "string" }, 
-          "description": "Up to 4 images stored as base64 data URIs."
-        },
+        "images": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["DRAFT", "SUBMITTED"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -35,10 +30,36 @@
         "company": { "type": "string", "enum": ["Alpha", "Bravo", "Charlie"] },
         "platoon": { "type": "string", "enum": ["1", "2", "3"] },
         "content": { "type": "string" },
-        "imageUrl": { "type": "string", "description": "Base64 data URI of the cadet's image." },
+        "imageUrl": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "cadetName", "company", "platoon", "content", "createdAt"]
+    },
+    "VisitorResponse": {
+      "title": "VisitorResponse",
+      "description": "Data collection for cadet visitors.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cadetId": { "type": "string" },
+        "cadetName": { "type": "string" },
+        "platoon": { "type": "string", "enum": ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"] },
+        "visitor1": { "type": "object" },
+        "visitor2": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "cadetName", "platoon", "createdAt"]
+    },
+    "Cadet": {
+      "title": "Cadet",
+      "description": "A registry of all Officer Cadets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "platoon": { "type": "string", "enum": ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"] }
+      },
+      "required": ["id", "name", "platoon"]
     },
     "UserProfile": {
       "title": "UserProfile",
@@ -49,7 +70,7 @@
         "email": { "type": "string" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["ADMIN", "TRAINEE", "LEADER", "COMMANDER", "PTSLEADERSHIP", "INACTIVE"] },
-        "unit": { "type": "string", "enum": ["Gasabo DPU", "Kicukiro DPU", "Nyarugenge DPU", "TRS", "SIF", "TFU", "ORDERLY REPORT"] },
+        "unit": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastLogin": { "type": "string", "format": "date-time" }
       },
@@ -74,21 +95,11 @@
     "providers": ["google.com", "password", "anonymous"]
   },
   "firestore": {
-    "/reports/{reportId}": {
-      "schema": "Report",
-      "description": "Collection of operational reports."
-    },
-    "/users/{userId}": {
-      "schema": "UserProfile",
-      "description": "User role and profile data."
-    },
-    "/articles/{articleId}": {
-      "schema": "Article",
-      "description": "Collection of cadet magazine articles."
-    },
-    "/system_logs/{logId}": {
-      "schema": "SystemLog",
-      "description": "Centralized system audit logs."
-    }
+    "/reports/{reportId}": { "schema": "Report", "description": "Operational reports." },
+    "/users/{userId}": { "schema": "UserProfile", "description": "User profiles." },
+    "/articles/{articleId}": { "schema": "Article", "description": "Magazine articles." },
+    "/visitor_responses/{responseId}": { "schema": "VisitorResponse", "description": "Visitor registrations." },
+    "/cadets/{cadetId}": { "schema": "Cadet", "description": "Cadet registry." },
+    "/system_logs/{logId}": { "schema": "SystemLog", "description": "Audit logs." }
   }
 }
