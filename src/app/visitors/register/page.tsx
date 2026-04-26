@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Select, 
   SelectContent, 
@@ -19,17 +19,14 @@ import {
 import { 
   Users, 
   User, 
-  Building2, 
   Send, 
   Loader2, 
   CheckCircle2, 
-  AlertCircle,
   ArrowLeft,
   ChevronRight,
   ShieldCheck,
   MapPin,
-  Phone,
-  Calendar
+  Phone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { recordLog } from '@/lib/logger';
@@ -47,14 +44,6 @@ export default function VisitorRegistration() {
   const [selectedPlatoon, setSelectedPlatoon] = useState<string>('');
   const [selectedCadet, setSelectedCadet] = useState<string>('');
 
-  // Fetch cadets based on selected platoon
-  const cadetsQuery = useMemoFirebase(() => {
-    if (!db || !selectedPlatoon) return null;
-    return query(collection(db, 'cadets'), where('platoon', '==', selectedPlatoon), orderBy('name', 'asc'));
-  }, [db, selectedPlatoon]);
-
-  const { data: cadets, isLoading: isCadetsLoading } = useCollection(cadetsQuery);
-
   const [formData, setFormData] = useState({
     visitor1: { fullName: '', idNumber: '', age: '', telephone: '', location: '', profession: '', childBelow6: 'No', childAge: '', disability: 'No' },
     visitor2: { fullName: '', idNumber: '', age: '', telephone: '', location: '', profession: '', childBelow6: 'No', childAge: '', disability: 'No' }
@@ -70,7 +59,7 @@ export default function VisitorRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCadet || !selectedPlatoon) {
-      toast({ variant: "destructive", title: "Incomplete Identity", description: "Please select your name and platoon." });
+      toast({ variant: "destructive", title: "Incomplete Identity", description: "Please enter your name and select your platoon." });
       return;
     }
 
@@ -165,24 +154,19 @@ export default function VisitorRegistration() {
 
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Officer Cadet Full Name</Label>
-                  <Select 
-                    disabled={!selectedPlatoon || isCadetsLoading} 
-                    value={selectedCadet} 
-                    onValueChange={setSelectedCadet}
-                  >
-                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 text-base font-bold shadow-inner">
-                      {isCadetsLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <User className="h-5 w-5 mr-2 text-slate-400" />}
-                      <SelectValue placeholder={selectedPlatoon ? "Select your name..." : "Select platoon first"} />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl max-h-[300px]">
-                      {cadets?.map(c => <SelectItem key={c.id} value={c.name} className="font-bold">{c.name}</SelectItem>)}
-                      {cadets?.length === 0 && <SelectItem value="none" disabled>No cadets found in {selectedPlatoon}</SelectItem>}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Input 
+                      placeholder="Type your full name..." 
+                      className="pl-12 h-14 rounded-2xl border-slate-200 bg-slate-50/50 text-base font-bold shadow-inner uppercase"
+                      value={selectedCadet}
+                      onChange={(e) => setSelectedCadet(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <Button 
-                  disabled={!selectedCadet} 
+                  disabled={!selectedCadet || !selectedPlatoon} 
                   onClick={() => setStep(2)} 
                   className="w-full h-16 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl shadow-primary/20 group"
                 >
@@ -272,10 +256,10 @@ export default function VisitorRegistration() {
                         className="flex gap-4"
                       >
                         <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                          <RadioGroupItem value="Yes" id="y" /><Label htmlFor="y" className="font-bold">Yes</Label>
+                          <RadioGroupItem value="Yes" id={`y-${step}`} /><Label htmlFor={`y-${step}`} className="font-bold">Yes</Label>
                         </div>
                         <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                          <RadioGroupItem value="No" id="n" /><Label htmlFor="n" className="font-bold">No</Label>
+                          <RadioGroupItem value="No" id={`n-${step}`} /><Label htmlFor={`n-${step}`} className="font-bold">No</Label>
                         </div>
                       </RadioGroup>
                    </div>
@@ -300,10 +284,10 @@ export default function VisitorRegistration() {
                     className="flex gap-4"
                   >
                     <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                      <RadioGroupItem value="Yes" id="dy" /><Label htmlFor="y" className="font-bold">Yes</Label>
+                      <RadioGroupItem value="Yes" id={`dy-${step}`} /><Label htmlFor={`dy-${step}`} className="font-bold">Yes</Label>
                     </div>
                     <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                      <RadioGroupItem value="No" id="dn" /><Label htmlFor="n" className="font-bold">No</Label>
+                      <RadioGroupItem value="No" id={`dn-${step}`} /><Label htmlFor={`dn-${step}`} className="font-bold">No</Label>
                     </div>
                   </RadioGroup>
                 </div>
