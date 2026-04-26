@@ -88,7 +88,7 @@ export async function exportVisitorsToExcel(responses: VisitorResponse[], platoo
       'CELLS', 
       'VILLAGES', 
       'PROFESSION', 
-      'ACCOMPANIED BY CHILD', 
+      'ACCOMPANIED BY CHILD BELOW 6', 
       'MENTION ANY DISABILITY'
     ];
     headerRow.font = { bold: true, color: { argb: 'FFFFFF' }, size: 9 };

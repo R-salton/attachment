@@ -304,10 +304,10 @@ export default function VisitorRegistration() {
                    <div className="space-y-2">
                       <div className="flex items-center gap-2 mb-2">
                         <Baby className="h-3.5 w-3.5 text-primary" />
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Accompanied by child below 6 years old?</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-500">ACCOMPANIED BY CHILD Below 6 (Ages only)</Label>
                       </div>
                       <Input 
-                        placeholder="e.g. No, or Yes (3 years)" 
+                        placeholder="e.g. 2, 4 or None" 
                         className="h-11 rounded-xl bg-slate-50"
                         value={formData[step === 2 ? 'visitor1' : 'visitor2'].childBelow6}
                         onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'childBelow6', e.target.value)}
