@@ -195,13 +195,13 @@ export default function VisitorManagement() {
                             <div className="space-y-1">
                               <span className="text-[10px] font-black text-slate-900 uppercase">1. {res.visitor1.fullName}</span>
                               <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase">
-                                <MapPin className="h-2.5 w-2.5" /> {res.visitor1.district} / {res.visitor1.sector}
+                                <MapPin className="h-2.5 w-2.5" /> {res.visitor1.district} / {res.visitor1.sector} / {res.visitor1.cell} / {res.visitor1.village}
                               </div>
                             </div>
                             <div className="space-y-1">
                               <span className="text-[10px] font-black text-slate-900 uppercase">2. {res.visitor2.fullName}</span>
                               <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase">
-                                <MapPin className="h-2.5 w-2.5" /> {res.visitor2.district} / {res.visitor2.sector}
+                                <MapPin className="h-2.5 w-2.5" /> {res.visitor2.district} / {res.visitor2.sector} / {res.visitor2.cell} / {res.visitor2.village}
                               </div>
                             </div>
                           </div>
@@ -268,7 +268,8 @@ export default function VisitorManagement() {
                     Authorized Command Access Only. Mission-critical data is logged.
                   </p>
                 </div>
-             </aside>
+             </Card>
+          </aside>
         </div>
       </main>
     </div>
