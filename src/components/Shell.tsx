@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useAuth } from '@/firebase';
@@ -5,7 +6,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogIn, ShieldCheck, Menu, Loader2, Lock, LogOut, Clock, ShieldAlert, Fingerprint, ChevronRight } from 'lucide-react';
+import { LogIn, ShieldCheck, Menu, Loader2, Lock, LogOut, Clock, ShieldAlert, Fingerprint, ChevronRight, UserPlus } from 'lucide-react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { signOut } from 'firebase/auth';
 
@@ -41,12 +42,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-black text-lg tracking-tighter text-slate-900">Report Master</span>
           </div>
-          <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
-            <Link href="/login">
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign In
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="hidden sm:flex rounded-xl font-bold text-slate-500">
+              <Link href="/visitors/register">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Visitor Registration
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-xl font-bold border-slate-200">
+              <Link href="/login">
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Link>
+            </Button>
+          </div>
         </header>
         <main className="flex-1 flex flex-col">
           {children}

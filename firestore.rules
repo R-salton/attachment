@@ -41,13 +41,13 @@ service cloud.firestore {
 
     match /visitor_responses/{responseId} {
       allow read, list: if isAdmin() || isPTSLeadership();
-      allow create: if isSignedIn();
+      allow create: if true; // Public access enabled for any one to submit
       allow update, delete: if isAdmin() || isPTSLeadership();
     }
 
     match /system_logs/{logId} {
       allow read, list: if isAdmin();
-      allow create: if isSignedIn();
+      allow create: if true; // Allow anonymous logging for public actions
     }
   }
 }

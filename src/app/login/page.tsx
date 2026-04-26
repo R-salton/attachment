@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, Mail, Lock, UserCheck, AlertCircle, ShieldX, Fingerprint } from 'lucide-react';
+import { Loader2, Mail, Lock, UserCheck, AlertCircle, ShieldX, Fingerprint, UserPlus, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -116,6 +118,18 @@ export default function LoginPage() {
                   )}
                   Google Credentials
                 </Button>
+
+                <div className="pt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-3 w-3 text-primary" />
+                    <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Public Registry</span>
+                  </div>
+                  <Button asChild variant="ghost" className="w-full h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 transition-all border border-primary/10">
+                    <Link href="/visitors/register">
+                      Visitor Registration <ChevronRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
