@@ -335,7 +335,7 @@ export default function VisitorRegistration() {
                     disabled={isLoading}
                   >
                     {isLoading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : step === 2 ? <ChevronRight className="mr-2 h-5 w-5" /> : <Send className="mr-2 h-5 w-5" />}
-                    {step === 2 ? 'Continue to Visitor 2' : 'Authorize Registry'}
+                    {step === 2 ? 'Continue to Visitor 2' : 'SUBMIT'}
                   </Button>
                 </div>
               </div>
