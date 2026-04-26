@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -27,7 +26,8 @@ import {
   Filter, 
   ShieldCheck,
   Building2,
-  ListFilter
+  ListFilter,
+  MapPin
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -180,7 +180,7 @@ export default function VisitorManagement() {
                     <TableRow>
                       <TableHead className="font-black text-[10px] uppercase tracking-widest">Officer Cadet</TableHead>
                       <TableHead className="font-black text-[10px] uppercase tracking-widest">Platoon</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase tracking-widest">Visitors</TableHead>
+                      <TableHead className="font-black text-[10px] uppercase tracking-widest">Visitors & Location</TableHead>
                       <TableHead className="font-black text-[10px] uppercase tracking-widest">Registry Date</TableHead>
                       <TableHead className="text-right font-black text-[10px] uppercase tracking-widest">Audit</TableHead>
                     </TableRow>
@@ -191,9 +191,19 @@ export default function VisitorManagement() {
                         <TableCell className="font-black text-slate-900 uppercase text-xs">{res.cadetName}</TableCell>
                         <TableCell><Badge variant="outline" className="font-black text-[10px] border-primary/20 text-primary">{res.platoon}</Badge></TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">1. {res.visitor1.fullName}</span>
-                            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">2. {res.visitor2.fullName}</span>
+                          <div className="flex flex-col gap-2 py-2">
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black text-slate-900 uppercase">1. {res.visitor1.fullName}</span>
+                              <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase">
+                                <MapPin className="h-2.5 w-2.5" /> {res.visitor1.district} / {res.visitor1.sector}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black text-slate-900 uppercase">2. {res.visitor2.fullName}</span>
+                              <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase">
+                                <MapPin className="h-2.5 w-2.5" /> {res.visitor2.district} / {res.visitor2.sector}
+                              </div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-[10px] font-bold text-slate-400 uppercase">

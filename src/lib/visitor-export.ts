@@ -1,4 +1,3 @@
-
 'use client';
 
 import ExcelJS from 'exceljs';
@@ -9,10 +8,12 @@ interface VisitorData {
   idNumber: string;
   age: string;
   telephone: string;
-  location: string;
+  district: string;
+  sector: string;
+  cell: string;
+  village: string;
   profession: string;
   childBelow6: string;
-  childAge?: string;
   disability: string;
 }
 
@@ -42,15 +43,18 @@ export async function exportVisitorsToExcel(responses: VisitorResponse[], platoo
     { header: 'ID NUMBER', key: 'vId', width: 20 },
     { header: 'AGE', key: 'vAge', width: 10 },
     { header: 'TELEPHONE', key: 'vTel', width: 15 },
-    { header: 'LOCATION (D/S/C/V)', key: 'vLoc', width: 35 },
+    { header: 'DISTRICT', key: 'dist', width: 15 },
+    { header: 'SECTOR', key: 'sect', width: 15 },
+    { header: 'CELL', key: 'cell', width: 15 },
+    { header: 'VILLAGE', key: 'vill', width: 15 },
     { header: 'PROFESSION', key: 'vProf', width: 20 },
-    { header: 'CHILD < 6 (AGE)', key: 'vChild', width: 15 },
-    { header: 'DISABILITY', key: 'vDis', width: 15 }
+    { header: 'CHILD < 6 STATUS', key: 'vChild', width: 20 },
+    { header: 'DISABILITY STATUS', key: 'vDis', width: 20 }
   ];
 
   // Header Styling
   const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+  headerRow.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
   headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E293B' } };
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
@@ -67,9 +71,12 @@ export async function exportVisitorsToExcel(responses: VisitorResponse[], platoo
       vId: resp.visitor1.idNumber,
       vAge: resp.visitor1.age,
       vTel: resp.visitor1.telephone,
-      vLoc: resp.visitor1.location,
+      dist: resp.visitor1.district,
+      sect: resp.visitor1.sector,
+      cell: resp.visitor1.cell,
+      vill: resp.visitor1.village,
       vProf: resp.visitor1.profession,
-      vChild: `${resp.visitor1.childBelow6}${resp.visitor1.childAge ? ` (${resp.visitor1.childAge})` : ''}`,
+      vChild: resp.visitor1.childBelow6,
       vDis: resp.visitor1.disability
     };
     worksheet.addRow(row1Values);
@@ -83,9 +90,12 @@ export async function exportVisitorsToExcel(responses: VisitorResponse[], platoo
       vId: resp.visitor2.idNumber,
       vAge: resp.visitor2.age,
       vTel: resp.visitor2.telephone,
-      vLoc: resp.visitor2.location,
+      dist: resp.visitor2.district,
+      sect: resp.visitor2.sector,
+      cell: resp.visitor2.cell,
+      vill: resp.visitor2.village,
       vProf: resp.visitor2.profession,
-      vChild: `${resp.visitor2.childBelow6}${resp.visitor2.childAge ? ` (${resp.visitor2.childAge})` : ''}`,
+      vChild: resp.visitor2.childBelow6,
       vDis: resp.visitor2.disability
     };
     worksheet.addRow(row2Values);
@@ -107,8 +117,9 @@ export async function exportVisitorsToExcel(responses: VisitorResponse[], platoo
         bottom: { style: 'thin' },
         right: { style: 'thin' }
       };
+      cell.font = { size: 9 };
       if (rowNumber > 1) {
-        cell.alignment = { vertical: 'middle', horizontal: rowNumber % 2 === 0 ? 'left' : 'left', wrapText: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
       }
     });
   });

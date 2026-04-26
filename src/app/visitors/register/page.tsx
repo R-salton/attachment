@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -26,11 +25,12 @@ import {
   ChevronRight,
   ShieldCheck,
   MapPin,
-  Phone
+  Phone,
+  Baby,
+  Accessibility
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { recordLog } from '@/lib/logger';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const PLATOONS = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"];
 
@@ -45,8 +45,32 @@ export default function VisitorRegistration() {
   const [selectedCadet, setSelectedCadet] = useState<string>('');
 
   const [formData, setFormData] = useState({
-    visitor1: { fullName: '', idNumber: '', age: '', telephone: '', location: '', profession: '', childBelow6: 'No', childAge: '', disability: 'No' },
-    visitor2: { fullName: '', idNumber: '', age: '', telephone: '', location: '', profession: '', childBelow6: 'No', childAge: '', disability: 'No' }
+    visitor1: { 
+      fullName: '', 
+      idNumber: '', 
+      age: '', 
+      telephone: '', 
+      district: '', 
+      sector: '', 
+      cell: '', 
+      village: '', 
+      profession: '', 
+      childBelow6: '', 
+      disability: '' 
+    },
+    visitor2: { 
+      fullName: '', 
+      idNumber: '', 
+      age: '', 
+      telephone: '', 
+      district: '', 
+      sector: '', 
+      cell: '', 
+      village: '', 
+      profession: '', 
+      childBelow6: '', 
+      disability: '' 
+    }
   });
 
   const handleVisitorChange = (visitorKey: 'visitor1' | 'visitor2', field: string, value: string) => {
@@ -70,7 +94,7 @@ export default function VisitorRegistration() {
 
       await setDoc(responseRef, {
         id: responseId,
-        cadetName: selectedCadet,
+        cadetName: selectedCadet.toUpperCase(),
         platoon: selectedPlatoon,
         visitor1: formData.visitor1,
         visitor2: formData.visitor2,
@@ -79,7 +103,7 @@ export default function VisitorRegistration() {
 
       recordLog(db, {
         userId: 'VISITOR_PORTAL',
-        userName: selectedCadet,
+        userName: selectedCadet.toUpperCase(),
         action: 'VISITOR_REGISTERED',
         details: `Registered visitors for Platoon ${selectedPlatoon}`
       });
@@ -224,16 +248,45 @@ export default function VisitorRegistration() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-500">Location (District / Sector / Cell / Village)</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input 
-                      placeholder="e.g. RWAMAGANA / GISHARI / ..." 
-                      className="pl-11 h-12 rounded-xl bg-slate-50 border-slate-200" 
-                      value={formData[step === 2 ? 'visitor1' : 'visitor2'].location}
-                      onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'location', e.target.value)}
-                    />
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Location Registry</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">District</Label>
+                      <Input 
+                        placeholder="e.g. RWAMAGANA" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].district}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'district', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Sector</Label>
+                      <Input 
+                        placeholder="e.g. GISHARI" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].sector}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'sector', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Cell</Label>
+                      <Input 
+                        placeholder="e.g. CELL NAME" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].cell}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'cell', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Village</Label>
+                      <Input 
+                        placeholder="e.g. VILLAGE" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].village}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'village', e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -247,49 +300,31 @@ export default function VisitorRegistration() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4 border-y border-slate-100">
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-slate-400">Child below 6 years?</Label>
-                      <RadioGroup 
-                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].childBelow6} 
-                        onValueChange={v => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'childBelow6', v)}
-                        className="flex gap-4"
-                      >
-                        <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                          <RadioGroupItem value="Yes" id={`y-${step}`} /><Label htmlFor={`y-${step}`} className="font-bold">Yes</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                          <RadioGroupItem value="No" id={`n-${step}`} /><Label htmlFor={`n-${step}`} className="font-bold">No</Label>
-                        </div>
-                      </RadioGroup>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 border-y border-slate-100">
+                   <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Baby className="h-3.5 w-3.5 text-primary" />
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Accompanied by child below 6 years old?</Label>
+                      </div>
+                      <Input 
+                        placeholder="e.g. No, or Yes (3 years)" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].childBelow6}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'childBelow6', e.target.value)}
+                      />
                    </div>
-                   {formData[step === 2 ? 'visitor1' : 'visitor2'].childBelow6 === 'Yes' && (
-                     <div className="space-y-2 animate-in slide-in-from-left-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Child's Age</Label>
-                        <Input 
-                          placeholder="e.g. 4 years" 
-                          className="h-12 rounded-xl"
-                          value={formData[step === 2 ? 'visitor1' : 'visitor2'].childAge}
-                          onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'childAge', e.target.value)}
-                        />
-                     </div>
-                   )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">Living with Disability?</Label>
-                  <RadioGroup 
-                    value={formData[step === 2 ? 'visitor1' : 'visitor2'].disability} 
-                    onValueChange={v => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'disability', v)}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                      <RadioGroupItem value="Yes" id={`dy-${step}`} /><Label htmlFor={`dy-${step}`} className="font-bold">Yes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border">
-                      <RadioGroupItem value="No" id={`dn-${step}`} /><Label htmlFor={`dn-${step}`} className="font-bold">No</Label>
-                    </div>
-                  </RadioGroup>
+                   <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Accessibility className="h-3.5 w-3.5 text-primary" />
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Living with Disability?</Label>
+                      </div>
+                      <Input 
+                        placeholder="e.g. None, or specific detail" 
+                        className="h-11 rounded-xl bg-slate-50"
+                        value={formData[step === 2 ? 'visitor1' : 'visitor2'].disability}
+                        onChange={e => handleVisitorChange(step === 2 ? 'visitor1' : 'visitor2', 'disability', e.target.value)}
+                      />
+                   </div>
                 </div>
 
                 <div className="flex gap-4 pt-6">
