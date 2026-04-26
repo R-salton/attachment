@@ -27,7 +27,9 @@ import {
   MapPin,
   Phone,
   Baby,
-  Accessibility
+  Accessibility,
+  Eye,
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { recordLog } from '@/lib/logger';
@@ -132,6 +134,26 @@ export default function VisitorRegistration() {
     );
   }
 
+  const VisitorSummary = ({ title, data }: { title: string, data: any }) => (
+    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+      <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">{title}</h4>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] md:text-xs">
+        <div className="text-slate-400 font-bold uppercase">Name:</div>
+        <div className="text-slate-900 font-black">{data.fullName || 'N/A'}</div>
+        <div className="text-slate-400 font-bold uppercase">ID/NID:</div>
+        <div className="text-slate-900 font-black">{data.idNumber || 'N/A'}</div>
+        <div className="text-slate-400 font-bold uppercase">Age:</div>
+        <div className="text-slate-900 font-black">{data.age}</div>
+        <div className="text-slate-400 font-bold uppercase">Tel:</div>
+        <div className="text-slate-900 font-black">{data.telephone || 'N/A'}</div>
+        <div className="text-slate-400 font-bold uppercase">District:</div>
+        <div className="text-slate-900 font-black">{data.district || 'N/A'}</div>
+        <div className="text-slate-400 font-bold uppercase">Sector:</div>
+        <div className="text-slate-900 font-black">{data.sector || 'N/A'}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#f8fafc] py-8 md:py-16 px-4 md:px-6">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -148,16 +170,16 @@ export default function VisitorRegistration() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Section {step} of 3</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Section {step} of 4</span>
               </div>
               <div className="flex gap-1">
-                {[1, 2, 3].map(i => (
+                {[1, 2, 3, 4].map(i => (
                   <div key={i} className={`h-1 rounded-full transition-all duration-500 ${step >= i ? 'w-6 bg-primary' : 'w-2 bg-slate-700'}`} />
                 ))}
               </div>
             </div>
             <CardTitle className="text-2xl md:text-3xl font-black tracking-tight uppercase">
-              {step === 1 ? 'Cadet Identity' : step === 2 ? 'Visitor One' : 'Visitor Two'}
+              {step === 1 ? 'Cadet Identity' : step === 2 ? 'Visitor One' : step === 3 ? 'Visitor Two' : 'Verify Entries'}
             </CardTitle>
           </div>
 
@@ -330,12 +352,50 @@ export default function VisitorRegistration() {
                 <div className="flex gap-4 pt-6">
                   <Button variant="ghost" onClick={() => setStep(step - 1)} className="h-14 px-8 rounded-2xl font-bold">Back</Button>
                   <Button 
-                    onClick={step === 2 ? () => setStep(3) : handleSubmit} 
+                    onClick={() => setStep(step + 1)} 
                     className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl"
+                  >
+                    Continue <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/10 space-y-4">
+                  <div className="flex items-center gap-3 border-b border-primary/10 pb-3">
+                    <ShieldCheck className="h-6 w-6 text-primary" />
+                    <h3 className="font-black text-slate-900 uppercase tracking-tight">Identity Confirmation</h3>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Officer Cadet:</span>
+                    <span className="text-xl font-black text-slate-900 uppercase">{selectedCadet}</span>
+                    <Badge className="w-fit mt-1 px-3 py-1 font-black bg-slate-900 text-white border-none">{selectedPlatoon} PLATOON</Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <VisitorSummary title="Visitor One" data={formData.visitor1} />
+                  <VisitorSummary title="Visitor Two" data={formData.visitor2} />
+                </div>
+
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3">
+                  <Eye className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] md:text-xs font-bold text-amber-800 leading-relaxed">
+                    Verify all entries carefully. Once submitted, this record will be archived in the official command registry and cannot be edited by the sender.
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button variant="ghost" onClick={() => setStep(3)} className="h-16 px-8 rounded-2xl font-bold" disabled={isLoading}>Back</Button>
+                  <Button 
+                    onClick={handleSubmit} 
+                    className="flex-1 h-16 rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90"
                     disabled={isLoading}
                   >
-                    {isLoading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : step === 2 ? <ChevronRight className="mr-2 h-5 w-5" /> : <Send className="mr-2 h-5 w-5" />}
-                    {step === 2 ? 'Continue to Visitor 2' : 'SUBMIT'}
+                    {isLoading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <Send className="mr-2 h-5 w-5" />}
+                    SUBMIT
                   </Button>
                 </div>
               </div>
@@ -352,3 +412,4 @@ export default function VisitorRegistration() {
     </div>
   );
 }
+
