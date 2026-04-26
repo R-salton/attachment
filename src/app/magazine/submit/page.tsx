@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from 'react';
@@ -224,7 +223,7 @@ export default function MagazineSubmissionPortal() {
 
               <Button type="submit" disabled={isLoading} className="w-full h-14 md:h-16 rounded-xl md:rounded-[2rem] font-black text-base md:text-lg bg-primary hover:bg-primary/90 shadow-xl md:shadow-2xl shadow-primary/20 transition-all active:scale-95">
                 {isLoading ? <Loader2 className="animate-spin mr-2 md:mr-3 h-5 w-5 md:h-6 md:w-6" /> : <Send className="mr-2 md:mr-3 h-5 w-5 md:h-6 md:w-6" />}
-                AUTHORIZE SUBMISSION
+                SUBMIT
               </Button>
             </form>
           </CardContent>
